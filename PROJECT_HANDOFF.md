@@ -38,6 +38,16 @@
 
 ## 다른 컴퓨터에서 시작
 
-비공개 Git 저장소를 복제하고 저장소 루트에서 Codex 작업을 연다. 새 작업의 첫 메시지에서 `README.md`와 `PROJECT_HANDOFF.md`를 먼저 읽도록 요청한다. Windows에서 `./desktop/build.ps1`을 실행하고 두 self-test를 통과시킨 뒤 작업을 계속한다.
+비공개 Git 저장소는 `https://github.com/unistcetacea-dev/aa-battle`이다. 다른 컴퓨터에서 같은 GitHub 계정으로 로그인한 뒤 다음 명령으로 복제한다.
+
+```powershell
+git clone https://github.com/unistcetacea-dev/aa-battle.git
+cd aa-battle
+./desktop/build.ps1
+```
+
+저장소 루트에서 Codex 작업을 열고, 새 작업의 첫 메시지에서 `README.md`와 `PROJECT_HANDOFF.md`를 먼저 읽도록 요청한다. 빌드 후 두 self-test를 통과시킨 뒤 작업을 계속한다.
+
+작업을 시작하기 전에는 `git pull`, 마친 뒤에는 커밋과 `git push`를 수행해 두 컴퓨터의 소스를 맞춘다. 같은 파일을 두 컴퓨터에서 동시에 편집하지 않는다.
 
 Codex 공유 링크는 특정 시점의 읽기 전용 대화 스냅샷이다. 향후 결정은 이 문서에도 갱신하여 대화 링크 없이도 개발을 이어갈 수 있게 한다.
