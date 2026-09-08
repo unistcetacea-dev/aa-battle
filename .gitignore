@@ -38,3 +38,13 @@ next-env.d.ts
 /work/
 /reference-page.html
 *.tsbuildinfo
+
+# local previews and test output
+/preview*.png
+/mono-preview*.png
+/state-preview*.png
+/self-test.txt
+/research/potentials/raw-cache/
+
+# private Codex conversation snapshot URL
+/CODEX_HISTORY.private.md

@@ -1,22 +1,45 @@
-# AA BATTLE LAB
+# AA BATTLE
 
-창작 포켓몬용 수동 판정 보조 테스트 빌드. React / Vinext / TypeScript.
+아스키아트 기반 창작 포켓몬 배틀 시뮬레이터의 Windows 테스트 빌드입니다. 포텐셜 실행기를 추가할 수 있도록 트리거와 효과를 분리한 데이터 구조를 준비하고 있습니다.
 
-## 실행
+## Windows 빌드
 
-Node 22.13 이상. `pnpm install` 후 `pnpm dev`. `pnpm build`로 프로덕션 빌드.
-설치 환경이 pnpm 의존성 재검사를 실패하면 이미 설치된 CLI를 `node node_modules/vinext/dist/cli.js dev`로 실행할 수 있습니다.
-검증: `node battle.test.cjs`, `node node_modules/typescript/bin/tsc --noEmit`.
+Windows PowerShell에서 다음 명령을 실행합니다.
 
-## 데이터와 구현 범위
+```powershell
+./desktop/build.ps1
+```
 
-- 제공된 Ver 3.617 xlsx의 포켓몬 목록 43개(종족치가 채워진 행), 기술 목록 1,391개, 20타입 상성표를 추출했습니다. 레벨 공란은 테스트 기본값 100입니다. 원본 xlsx는 수정하지 않았습니다.
-- 능력치: 시트 G10:L10의 낮은 레벨 기준 + 레벨 차 1% 보정. HP 보정은 선택 사항. 대미지 C1, N14:N16의 내림 순서와 85–100 난수를 반영했습니다.
-- 최대 6마리씩, AA 원문 편집, 수동 교대, 랭크/배율, 우선도/속도/동속 무작위 순서, 명중, HP 반영, 기절 후 행동 중단, 되돌리기.
-- 날씨(쾌청/비), 필드 4종, 화상/동상, 3타입, 급소 2배 지원. 급소 선택과 공통 계산 보정은 양쪽에 적용됩니다.
-- 변화기, 가변 위력, 연속기 횟수, 반동, 상태 부여, 명중/회피 랭크, PP, 지속 턴, 특성/소지품/익스펜션과 시트의 삼각·삼점방호 등 특수 효과는 자동 실행되지 않습니다. 기술 선택은 기본 위력 계산이며 부가 효과는 수동 판정해야 합니다.
-- 세션은 메모리에만 유지됩니다. 새로고침하면 초기화됩니다.
-- `lib/battle.ts`의 Potential 타입은 향후 이벤트별 확장용이며 현재 핸들러는 없습니다.
+결과물은 `outputs/desktop/AABattle.exe`와 `AABattleDataEditor.exe`입니다. 출력 폴더는 Git에서 제외되며 EXE에는 HeadKasen과 Pokemon BW 폰트, 시트 참조 데이터가 포함됩니다.
 
-AA 참조: https://bbs2.tunaground.net/trace/anchor/13988/1/11
-HeadKasen, 검정/흰색, 15px/16px와 공백 보존을 적용했습니다. 시작 AA는 참조 캐릭터의 표시 샘플이며 시트 포켓몬과 대응하지 않습니다. AA 편집으로 교체합니다. 시스템 로그는 제공된 Pokemon BW 폰트를 사용합니다.
+검증:
+
+```powershell
+./outputs/desktop/AABattle.exe --self-test battle-test.txt
+./outputs/desktop/AABattleDataEditor.exe --self-test editor-test.txt
+```
+
+## 현재 기능
+
+- 좌우 포켓몬 AA, 기술 선택, 대미지 계산, HP와 턴 처리
+- 20타입 상성 및 무효, 주요 상태이상·상태변화, 날씨·필드·중력·트릭룸
+- 원본 슈퍼 마개조 계산기 Ver 3.617의 능력치 및 대미지 계산 기반
+- 같은 프로그램 안의 트레이너·포켓몬·포텐셜 데이터 편집기
+- 포켓몬을 왼쪽/오른쪽 배틀 슬롯으로 즉시 불러오기
+- `.aabdata.json` 저장 및 불러오기
+
+팀 편집기의 여섯 능력치는 종족값입니다. 배틀 슬롯 적용 시 개체값 31, 노력치 0, 성격 무보정을 사용한 뒤 원본 시트의 레벨 차 보정을 적용합니다.
+
+포텐셜 데이터는 포켓몬과 함께 전달되지만 효과 실행기는 아직 활성화하지 않았습니다. 수집한 포텐셜 연구 데이터와 실행 모델은 `research/potentials`에 있습니다.
+
+## 주요 파일
+
+- `desktop/BattleEngine.cs`: 능력치, 대미지, 턴 처리
+- `desktop/Mechanics.cs`: 타입, 상태, 날씨와 필드 규칙
+- `desktop/BattleApp.cs`: 배틀 UI
+- `desktop/DataEditor.cs`: 통합 데이터 편집기와 배틀 슬롯 변환
+- `desktop/MechanicsTests.cs`: 회귀 검사
+- `lib/reference-data.json`: 시트에서 추출한 포켓몬·기술·상성 데이터
+- `PROJECT_HANDOFF.md`: 다른 컴퓨터나 새 Codex 작업을 위한 현재 상태
+
+웹 프로토타입 소스도 저장소에 남아 있지만 현재 배포 대상은 네이티브 Windows EXE입니다.
