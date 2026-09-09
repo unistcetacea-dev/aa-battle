@@ -45,6 +45,7 @@ next-env.d.ts
 /state-preview*.png
 /self-test.txt
 /research/potentials/raw-cache/
+/research/potentials/__pycache__/
 
 # private Codex conversation snapshot URL
 /CODEX_HISTORY.private.md

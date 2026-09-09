@@ -1,0 +1,2 @@
+# Keep tool history concise; large datasets should be searched, not dumped.
+tool_output_token_limit = 4000

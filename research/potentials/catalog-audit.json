@@ -1,0 +1,40 @@
+{
+  "definitions": 4151,
+  "source_pages": 482,
+  "cached_source_pages": 482,
+  "missing_cache_pages": [],
+  "definitions_with_name_in_source": 4151,
+  "definitions_with_raw_in_source": 4151,
+  "definitions_without_trigger": 1713,
+  "definitions_needing_review": 1773,
+  "live_checks": [
+    {
+      "page": "포켓몬스터_아바돈_썩어가는_낙원과_부해의_탐험대_캐릭터_시트",
+      "url": "https://wiki.tunaground.net/doku.php?id=%ED%8F%AC%EC%BC%93%EB%AA%AC%EC%8A%A4%ED%84%B0_%EC%95%84%EB%B0%94%EB%8F%88_%EC%8D%A9%EC%96%B4%EA%B0%80%EB%8A%94_%EB%82%99%EC%9B%90%EA%B3%BC_%EB%B6%80%ED%95%B4%EC%9D%98_%ED%83%90%ED%97%98%EB%8C%80_%EC%BA%90%EB%A6%AD%ED%84%B0_%EC%8B%9C%ED%8A%B8&do=export_raw",
+      "same_as_cache": true,
+      "new_links": [],
+      "removed_links": []
+    },
+    {
+      "page": "오레마스_포텐셜일람",
+      "url": "https://wiki.tunaground.net/doku.php?id=%EC%98%A4%EB%A0%88%EB%A7%88%EC%8A%A4_%ED%8F%AC%ED%85%90%EC%85%9C%EC%9D%BC%EB%9E%8C&do=export_raw",
+      "same_as_cache": true,
+      "new_links": [],
+      "removed_links": []
+    },
+    {
+      "page": "오레마스_역할포텐셜",
+      "url": "https://wiki.tunaground.net/doku.php?id=%EC%98%A4%EB%A0%88%EB%A7%88%EC%8A%A4_%EC%97%AD%ED%95%A0%ED%8F%AC%ED%85%90%EC%85%9C&do=export_raw",
+      "same_as_cache": true,
+      "new_links": [],
+      "removed_links": []
+    },
+    {
+      "page": "아바돈_유키나리",
+      "url": "https://wiki.tunaground.net/doku.php?id=%EC%95%84%EB%B0%94%EB%8F%88_%EC%9C%A0%ED%82%A4%EB%82%98%EB%A6%AC&do=export_raw",
+      "same_as_cache": true,
+      "new_links": [],
+      "removed_links": []
+    }
+  ]
+}
