@@ -148,8 +148,8 @@ namespace AABattle {
  }
 
  partial class DataEditorForm {
-  DataGridView moveDex,triggerDex,effectDex;PixelSearchBox dexMoveSearch,triggerPartSearch,effectPartSearch;PixelText dexMoveDetail,triggerPartDetail,effectPartDetail;
-  Label moveCount,triggerPartCount,effectPartCount;PotentialParts partCatalog;List<PotentialPart> effectOptions=new List<PotentialPart>();
+  DataGridView moveDex,triggerDex;PixelSearchBox dexMoveSearch,triggerPartSearch;PixelText dexMoveDetail,triggerPartDetail;
+  Label moveCount,triggerPartCount;PotentialParts partCatalog;
   DataGridView DexGrid(){return new PixelDexGrid{Dock=DockStyle.Fill,ReadOnly=true,AllowUserToAddRows=false,AllowUserToDeleteRows=false,AllowUserToResizeRows=false,RowHeadersVisible=false,MultiSelect=false,SelectionMode=DataGridViewSelectionMode.FullRowSelect,BackgroundColor=Color.White,BorderStyle=BorderStyle.None,EnableHeadersVisualStyles=false,ColumnHeadersHeight=34,RowTemplate={Height=36},DefaultCellStyle=new DataGridViewCellStyle{Font=Theme.UI(10),SelectionBackColor=Color.Black,SelectionForeColor=Color.White},ColumnHeadersDefaultCellStyle=new DataGridViewCellStyle{BackColor=Color.Black,ForeColor=Color.White,Font=Theme.UI(8)}};}
   void DexColumn(DataGridView grid,string title,int width){grid.Columns.Add(new DataGridViewTextBoxColumn{HeaderText=title,Width=width,MinimumWidth=width,AutoSizeMode=title.StartsWith("효과")?DataGridViewAutoSizeColumnMode.Fill:DataGridViewAutoSizeColumnMode.None,SortMode=DataGridViewColumnSortMode.NotSortable});}
   void BuildCatalogTab(){
@@ -164,51 +164,50 @@ namespace AABattle {
    page.Controls.Add(columns);page.Controls.Add(compose);columns.BringToFront();RefreshPotentialDex();
   }
   Panel BuildPartPanel(bool trigger){
+   if(!trigger)return BuildStructuredEffectPanel();
    var panel=new Panel{Dock=DockStyle.Fill,Padding=new Padding(4)};
-   var grid=DexGrid();grid.DefaultCellStyle.WrapMode=DataGridViewTriState.True;grid.AutoSizeRowsMode=DataGridViewAutoSizeRowsMode.None;grid.RowTemplate.Height=62;grid.Columns.Add(new DataGridViewTextBoxColumn{HeaderText=trigger?"트리거 조건":"효과",AutoSizeMode=DataGridViewAutoSizeColumnMode.Fill,MinimumWidth=160,SortMode=DataGridViewColumnSortMode.NotSortable});
+   var grid=DexGrid();grid.DefaultCellStyle.WrapMode=DataGridViewTriState.True;grid.AutoSizeRowsMode=DataGridViewAutoSizeRowsMode.None;grid.RowTemplate.Height=62;grid.Columns.Add(new DataGridViewTextBoxColumn{HeaderText="트리거 조건",AutoSizeMode=DataGridViewAutoSizeColumnMode.Fill,MinimumWidth=160,SortMode=DataGridViewColumnSortMode.NotSortable});
    var header=Theme.Label("",32);var search=new PixelSearchBox();search.Font=Theme.UI(8);search.Dock=DockStyle.Top;
-   var detail=new PixelText{Dock=DockStyle.Bottom,Height=trigger?155:92};var apply=Button(trigger?"선택한 조건 입력":"선택한 구조 효과 입력",220,()=>ApplyPart(trigger));apply.Dock=DockStyle.Bottom;
-   panel.Controls.Add(new PixelGridHost(grid));panel.Controls.Add(detail);panel.Controls.Add(apply);if(!trigger)panel.Controls.Add(BuildInlineEffectBuilder());panel.Controls.Add(search);panel.Controls.Add(header);panel.Controls[0].BringToFront();
-   if(trigger){triggerDex=grid;triggerPartSearch=search;triggerPartCount=header;triggerPartDetail=detail;}else{effectDex=grid;effectPartSearch=search;effectPartCount=header;effectPartDetail=detail;}
-   search.TextChanged+=(o,e)=>FilterParts(trigger);grid.CurrentCellChanged+=(o,e)=>ShowPart(trigger);grid.CellDoubleClick+=(o,e)=>{if(e.RowIndex>=0)ApplyPart(trigger);};return panel;
+   var detail=new PixelText{Dock=DockStyle.Bottom,Height=155};var apply=Button("선택한 조건 입력",220,()=>ApplyPart(true));apply.Dock=DockStyle.Bottom;
+   panel.Controls.Add(new PixelGridHost(grid));panel.Controls.Add(detail);panel.Controls.Add(apply);panel.Controls.Add(search);panel.Controls.Add(header);panel.Controls[0].BringToFront();
+   triggerDex=grid;triggerPartSearch=search;triggerPartCount=header;triggerPartDetail=detail;
+   search.TextChanged+=(o,e)=>FilterParts(true);grid.CurrentCellChanged+=(o,e)=>ShowPart(true);grid.CellDoubleClick+=(o,e)=>{if(e.RowIndex>=0)ApplyPart(true);};return panel;
   }
   void RefreshMoveDex(){string q=dexMoveSearch.Text.Trim();moveDex.Rows.Clear();foreach(var m in catalogDb.moves.Where(x=>(x.name+" "+string.Join(" ",x.types??new string[0])+" "+x.category+" "+x.effect).IndexOf(q,StringComparison.OrdinalIgnoreCase)>=0).OrderBy(x=>x.name)){int i=moveDex.Rows.Add(m.name,string.Join("/",m.types??new string[0]),m.category,m.power,m.accuracy,m.priority,m.effect);moveDex.Rows[i].Tag=m;}if(moveDex.RowCount>0)moveDex.CurrentCell=moveDex.Rows[0].Cells[0];moveCount.Text="기술 도감 · "+moveDex.RowCount+"개 · 이름 / 타입 / 효과 검색";ShowDexMove();}
   Move SelectedDexMove(){return moveDex.CurrentRow==null?null:moveDex.CurrentRow.Tag as Move;}
   void ShowDexMove(){var m=SelectedDexMove();dexMoveDetail.Text=m==null?"검색 결과가 없습니다.":"【"+m.name+"】  "+string.Join(" / ",m.types??new string[0])+" · "+m.category+"\r\n위력 "+m.power+"   명중 "+m.accuracy+"   우선도 "+m.priority+"\r\n판정 "+m.attack+" / "+m.defense+"   태그 "+string.Join(", ",m.tags??new string[0])+"\r\n효과: "+m.effect;}
   void AddDexMove(){var m=SelectedDexMove();if(m==null)return;if(!(Current is PokemonRecord)){MessageBox.Show(this,"포켓몬을 선택한 뒤 기술을 추가하세요.");return;}var names=pMoves.Lines.Where(x=>x.Trim().Length>0).Select(x=>x.Trim()).ToList();if(names.Contains(m.name))return;if(names.Count>=4){MessageBox.Show(this,"기술은 4개까지 넣을 수 있습니다.");return;}names.Add(m.name);pMoves.Text=string.Join("\r\n",names);}
   void RefreshPotentialDex(){
-   if(triggerDex==null||effectDex==null)return;
+   if(triggerDex==null)return;
    var local=ProjectPotentials().Select(p=>new DexPotential{record=p,source="내 데이터",urls=new string[0]});
-   partCatalog=PotentialParts.Build(PotentialParts.StandardEntries().Concat(local));effectOptions=EffectStructures.Collapse(partCatalog.effects);FilterParts(true);FilterParts(false);
+   partCatalog=PotentialParts.Build(PotentialParts.StandardEntries().Concat(local));FilterParts(true);RefreshStructuredEffect();
   }
-  PotentialPart SelectedPart(bool trigger){var grid=trigger?triggerDex:effectDex;return grid==null||grid.CurrentRow==null?null:grid.CurrentRow.Tag as PotentialPart;}
+  PotentialPart SelectedPart(bool trigger){var grid=trigger?triggerDex:null;return grid==null||grid.CurrentRow==null?null:grid.CurrentRow.Tag as PotentialPart;}
   void FilterParts(bool trigger){
-   if(partCatalog==null)return;var grid=trigger?triggerDex:effectDex;var previous=SelectedPart(trigger);string q=PotentialParts.Key((trigger?triggerPartSearch:effectPartSearch).Text);
-   grid.Rows.Clear();foreach(var part in (trigger?partCatalog.triggers:effectOptions).Where(x=>PotentialParts.Key(x.Search).Contains(q))){int i=grid.Rows.Add(part.Display);grid.Rows[i].Tag=part;}
+   if(!trigger||partCatalog==null)return;var grid=triggerDex;var previous=SelectedPart(true);string q=PotentialParts.Key(triggerPartSearch.Text);
+   grid.Rows.Clear();foreach(var part in partCatalog.triggers.Where(x=>PotentialParts.Key(x.Search).Contains(q))){int i=grid.Rows.Add(part.Display);grid.Rows[i].Tag=part;}
    if(grid.RowCount>0){var row=previous==null?null:grid.Rows.Cast<DataGridViewRow>().FirstOrDefault(r=>((PotentialPart)r.Tag).id==previous.id);grid.CurrentCell=(row??grid.Rows[0]).Cells[0];}
-   int excluded=trigger?0:partCatalog.effects.Count(x=>x.excludedFromImplementation);(trigger?triggerPartCount:effectPartCount).Text=trigger?"트리거 조건 · "+grid.RowCount+"개":"효과 구조 · "+grid.RowCount+"개 · 원문 "+partCatalog.effects.Count(x=>!x.excludedFromImplementation)+"개 · 제외 "+excluded+"개";ShowPart(trigger);
+   triggerPartCount.Text="트리거 조건 · "+grid.RowCount+"개";ShowPart(true);
   }
-  void ShowPart(bool trigger){var p=SelectedPart(trigger);if(!trigger)SelectEffectStructure(p);(trigger?triggerPartDetail:effectPartDetail).Text=p==null?"검색 결과가 없습니다.":p.Display+(p.variantCount>0?"\r\n같은 구조로 합친 원문 "+p.variantCount+"개 · 원문은 보존됨":"");}
+  void ShowPart(bool trigger){if(!trigger)return;var p=SelectedPart(true);triggerPartDetail.Text=p==null?"검색 결과가 없습니다.":p.Display;}
   void ApplyPart(bool trigger){
-   var p=SelectedPart(trigger);var row=SelectedPotentialRow();if(p==null)return;if(row==null){MessageBox.Show(this,"포텐셜 편집에서 입력할 행을 먼저 선택하세요.");return;}
-   loading=true;row.Cells[trigger?"trigger":"effect"].Value=trigger?p.text:ConfiguredEffect(p);
+   var p=SelectedPart(trigger);var row=SelectedPotentialRow();if(trigger&&p==null)return;if(row==null){MessageBox.Show(this,"포텐셜 편집에서 입력할 행을 먼저 선택하세요.");return;}
+   loading=true;row.Cells[trigger?"trigger":"effect"].Value=trigger?p.text:ConfiguredEffect();
    if(trigger){var record=row.Tag as PotentialRecord??new PotentialRecord();record.activation=p.activation;record.uses=p.uses;row.Tag=record;}
    loading=false;GridChanged();
   }
-  void ComposePotential(){var trigger=SelectedPart(true);var effect=SelectedPart(false);if(trigger==null||effect==null){MessageBox.Show(this,"조건과 효과를 각각 선택하세요.");return;}AddPotential(new PotentialRecord{name="새 포텐셜",slot=Current is TrainerRecord?"고유":"종족 ①",activation=trigger.activation,uses=trigger.uses,trigger=trigger.text,effect=ConfiguredEffect(effect),raw=""});}
+  void ComposePotential(){var trigger=SelectedPart(true);if(trigger==null){MessageBox.Show(this,"조건을 선택하세요.");return;}AddPotential(new PotentialRecord{name="새 포텐셜",slot=Current is TrainerRecord?"고유":"종족 ①",activation=trigger.activation,uses=trigger.uses,trigger=trigger.text,effect=ConfiguredEffect(),raw=""});}
   public void TestCatalogUi(){
-   if(tabs.TabPages[4].Text!="기술 도감"||tabs.TabPages[5].Text!="포텐셜 도감"||triggerDex.ColumnCount!=1||effectDex.ColumnCount!=1)throw new Exception("Separate component UI missing");
+   if(tabs.TabPages[4].Text!="기술 도감"||tabs.TabPages[5].Text!="포텐셜 도감"||triggerDex.ColumnCount!=1||effectKind==null)throw new Exception("Trigger and structured effect UI missing");
    if(!potentials.Columns.Contains("targetType")||potentials.Columns.Contains("activation")||potentials.Columns.Contains("uses")||!potentials.Columns.Contains("disabled")||!(potentials.Columns["disabled"] is PixelDisableColumn))throw new Exception("Potential editor columns or pixel toggle invalid");
    dexMoveSearch.Text="비바라기";if(moveDex.Rows.Count==0)throw new Exception("Move search failed");moveDex.CurrentCell=moveDex.Rows[0].Cells[0];ShowDexMove();if(!dexMoveDetail.Text.Contains("비바라기"))throw new Exception("Move details missing");
-   triggerPartSearch.Text="필드에 나왔을 때";effectPartSearch.Text="회복";if(triggerDex.RowCount==0||effectDex.RowCount==0)throw new Exception("Part search failed");
-   effectPartSearch.Text="PT에 참가할 수 없다";if(effectDex.RowCount!=0)throw new Exception("Excluded implementation effect remained visible");effectPartSearch.Text="회복";
-   var row=potentials.Rows.Cast<DataGridViewRow>().First(r=>!r.IsNewRow&&Cell(r,"name")=="샘플의 전도");potentials.CurrentCell=row.Cells["effect"];string before=Cell(row,"raw");ApplyPart(true);string condition=Cell(row,"trigger");ApplyPart(false);if(condition.Length==0||Cell(row,"trigger")!=condition||Cell(row,"raw")!=before)throw new Exception("Independent part apply corrupted data");
+   triggerPartSearch.Text="필드에 나왔을 때";if(triggerDex.RowCount==0)throw new Exception("Trigger search failed");
+   var row=potentials.Rows.Cast<DataGridViewRow>().First(r=>!r.IsNewRow&&Cell(r,"name")=="샘플의 전도");potentials.CurrentCell=row.Cells["effect"];string before=Cell(row,"raw");ApplyPart(true);string condition=Cell(row,"trigger");effectKind.SelectedItem="최대 HP의 1/N";effectAction.SelectedItem="회복";ApplyPart(false);if(condition.Length==0||Cell(row,"trigger")!=condition||!Cell(row,"effect").Contains("최대 HP")||Cell(row,"raw")!=before)throw new Exception("Independent structured effect apply corrupted data");
    row.Cells["disabled"].Value=true;SaveCurrent();if(CurrentPotentials().First(x=>x.name=="샘플의 전도").enabled)throw new Exception("Never activate toggle failed");
-   var selected=SelectedPart(false).id;RefreshPotentialDex();if(SelectedPart(false).id!=selected)throw new Exception("Part refresh lost selection");
    if(triggerDex.DefaultCellStyle.Font.FontFamily.Name!=Theme.UI(10).FontFamily.Name||dexMoveDetail.Font.FontFamily.Name!=Theme.UI(10).FontFamily.Name)throw new Exception("Catalog font missing");
    var rail=new PixelScrollBar{Maximum=10,Page=3};rail.Value=100;if(rail.Value!=10)throw new Exception("Scroll upper bound");rail.Value=-10;if(rail.Value!=0)throw new Exception("Scroll lower bound");rail.Dispose();
    potentials.HorizontalScrollingOffset=0;if(potentials.RowCount>0)potentials.FirstDisplayedScrollingRowIndex=0;
-   effectPartSearch.Text="수치 배율";if(effectDex.RowCount!=1||SelectedPart(false).structureKind!="scalar")throw new Exception("Scalar structure selection missing");effectAction.SelectedIndex=1;effectRate.Value=.8M;if(!ConfiguredEffect(SelectedPart(false)).Contains("약화(0.8배)"))throw new Exception("Inline structured effect configuration failed");effectPartSearch.Text="능력 랭크 변화";if(effectDex.RowCount!=1||SelectedPart(false).structureKind!="rank")throw new Exception("Rank structure selection missing");effectAction.SelectedIndex=5;effectDenominator.Value=3;if(!ConfiguredEffect(SelectedPart(false)).Contains("매우 크게 내린다"))throw new Exception("Rank structure configuration failed");
+   effectKind.SelectedItem="수치 배율";effectAction.SelectedItem="약화";effectRate.Value=.8M;if(effectKind.SelectedIndex<0||effectAction.SelectedIndex<0||!ConfiguredEffect().Contains("약화(0.8배)"))throw new Exception("Inline structured effect configuration failed");effectKind.SelectedItem="능력 랭크 변화";effectAction.SelectedItem="하락";effectDenominator.Value=3;if(effectKind.SelectedIndex<0||effectAction.SelectedIndex<0||!ConfiguredEffect().Contains("매우 크게 내린다"))throw new Exception("Rank structure configuration failed");
   }
  }
 }
