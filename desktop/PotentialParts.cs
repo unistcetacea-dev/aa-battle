@@ -20,7 +20,7 @@ namespace AABattle {
 
   public static string Key(string text){return Regex.Replace(Clean(text),@"\s+","");}
   static void Add(Dictionary<string,PotentialPart> map,string kind,string text,PotentialRecord p,string source){
-   text=kind=="T"?EntryTriggers.Normalize(text):EffectNormalizer.Normalize(text);if(text.Length==0)return;
+   text=kind=="T"?TriggerStructures.Normalize(text):EffectNormalizer.Normalize(text);if(text.Length==0)return;
    string mode=kind=="T"?Clean(p.activation):"",uses=kind=="T"?Clean(p.uses):"";
    string key=Key(text)+"\u001f"+Key(mode)+"\u001f"+Key(uses);PotentialPart part;
    if(!map.TryGetValue(key,out part)){string id;using(var sha=SHA256.Create())id=BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(kind+key))).Replace("-","").Substring(0,16).ToLowerInvariant();part=new PotentialPart{id=kind.ToLowerInvariant()+"-"+id,key=key,text=text,activation=mode,uses=uses};map.Add(key,part);}
