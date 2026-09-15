@@ -148,23 +148,20 @@ namespace AABattle {
    if(grounded&&hazards.ToxicSpikes>0){if(Has(entering,"독")){hazards.ToxicSpikes=0;log.Add(entering.Data.name+": 독 타입이 독압정을 흡수했다.");}else if(Has(entering,"강철"))log.Add(entering.Data.name+": 강철 타입이라 독압정이 통하지 않는다.");else{var source=opponent.Copy();source.Data.ability="";ApplyStatus(entering,source,hazards.ToxicSpikes>=2?"맹독":"독",r,rng,log);}}
    if(grounded&&hazards.StickyWeb&&entering.HP>0){entering.Stages[5]=Math.Max(-6,entering.Stages[5]-1);log.Add(entering.Data.name+": 끈적끈적네트로 속도 -1");}
   }
-  public static void EndTurn(Fighter[] f,Rules r,List<string> log){
-   string weather=Weather(f[0],f[1],r);
-   for(int i=0;i<2;i++){var a=f[i];var b=f[1-i];int max=Max(a,b,r);if(weather=="모래바람"&&!a.Data.types.Any(t=>new[]{"바위","땅","강철"}.Contains(t))&&!Ability(a,"방진","모래헤치기")&&a.Data.item!="방진고글")Hurt(a,max/16,"모래바람",log);if(weather=="싸라기눈"&&!Has(a,"얼음")&&!Ability(a,"방진")&&a.Data.item!="방진고글")Hurt(a,max/16,"싸라기눈",log);}
-   for(int i=0;i<2;i++){var a=f[i];var b=f[1-i];var c=a.Conditions;int max=Max(a,b,r);
-    if(r.Terrain=="그래스필드"&&Grounded(a,r))Heal(a,b,r,max/16,"그래스필드",log);
-    if(a.Data.item=="먹다남은음식")Heal(a,b,r,max/16,"먹다남은음식",log);
-    if(a.Data.item=="검은진흙"){if(Has(a,"독"))Heal(a,b,r,max/16,"검은진흙",log);else Hurt(a,max/8,"검은진흙",log);}
-    if(c.AquaRing)Heal(a,b,r,max/16,"아쿠아링",log);if(c.Ingrain)Heal(a,b,r,max/16,"뿌리박기",log);
-    if(c.Seed&&a.HP>0&&!Ability(a,"매직가드")){int before=a.HP;Hurt(a,max/8,"씨뿌리기",log);if(before>a.HP)Heal(b,a,r,before-a.HP,"씨뿌리기 흡수",log);}
-    if(a.Status=="독")Hurt(a,max/8,"독",log);if(a.Status=="맹독"){Hurt(a,Math.Max(1,(int)Math.Floor(max*c.ToxicStage/16.0)),"맹독 "+c.ToxicStage+"/16",log);c.ToxicStage=Math.Min(15,c.ToxicStage+1);}
-    if(a.Status=="화상"||a.Status=="동상")Hurt(a,max/16,a.Status,log);if(c.Curse)Hurt(a,max/4,"저주",log);
-    c.Protect=false;c.Flinch=false;Tick(ref c.Taunt,"도발",a,log);Tick(ref c.Reflect,"리플렉터",a,log);Tick(ref c.LightScreen,"빛의장막",a,log);Tick(ref c.Tailwind,"순풍",a,log);
+  public static void EndTurn(Fighter[] f,Rules r,List<string> log,Func<double> rng=null){
+   string weather=Weather(f[0],f[1],r);int[] order=EndOrder(f,r,rng);
+   foreach(int i in order){var a=f[i];var b=f[1-i];var c=a.Conditions;int max=Max(a,b,r);
+    if(weather=="모래바람"&&!a.Data.types.Any(t=>new[]{"바위","땅","강철"}.Contains(t))&&!Ability(a,"방진","모래헤치기")&&a.Data.item!="방진고글")Hurt(a,max/16,"모래바람",log);if(weather=="싸라기눈"&&!Has(a,"얼음")&&!Ability(a,"방진")&&a.Data.item!="방진고글")Hurt(a,max/16,"싸라기눈",log);
+    if(a.Data.item=="검은진흙"&&!Has(a,"독"))Hurt(a,max/8,"검은진흙",log);if(a.Status=="독")Hurt(a,max/8,"독",log);if(a.Status=="맹독"){Hurt(a,Math.Max(1,(int)Math.Floor(max*c.ToxicStage/16.0)),"맹독 "+c.ToxicStage+"/16",log);c.ToxicStage=Math.Min(15,c.ToxicStage+1);}if(a.Status=="화상"||a.Status=="동상")Hurt(a,max/16,a.Status,log);if(c.Curse)Hurt(a,max/4,"저주",log);
    }
+   foreach(int i in order){var a=f[i];var b=f[1-i];var c=a.Conditions;int max=Max(a,b,r);if(c.Seed&&a.HP>0&&!Ability(a,"매직가드")){int before=a.HP;Hurt(a,max/8,"씨뿌리기",log);if(before>a.HP)Heal(b,a,r,before-a.HP,"씨뿌리기 흡수",log);}}
+   foreach(int i in order){var a=f[i];var b=f[1-i];var c=a.Conditions;int max=Max(a,b,r);if(r.Terrain=="그래스필드"&&Grounded(a,r))Heal(a,b,r,max/16,"그래스필드",log);if(a.Data.item=="먹다남은음식")Heal(a,b,r,max/16,"먹다남은음식",log);if(a.Data.item=="검은진흙"&&Has(a,"독"))Heal(a,b,r,max/16,"검은진흙",log);if(c.AquaRing)Heal(a,b,r,max/16,"아쿠아링",log);if(c.Ingrain)Heal(a,b,r,max/16,"뿌리박기",log);}
+   foreach(int i in order){var a=f[i];var c=a.Conditions;c.Protect=false;c.Flinch=false;Tick(ref c.Taunt,"도발",a,log);Tick(ref c.Reflect,"리플렉터",a,log);Tick(ref c.LightScreen,"빛의장막",a,log);Tick(ref c.Tailwind,"순풍",a,log);}
    if(r.Weather!="없음"&&r.WeatherTurns>0&&--r.WeatherTurns==0){log.Add(r.Weather+" 종료");r.Weather="없음";}
    if(r.Terrain!="없음"&&r.TerrainTurns>0&&--r.TerrainTurns==0){log.Add(r.Terrain+" 종료");r.Terrain="없음";}
    if(r.TrickRoom>0&&--r.TrickRoom==0)log.Add("트릭룸 종료");if(r.Gravity>0&&--r.Gravity==0)log.Add("중력 종료");
   }
+  static int[] EndOrder(Fighter[] f,Rules r,Func<double> rng){int left=Engine.Effective(f[0],f[1],5,r),right=Engine.Effective(f[1],f[0],5,r);if(left==right)return rng!=null&&rng()>=.5?new[]{1,0}:new[]{0,1};return left>right?new[]{0,1}:new[]{1,0};}
   static void Tick(ref int value,string name,Fighter a,List<string> log){if(value>0&&--value==0)log.Add(a.Data.name+": "+name+" 종료");}
  }
 }
