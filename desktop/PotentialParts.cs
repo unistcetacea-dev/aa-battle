@@ -38,6 +38,7 @@ namespace AABattle {
   public static bool TryExclusionReason(string text,out string reason){
    string value=Clean(text);reason="";
    if(value.Contains("고확률")){reason="지원하지 않는 확률 표현";return true;}
+   if(Regex.IsMatch(value,@"(쭉\s*오른다|급격히\s*오른다)")){reason="삭제된 랭크 표현";return true;}
    if(Regex.IsMatch(value,@"^[\(（].*[\)）]$")){reason="독립 주석";return true;}
    if(value=="PT포텐셜"){reason="분류 표기";return true;}
    if(Regex.IsMatch(value,@"(대회.*참가할 수 없다|대회.*밖에 참가할 수 없다|PT.*(참가|엔트리|소속).*수 (있|없)다|PT.*(참가|엔트리|소속).*수가 없다|함께 엔트리할 수 없다|배틀에 엔트리할 수 있다|트레이너.*PT.*(참가|소속)|트레이너에게 소속될 수 없다|필요통솔을)")||Regex.IsMatch(value,@"^이 (PT는|포텐셜은 PT의|퍼텐셜은 PT의).*(사용|발동)")){reason="편성·공유 규칙";return true;}
@@ -63,7 +64,7 @@ namespace AABattle {
    if(data.triggers.Count!=2||data.effects.Count!=2||!data.effects.Any(x=>x.sources.Count==2))throw new Exception("Parts deduplication/provenance failed");
    if(Key("저확률로 회피") == Key("중확률로 회피"))throw new Exception("Probability collapsed");
    var all=Build(StandardEntries());if(all.triggers.Count<100||all.effects.Count<100||all.triggers.Select(x=>x.key).Distinct().Count()!=all.triggers.Count||all.effects.Select(x=>x.key).Distinct().Count()!=all.effects.Count)throw new Exception("Part catalog uniqueness failed");if(all.effects.Count(x=>x.protectedTemplate)<20||!all.effects.Any(x=>x.protectedTemplate&&x.text.Contains("전능력치"))||all.effects.Any(x=>x.protectedTemplate&&x.excludedFromImplementation))throw new Exception("Template effect protection failed");if(all.effects.Count(x=>x.excludedFromImplementation)!=53)throw new Exception("Unexpected implementation exclusion count");
-   string reason;if(!TryExclusionReason("(※1T이 아니라, 1번의 공격에 대해 반응)",out reason)||reason!="독립 주석"||!TryExclusionReason("PT에 참가할 수 없다",out reason)||reason!="편성·공유 규칙"||TryExclusionReason("PT 전원이 기술 「파도타기」를 내보낼 수 있다",out reason))throw new Exception("Implementation exclusion classification failed");
+   string reason;if(!TryExclusionReason("(※1T이 아니라, 1번의 공격에 대해 반응)",out reason)||reason!="독립 주석"||!TryExclusionReason("PT에 참가할 수 없다",out reason)||reason!="편성·공유 규칙"||!TryExclusionReason("속도가 쭉 오른다",out reason)||reason!="삭제된 랭크 표현"||TryExclusionReason("PT 전원이 기술 「파도타기」를 내보낼 수 있다",out reason))throw new Exception("Implementation exclusion classification failed");
   }
  }
 }

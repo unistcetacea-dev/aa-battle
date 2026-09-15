@@ -207,7 +207,7 @@ namespace AABattle {
    var selected=SelectedPart(false).id;RefreshPotentialDex();if(SelectedPart(false).id!=selected)throw new Exception("Part refresh lost selection");
    if(triggerDex.DefaultCellStyle.Font.FontFamily.Name!=Theme.UI(10).FontFamily.Name||dexMoveDetail.Font.FontFamily.Name!=Theme.UI(10).FontFamily.Name)throw new Exception("Catalog font missing");
    var rail=new PixelScrollBar{Maximum=10,Page=3};rail.Value=100;if(rail.Value!=10)throw new Exception("Scroll upper bound");rail.Value=-10;if(rail.Value!=0)throw new Exception("Scroll lower bound");rail.Dispose();
-   effectPartSearch.Text="수치 배율";if(effectDex.RowCount!=1||SelectedPart(false).structureKind!="scalar")throw new Exception("Scalar structure selection missing");effectAction.SelectedItem="약화";effectRate.Value=.8M;if(!ConfiguredEffect(SelectedPart(false)).Contains("약화(0.8배)"))throw new Exception("Inline structured effect configuration failed");
+   effectPartSearch.Text="수치 배율";if(effectDex.RowCount!=1||SelectedPart(false).structureKind!="scalar")throw new Exception("Scalar structure selection missing");effectAction.SelectedIndex=1;effectRate.Value=.8M;if(!ConfiguredEffect(SelectedPart(false)).Contains("약화(0.8배)"))throw new Exception("Inline structured effect configuration failed");effectPartSearch.Text="능력 랭크 상승";if(effectDex.RowCount!=1||SelectedPart(false).structureKind!="rank-up")throw new Exception("Rank structure selection missing");effectDenominator.Value=3;if(!ConfiguredEffect(SelectedPart(false)).Contains("매우 크게 오른다"))throw new Exception("Rank structure configuration failed");
    potentials.HorizontalScrollingOffset=0;if(potentials.RowCount>0)potentials.FirstDisplayedScrollingRowIndex=0;
   }
  }
