@@ -29,7 +29,7 @@ namespace AABattle {
    PotentialLibrary.Split("「여기다！」일 때, 필드에 나오면 자신의 공격이 오른다.",out trigger,out effect);Check(trigger.Contains("여기다")&&trigger.Contains("필드에 나오면")&&effect=="자신의 공격이 오른다.","chained conditions");
    PotentialLibrary.Split("T종료시까지 자신의 공격이 오른다.",out trigger,out effect);Check(trigger==""&&effect.StartsWith("T종료시까지"),"duration remains effect");
    PotentialLibrary.Split("「가열」상태가 된 T 종료시, 아군과 교대한다.",out trigger,out effect);Check(trigger.EndsWith("종료시")&&effect=="아군과 교대한다.","compact turn timing");
-   PotentialParts.Test();var data=PotentialLibrary.Load();Check(data.Count==4151,"all embedded definitions");Check(data.Any(x=>x.record.name=="선의 선"&&x.record.trigger.Length>0),"research triggers");Check(data.All(x=>x.source.Length>0&&x.urls.Length>0&&x.record.raw.Length>0),"provenance and raw");
+   PotentialParts.Test();EffectImplementationDex.Test();var data=PotentialLibrary.Load();Check(data.Count==4151,"all embedded definitions");Check(data.Any(x=>x.record.name=="선의 선"&&x.record.trigger.Length>0),"research triggers");Check(data.All(x=>x.source.Length>0&&x.urls.Length>0&&x.record.raw.Length>0),"provenance and raw");
    var order=EditorTemplate.BaseOrders().First();Check(order.name=="물러나！"&&order.trigger.Length>0&&order.effect.Contains("한 번"),"user directive semantics");
    var arbitrary=EditorTemplate.Parse("『검사』… 필드를 떠날 때, 아군의 임의의 능력치를 올린다.","역할");Check(arbitrary.effect.Contains("임의의")&&arbitrary.activation=="","preserve optional target wording");
   }
