@@ -21,6 +21,7 @@ namespace AABattle {
    return new EffectImplementationEntry{status=status,family=family,effect=value,interpretation=interpretation,implementation=implementation,sources=string.Join(" / ",part.sources.Take(4))+(part.sources.Count>4?" 외 "+(part.sources.Count-4)+"곳":"")};
   }
   static string Family(string value){
+   if(Regex.IsMatch(value,@"종족치.*(오른|올린|상승|동랭크|로 한다|취급한다)"))return "종족치 변경";
    if(EffectStructures.IsRank(value)||Regex.IsMatch(value,@"(랭크|능력치).*(올린|오른|상승|내린|저하)|전능력치가 오른다"))return "능력 랭크 변화";
    if(Regex.IsMatch(value,@"(강화|약화|완화|반감|배가|[0-9.]+배)"))return "수치 배율 변화";
    if(Regex.IsMatch(value,@"(체력|HP).*(회복|감소)|회복한다"))return "체력 회복·소모";
@@ -38,6 +39,7 @@ namespace AABattle {
   }
   static string Prepared(string family){
    switch(family){
+    case "종족치 변경":return "대상 종족치에 직접 수치를 지정하거나 가장 높은/낮은 종족치의 실제 숫자를 복사합니다. 1랭크 상승은 기존의 -, 무표기, +를 유지한 다음 문자 등급의 허용 범위 안에서 설정값을 고릅니다. 동률 비교는 후보 중 무작위입니다. 포텐셜 실행기 연결은 아직 준비 단계입니다.";
     case "능력 랭크 변화":return "대상, 능력 종류, 증감 랭크를 구조화한 뒤 Fighter.Stages, AccuracyStage, EvasionStage, CriticalStage에 연결할 예정입니다. 임의의 능력은 공격·방어·특공·특방·속도·명중·회피·C 중 사용자가 선택하고, 랜덤한 능력치는 공격·방어·특공·특방·속도 중 자동 선택합니다. 가장 높은/낮은 능력은 5개 전투 능력의 현재 랭크·배율·상태·장소 보정을 적용한 실능력값을 비교하고 동률 후보 중 무작위로 정합니다. 아직 포텐셜에서 자동 적용되지는 않습니다.";
     case "수치 배율 변화":return "대상 수치와 괄호 안 배율을 구조화한 뒤 Fighter.Multipliers 또는 대미지 계산 배율에 곱하도록 준비한 분류입니다. 적용 기간과 중첩 기준 확정이 필요합니다.";
     case "체력 회복·소모":return "최대 HP/N은 소수점을 버리고 최소 1로 계산합니다. 회복은 최대 HP를 넘지 않고, 대미지는 기본적으로 빈사가 가능하며 ‘빈사로 할 수 없다’가 지정된 경우만 HP 1에서 멈춥니다. 포텐셜 실행기에서 Mechanics.Heal/Hurt에 연결할 예정입니다.";
