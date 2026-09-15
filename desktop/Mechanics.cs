@@ -84,16 +84,20 @@ namespace AABattle {
    if(Grounded(a,r)&&m.types.Contains(type))v*=r.SheetTerrain?1.5:1.3;if(r.Terrain=="미스트필드"&&Grounded(b,r)&&m.types.Contains("드래곤"))v*=.5;if(r.Terrain=="그래스필드"&&Grounded(b,r)&&new[]{"지진","땅고르기","매그니튜드"}.Contains(m.name))v*=.5;if(a.Conditions.FlashFire&&m.types.Contains("불꽃"))v*=1.5;return v;}
   public static double DamageFactor(Fighter a,Fighter b,Move m,Rules r){double v=PrivilegeRules.ContractType(b).Length>0&&m.types.Contains(PrivilegeRules.ContractType(b))?.5:1;if(r.Critical||Ability(a,"틈새포착"))return v;if(m.category=="물리"&&b.Conditions.Reflect>0||m.category=="특수"&&b.Conditions.LightScreen>0)v*=.5;return v;}
   static int Max(Fighter a,Fighter b,Rules r){return Engine.Stats(a,b.Data.level,r)[0];}
-  static void Hurt(Fighter a,int damage,string reason,List<string> log,bool indirect=true){if(a.HP<=0||indirect&&Ability(a,"매직가드"))return;int loss=Math.Min(a.HP,Math.Max(1,damage));a.HP-=loss;log.Add(a.Data.name+" — "+reason+": HP -"+loss);RuntimeTriggers.Damaged(a,loss,reason,log.Add);if(a.HP==0)log.Add(a.Data.name+"은 쓰러졌다!");}
-  public static void Heal(Fighter a,Fighter b,Rules r,int amount,string reason,List<string> log){if(a.HP<=0)return;int gain=Math.Min(Max(a,b,r)-a.HP,Math.Max(1,amount));if(gain>0){a.HP+=gain;log.Add(a.Data.name+" — "+reason+": HP +"+gain);}}
-  public static void Absorb(Fighter a,Fighter b,string reason,Rules r,List<string> log){if(reason=="축전"||reason=="저수")Heal(b,a,r,Max(b,a,r)/4,reason,log);if(reason=="피뢰침"||reason=="마중물")b.Stages[3]=Math.Min(6,b.Stages[3]+1);if(reason=="전기엔진")b.Stages[5]=Math.Min(6,b.Stages[5]+1);if(reason=="초식")b.Stages[1]=Math.Min(6,b.Stages[1]+1);if(reason=="타오르는불꽃")b.Conditions.FlashFire=true;}
+  public static int MaxHP(Fighter a,Fighter b,Rules r){return Max(a,b,r);}
+  public static bool Contact(Move move){return move!=null&&(move.tags??new string[0]).Any(x=>x=="접촉"||x.Contains("접촉"));}
+  public static bool SureHit(Move move){return move!=null&&(move.tags??new string[0]).Any(x=>x.Contains("필중"))||move!=null&&new[]{"손가락흔들기"}.Contains(move.name);}
+  static void Hurt(Fighter a,Fighter b,Rules r,int damage,string reason,List<string> log,bool indirect=true){if(a.HP<=0||indirect&&Ability(a,"매직가드"))return;int before=a.HP;int loss=Math.Min(a.HP,Math.Max(1,damage));a.HP-=loss;log.Add(a.Data.name+" — "+reason+": HP -"+loss);RuntimeTriggers.Damaged(a,loss,reason,log.Add);AnsweredTriggers.HpChanged(a,b,r,before,a.HP,reason,log.Add);if(indirect)AnsweredTriggers.IndirectDamage(a,b,loss,reason,log.Add);if(a.HP==0)log.Add(a.Data.name+"은 쓰러졌다!");}
+  public static int Heal(Fighter a,Fighter b,Rules r,int amount,string reason,List<string> log){if(a.HP<=0)return 0;int gain=Math.Min(Max(a,b,r)-a.HP,Math.Max(1,amount));if(gain>0){a.HP+=gain;log.Add(a.Data.name+" — "+reason+": HP +"+gain);AnsweredTriggers.Healed(a,gain,reason,log.Add);}return gain;}
+  public static bool ChangeStage(Fighter target,Fighter other,int index,int amount,Rules r,string reason,List<string> log){if(target==null||index<0||index>=target.Stages.Length||amount==0)return false;int before=target.Stages[index],after=Math.Max(-6,Math.Min(6,before+amount));if(before==after)return false;target.Stages[index]=after;log.Add(target.Data.name+": "+Engine.Names[index]+" "+(amount>0?"+":"")+(after-before)+(reason.Length>0?" ("+reason+")":""));AnsweredTriggers.StageChanged(target,other,index,before,after,log.Add);return true;}
+  public static void Absorb(Fighter a,Fighter b,string reason,Rules r,List<string> log){if(reason=="축전"||reason=="저수"){if(Heal(b,a,r,Max(b,a,r)/4,reason,log)>0)AnsweredTriggers.AbilityActivated(b,reason,log.Add);}if(reason=="피뢰침"||reason=="마중물"){if(ChangeStage(b,a,3,1,r,reason,log))AnsweredTriggers.AbilityActivated(b,reason,log.Add);}if(reason=="전기엔진"){if(ChangeStage(b,a,5,1,r,reason,log))AnsweredTriggers.AbilityActivated(b,reason,log.Add);}if(reason=="초식"){if(ChangeStage(b,a,1,1,r,reason,log))AnsweredTriggers.AbilityActivated(b,reason,log.Add);}if(reason=="타오르는불꽃"){b.Conditions.FlashFire=true;AnsweredTriggers.AbilityActivated(b,reason,log.Add);}}
   public static bool BeforeMove(Fighter a,Fighter b,Move m,Rules r,Func<double> rng,List<string> log){var c=a.Conditions;
    if(c.Recharge){c.Recharge=false;log.Add(a.Data.name+": 반동으로 행동할 수 없다.");return false;}
    if(a.Status=="잠듦"){if(c.SleepTurns>0){c.SleepTurns--;log.Add(a.Data.name+": 잠들어 있다.");return false;}a.Status="정상";log.Add(a.Data.name+": 잠에서 깨어났다.");}
    if(a.Status=="얼음"){if(rng()<.2||new[]{"열탕","플레어드라이브","화염자동차","성스러운불꽃"}.Contains(m.name)){a.Status="정상";log.Add(a.Data.name+": 얼음이 녹았다.");}else{log.Add(a.Data.name+": 얼어서 움직일 수 없다.");return false;}}
    if(c.Flinch){c.Flinch=false;log.Add(a.Data.name+": 풀죽어서 움직일 수 없다.");return false;}
    if(c.Taunt>0&&m.category=="변화"){log.Add(a.Data.name+": 도발 때문에 변화기를 쓸 수 없다.");return false;}
-   if(c.Confusion>0){c.Confusion--;if(rng()<1.0/3){var plain=new Rules{LevelCorrection=r.LevelCorrection,HPCorrection=r.HPCorrection};int attack=Engine.Effective(a,b,1,plain),defense=Engine.Effective(a,b,2,plain);int damage=(int)Math.Floor(((2*a.Data.level+10)/250.0*attack/defense*40+2)*(.85+(int)(rng()*16)/100.0));Hurt(a,damage,"혼란 자해 (위력40)",log,false);return false;}log.Add(a.Data.name+": 혼란을 버티고 행동했다.");}
+   if(c.Confusion>0){c.Confusion--;if(rng()<1.0/3){var plain=new Rules{LevelCorrection=r.LevelCorrection,HPCorrection=r.HPCorrection};int attack=Engine.Effective(a,b,1,plain),defense=Engine.Effective(a,b,2,plain);int damage=(int)Math.Floor(((2*a.Data.level+10)/250.0*attack/defense*40+2)*(.85+(int)(rng()*16)/100.0));Hurt(a,b,r,damage,"혼란 자해 (위력40)",log,false);return false;}log.Add(a.Data.name+": 혼란을 버티고 행동했다.");}
    if(a.Status=="마비"&&rng()<.25){log.Add(a.Data.name+": 몸이 저려 움직일 수 없다.");return false;}return true;
   }
   public static double Accuracy(Fighter a,Fighter b,Move m,Rules r){string w=Weather(a,b,r);if((m.name=="번개"||m.name=="폭풍")&&Rain(w)||m.name=="눈보라"&&(w=="눈"||w=="싸라기눈"))return 100;if((m.name=="번개"||m.name=="폭풍")&&Sunny(w))return 50;double stage=Engine.Stage(a.AccuracyStage-b.EvasionStage);return Math.Min(100,m.accuracy*(r.Gravity>0?5.0/3:1)*stage*a.AccuracyMultiplier/b.EvasionMultiplier);}
@@ -105,8 +109,8 @@ namespace AABattle {
   public static bool KnownMove(Move m){return m.category!="변화"||StatusMoves.ContainsKey(m.name)||SelfMoves.Contains(m.name)||WeatherMoves.ContainsKey(m.name)||Terrains.Contains(m.name)||HazardMoves.Contains(m.name)||new[]{"이상한빛","초음파","씨뿌리기","도발","트릭룸","중력","안개제거"}.Contains(m.name);}
   public static void StatusMove(Fighter a,Fighter b,Move m,Rules r,Func<double> rng,List<string> log,int attackerSide=0){var c=a.Conditions;int max=Max(a,b,r);int targetSide=1-Math.Max(0,Math.Min(1,attackerSide));var hazards=r.Sides[targetSide];
    if(StatusMoves.ContainsKey(m.name)){ApplyStatus(b,a,StatusMoves[m.name],r,rng,log);return;}
-   if(WeatherMoves.ContainsKey(m.name)){if(r.Weather=="큰가뭄"||r.Weather=="강한 비"||r.Weather=="난기류"){log.Add("특수 날씨는 일반 날씨 기술로 덮어쓸 수 없다.");return;}r.Weather=WeatherMoves[m.name];r.WeatherTurns=5;log.Add("날씨: "+r.Weather+" (5턴)");return;}
-   if(Terrains.Contains(m.name)&&m.name!="없음"){r.Terrain=m.name;r.TerrainTurns=5;log.Add("필드: "+m.name+" (5턴)");return;}
+   if(WeatherMoves.ContainsKey(m.name)){string next=WeatherMoves[m.name];if(r.Weather=="큰가뭄"||r.Weather=="강한 비"||r.Weather=="난기류"){log.Add("특수 날씨는 일반 날씨 기술로 덮어쓸 수 없다.");return;}if(r.Weather==next){log.Add(m.name+" 실패: 이미 "+next+" 날씨다.");return;}string before=r.Weather;r.Weather=next;r.WeatherTurns=5;log.Add("날씨: "+r.Weather+" (5턴)");AnsweredTriggers.WeatherChanged(a,b,before,r.Weather,log.Add);return;}
+   if(Terrains.Contains(m.name)&&m.name!="없음"){string before=r.Terrain;r.Terrain=m.name;r.TerrainTurns=5;log.Add("필드: "+m.name+" (5턴)");AnsweredTriggers.TerrainChanged(a,b,before,r.Terrain,log.Add);return;}
    if(m.name=="스텔스록"){if(hazards.StealthRock)log.Add("스텔스록 실패: 이미 설치되어 있다.");else{hazards.StealthRock=true;log.Add((targetSide+1)+"팀 진영: 스텔스록");}return;}
    if(m.name=="압정뿌리기"){if(hazards.Spikes>=3)log.Add("압정뿌리기 실패: 이미 3겹이다.");else{hazards.Spikes++;log.Add((targetSide+1)+"팀 진영: 압정 "+hazards.Spikes+"겹");}return;}
    if(m.name=="독압정"){if(hazards.ToxicSpikes>=2)log.Add("독압정 실패: 이미 2겹이다.");else{hazards.ToxicSpikes++;log.Add((targetSide+1)+"팀 진영: 독압정 "+hazards.ToxicSpikes+"겹");}return;}
@@ -122,10 +126,10 @@ namespace AABattle {
     case "리플렉터":c.Reflect=5;log.Add(a.Data.name+": 리플렉터 5턴");break;
     case "빛의장막":c.LightScreen=5;log.Add(a.Data.name+": 빛의장막 5턴");break;
     case "순풍":c.Tailwind=4;log.Add(a.Data.name+": 순풍 4턴");break;
-    case "칼춤":a.Stages[1]=Math.Min(6,a.Stages[1]+2);log.Add(a.Data.name+": 공격 +2");break;
-    case "고속이동":a.Stages[5]=Math.Min(6,a.Stages[5]+2);log.Add(a.Data.name+": 속도 +2");break;
-    case "나쁜음모":a.Stages[3]=Math.Min(6,a.Stages[3]+2);log.Add(a.Data.name+": 특공 +2");break;
-    case "명상":a.Stages[3]=Math.Min(6,a.Stages[3]+1);a.Stages[4]=Math.Min(6,a.Stages[4]+1);log.Add(a.Data.name+": 특공·특방 +1");break;
+    case "칼춤":ChangeStage(a,b,1,2,r,m.name,log);break;
+    case "고속이동":ChangeStage(a,b,5,2,r,m.name,log);break;
+    case "나쁜음모":ChangeStage(a,b,3,2,r,m.name,log);break;
+    case "명상":ChangeStage(a,b,3,1,r,m.name,log);ChangeStage(a,b,4,1,r,m.name,log);break;
     case "이상한빛":case "초음파":if(!BypassAbility(a)&&Ability(b,"마이페이스")||r.Terrain=="미스트필드"&&Grounded(b,r))log.Add("혼란 무효: 마이페이스 / 미스트필드");else if(b.Conditions.Confusion==0){b.Conditions.Confusion=1+(int)(rng()*4);log.Add(b.Data.name+": 혼란");}break;
     case "씨뿌리기":if(Has(b,"풀"))log.Add("풀 타입: 씨뿌리기 무효");else{b.Conditions.Seed=true;log.Add(b.Data.name+": 씨뿌리기");}break;
     case "도발":b.Conditions.Taunt=3;log.Add(b.Data.name+": 도발 3턴");break;
@@ -136,7 +140,7 @@ namespace AABattle {
   }
   public static void AfterHit(Fighter a,Fighter b,Move m,Rules r,Func<double> rng,List<string> log,bool substitute,int attackerSide=0){
    if(m.name=="파괴광선"||m.name=="기가임팩트")a.Conditions.Recharge=true;
-   if(m.name=="고속스핀"){bool removed=r.Sides[attackerSide].Any();r.Sides[attackerSide].Clear();a.Stages[5]=Math.Min(6,a.Stages[5]+1);log.Add(a.Data.name+"의 고속스핀: 속도 +1"+(removed?" · 아군 진영의 설치물 제거":""));}
+   if(m.name=="고속스핀"){bool removed=r.Sides[attackerSide].Any();r.Sides[attackerSide].Clear();ChangeStage(a,b,5,1,r,m.name,log);if(removed)log.Add(a.Data.name+"의 고속스핀: 아군 진영의 설치물 제거");}
    if(substitute)return;if(b.Data.item=="풍선"&&!b.Conditions.BalloonPopped){b.Conditions.BalloonPopped=true;log.Add(b.Data.name+": 풍선이 터졌다.");}
    if(b.Status=="얼음"&&m.types.Contains("불꽃")){b.Status="정상";log.Add(b.Data.name+": 불꽃 공격으로 얼음이 녹았다.");}
    string status="";double chance=0;
@@ -150,18 +154,18 @@ namespace AABattle {
   }
   public static void EnterField(Database db,Fighter entering,Fighter opponent,int side,Rules r,Func<double> rng,List<string> log){
    var hazards=r.Sides[side];if(hazards==null||!hazards.Any()||entering.HP<=0)return;if(entering.Data.item=="통굽부츠"){log.Add(entering.Data.name+": 통굽부츠로 설치물의 영향을 받지 않는다.");return;}int max=Max(entering,opponent,r);
-   if(hazards.StealthRock){double type=Engine.Match(db,new[]{"바위"},entering.Data.types);Hurt(entering,(int)Math.Floor(max*type/8.0),"스텔스록",log);if(entering.HP<=0)return;}
-   bool grounded=Grounded(entering,r);if(grounded&&hazards.Spikes>0){double[] rate={0,1.0/8,1.0/6,1.0/4};Hurt(entering,(int)Math.Floor(max*rate[Math.Min(3,hazards.Spikes)]),"압정 "+hazards.Spikes+"겹",log);if(entering.HP<=0)return;}
+   if(hazards.StealthRock){double type=Engine.Match(db,new[]{"바위"},entering.Data.types);Hurt(entering,opponent,r,(int)Math.Floor(max*type/8.0),"스텔스록",log);if(entering.HP<=0)return;}
+   bool grounded=Grounded(entering,r);if(grounded&&hazards.Spikes>0){double[] rate={0,1.0/8,1.0/6,1.0/4};Hurt(entering,opponent,r,(int)Math.Floor(max*rate[Math.Min(3,hazards.Spikes)]),"압정 "+hazards.Spikes+"겹",log);if(entering.HP<=0)return;}
    if(grounded&&hazards.ToxicSpikes>0){if(Has(entering,"독")){hazards.ToxicSpikes=0;log.Add(entering.Data.name+": 독 타입이 독압정을 흡수했다.");}else if(Has(entering,"강철"))log.Add(entering.Data.name+": 강철 타입이라 독압정이 통하지 않는다.");else{var source=opponent.Copy();source.Data.ability="";ApplyStatus(entering,source,hazards.ToxicSpikes>=2?"맹독":"독",r,rng,log);}}
-   if(grounded&&hazards.StickyWeb&&entering.HP>0){entering.Stages[5]=Math.Max(-6,entering.Stages[5]-1);log.Add(entering.Data.name+": 끈적끈적네트로 속도 -1");}
+   if(grounded&&hazards.StickyWeb&&entering.HP>0)ChangeStage(entering,opponent,5,-1,r,"끈적끈적네트",log);
   }
   public static void EndTurn(Fighter[] f,Rules r,List<string> log,Func<double> rng=null){
    string weather=Weather(f[0],f[1],r);int[] order=EndOrder(f,r,rng);
    foreach(int i in order){var a=f[i];var b=f[1-i];var c=a.Conditions;int max=Max(a,b,r);
-    if(weather=="모래바람"&&!a.Data.types.Any(t=>new[]{"바위","땅","강철"}.Contains(t))&&!Ability(a,"방진","모래헤치기")&&a.Data.item!="방진고글")Hurt(a,max/16,"모래바람",log);if(weather=="싸라기눈"&&!Has(a,"얼음")&&!Ability(a,"방진")&&a.Data.item!="방진고글")Hurt(a,max/16,"싸라기눈",log);
-    if(a.Data.item=="검은진흙"&&!Has(a,"독"))Hurt(a,max/8,"검은진흙",log);if(a.Status=="독")Hurt(a,max/8,"독",log);if(a.Status=="맹독"){Hurt(a,Math.Max(1,(int)Math.Floor(max*c.ToxicStage/16.0)),"맹독 "+c.ToxicStage+"/16",log);c.ToxicStage=Math.Min(15,c.ToxicStage+1);}if(a.Status=="화상"||a.Status=="동상")Hurt(a,max/16,a.Status,log);if(c.Curse)Hurt(a,max/4,"저주",log);
+    if(weather=="모래바람"&&!a.Data.types.Any(t=>new[]{"바위","땅","강철"}.Contains(t))&&!Ability(a,"방진","모래헤치기")&&a.Data.item!="방진고글")Hurt(a,b,r,max/16,"모래바람",log);if(weather=="싸라기눈"&&!Has(a,"얼음")&&!Ability(a,"방진")&&a.Data.item!="방진고글")Hurt(a,b,r,max/16,"싸라기눈",log);
+    if(a.Data.item=="검은진흙"&&!Has(a,"독"))Hurt(a,b,r,max/8,"검은진흙",log);if(a.Status=="독")Hurt(a,b,r,max/8,"독",log);if(a.Status=="맹독"){Hurt(a,b,r,Math.Max(1,(int)Math.Floor(max*c.ToxicStage/16.0)),"맹독 "+c.ToxicStage+"/16",log);c.ToxicStage=Math.Min(15,c.ToxicStage+1);}if(a.Status=="화상"||a.Status=="동상")Hurt(a,b,r,max/16,a.Status,log);if(c.Curse)Hurt(a,b,r,max/4,"저주",log);
    }
-   foreach(int i in order){var a=f[i];var b=f[1-i];var c=a.Conditions;int max=Max(a,b,r);if(c.Seed&&a.HP>0&&!Ability(a,"매직가드")){int before=a.HP;Hurt(a,max/8,"씨뿌리기",log);if(before>a.HP)Heal(b,a,r,before-a.HP,"씨뿌리기 흡수",log);}}
+   foreach(int i in order){var a=f[i];var b=f[1-i];var c=a.Conditions;int max=Max(a,b,r);if(c.Seed&&a.HP>0&&!Ability(a,"매직가드")){int before=a.HP;Hurt(a,b,r,max/8,"씨뿌리기",log);int loss=before-a.HP;if(loss>0){int gain=Heal(b,a,r,loss,"씨뿌리기 흡수",log);AnsweredTriggers.Drained(b,a,loss,gain,log.Add);}}}
    foreach(int i in order){var a=f[i];var b=f[1-i];var c=a.Conditions;int max=Max(a,b,r);if(r.Terrain=="그래스필드"&&Grounded(a,r))Heal(a,b,r,max/16,"그래스필드",log);if(a.Data.item=="먹다남은음식")Heal(a,b,r,max/16,"먹다남은음식",log);if(a.Data.item=="검은진흙"&&Has(a,"독"))Heal(a,b,r,max/16,"검은진흙",log);if(c.AquaRing)Heal(a,b,r,max/16,"아쿠아링",log);if(c.Ingrain)Heal(a,b,r,max/16,"뿌리박기",log);}
    foreach(int i in order){var a=f[i];var c=a.Conditions;c.Protect=false;c.Flinch=false;Tick(ref c.Taunt,"도발",a,log);Tick(ref c.Reflect,"리플렉터",a,log);Tick(ref c.LightScreen,"빛의장막",a,log);Tick(ref c.Tailwind,"순풍",a,log);}
    if(r.Weather!="없음"&&r.WeatherTurns>0&&--r.WeatherTurns==0){log.Add(r.Weather+" 종료");r.Weather="없음";}
