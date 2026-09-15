@@ -1,0 +1,20 @@
+using System;
+using System.Linq;
+using System.Collections.Generic;
+
+namespace AABattle {
+ static class TriggerBatchTests {
+  static Fighter F(string name,params Potential[] potentials){return new Fighter(new Pokemon{name=name,level=100,types=new[]{"노말"},moves=new string[0],@base=new[]{100,100,100,100,100,100},iv=new[]{31,31,31,31,31,31},potentials=potentials});}
+  static Potential P(string name,string trigger,string slot="종족 ①"){return new Potential{id=slot,name=name,description="공격이 오른다.",triggers=new[]{trigger}};}
+  static void Check(bool ok,string label){if(!ok)throw new Exception("Trigger batch FAIL: "+label);}
+  public static void Run(){
+   Check(RuntimeTriggers.HereThreshold(6,3)&&!RuntimeTriggers.HereThreshold(6,4)&&RuntimeTriggers.HereThreshold(5,2)&&RuntimeTriggers.HereThreshold(4,2)&&RuntimeTriggers.HereThreshold(3,1),"here thresholds");
+   var ace=F("에이스",P("에이스",TriggerStructures.HereLabel,"역할"));Check(RuntimeTriggers.HereNow(6,6,ace),"opposing ace activates here");
+   var self=F("수령자",P("자신",TriggerStructures.SelfOrderLabel));var observer=F("감시자",P("아군",TriggerStructures.AllyOrderLabel));var logs=new List<string>();RuntimeTriggers.DirectiveReceived(self,new[]{self,observer},"숙달 공격 지령",logs.Add);Check(logs.Any(x=>x.Contains("『자신』"))&&logs.Any(x=>x.Contains("『아군』")),"self and ally order scopes");
+   logs.Clear();var analyst=F("해석자",P("분석",TriggerStructures.AnalyzedLabel));RuntimeTriggers.Analyzed(analyst,new[]{analyst},ace,logs.Add);Check(logs.Any(x=>x.Contains("『분석』")),"first analysis trigger");
+   var owner=F("주인",P("주인의 특권","X","특권"));var royal=F("왕자",P("왕자의 특권","X","특권"));var contract=F("계약자",P("계약의 특권 (불꽃)",TriggerStructures.ContractLabel,"특권"));var rules=new Rules{SlightSpeciesBonus=20};Check(PrivilegeRules.HpBonus(owner,rules)==20&&Engine.Stats(owner,100,rules)[0]>Engine.Stats(self,100,rules)[0],"configurable slight HP bonus");Check(Mechanics.StatusBlock(royal,self,"독",rules).StartsWith("왕자의 특권"),"royal status immunity");var move=new Move{name="화염",category="물리",types=new[]{"불꽃"}};Check(Math.Abs(Mechanics.DamageFactor(self,contract,move,rules)-.5)<.001,"typed contract reduction");
+   logs.Clear();var eventer=F("이벤트",P("개막",TriggerStructures.BattleStartLabel),P("상대등장",TriggerStructures.OpponentEntryLabel),P("기술전",TriggerStructures.MoveUseLabel),P("공격전",TriggerStructures.AttackMoveUseLabel),P("불꽃전",TriggerStructures.MoveType("불꽃")),P("지정기",TriggerStructures.MoveName("화염")),P("성공",TriggerStructures.AttackSuccessLabel),P("피격",TriggerStructures.DamagedLabel));RuntimeTriggers.BattleStart(new TrainerRecord[2],new IEnumerable<Fighter>[] {new[]{eventer},new Fighter[0]},logs.Add);RuntimeTriggers.OpponentEntered(eventer,self,logs.Add);RuntimeTriggers.BeforeMove(eventer,move,logs.Add);RuntimeTriggers.AttackSucceeded(eventer,self,move,logs.Add);eventer.HP=0;RuntimeTriggers.Damaged(eventer,10,"독",logs.Add);Check(logs.Any(x=>x.Contains("『개막』"))&&logs.Any(x=>x.Contains("『상대등장』"))&&logs.Any(x=>x.Contains("『기술전』"))&&logs.Any(x=>x.Contains("『공격전』"))&&logs.Any(x=>x.Contains("『불꽃전』"))&&logs.Any(x=>x.Contains("『지정기』"))&&logs.Any(x=>x.Contains("『성공』"))&&logs.Any(x=>x.Contains("『피격』")),"start, opponent entry, move, success and fainting damage triggers");
+   var granted=F("부여",P("계약의 특권 (불꽃)","X","특권"),P("조건",TriggerStructures.Granted("계약의 특권")));Check(RuntimeTriggers.Field(granted).Any(x=>x.name=="조건"),"generic granted condition");Check(EditorTemplate.PrivilegePotentials.Length==21&&EditorTemplate.FixedOption("특권","익스펜션（불꽃）").effect.Split('\n').Length==2,"expansion privilege templates and split effects");
+  }
+ }
+}

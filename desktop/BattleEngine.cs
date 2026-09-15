@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Web.Script.Serialization;
 
 namespace AABattle {
- public class Potential { public string id, name, description; public string[] triggers; }
+ public class Potential { public string id, name, description, activation, uses; public string[] triggers; }
  public class Pokemon {
   public string id, team, name, ability, item;
   public int level; public string[] types, moves; public int[] @base, iv;
@@ -36,24 +36,24 @@ namespace AABattle {
  public class SideFieldState {public bool StealthRock,StickyWeb;public int Spikes,ToxicSpikes;public SideFieldState Copy(){return (SideFieldState)MemberwiseClone();}public void Clear(){StealthRock=StickyWeb=false;Spikes=ToxicSpikes=0;}public bool Any(){return StealthRock||StickyWeb||Spikes>0||ToxicSpikes>0;}}
  public class Rules {
   public string Weather="없음", Terrain="없음"; public bool Critical, HPCorrection;
-  public double PowerBonus, PowerMultiplier=1, DamageMultiplier=1, Stab, LevelCorrection=1;
+  public double PowerBonus, PowerMultiplier=1, DamageMultiplier=1, Stab, LevelCorrection=1;public int SlightSpeciesBonus=10;
   public int WeatherTurns=5,TerrainTurns=5,TrickRoom,Gravity;public bool SheetTerrain;public SideFieldState[] Sides={new SideFieldState(),new SideFieldState()};public Rules Copy(){var copy=(Rules)MemberwiseClone();copy.Sides=(Sides??new[]{new SideFieldState(),new SideFieldState()}).Select(x=>(x??new SideFieldState()).Copy()).ToArray();return copy;}
  }
  public class Damage { public int Min,Max; public int[] Rolls;public double Stab,Type; public bool Supported;public string Reason=""; }
  // General potential execution is intentionally absent. Trainer directives are the first executable slice.
  public enum BattleEvent { OnEnter,BeforeMove,BeforeDamage,AfterDamage,TurnEnd }
  public class TrainerBattleState {
-  public HashSet<string> UsedForms=new HashSet<string>(),UsedOrders=new HashSet<string>();
-  public TrainerBattleState Copy(){var s=new TrainerBattleState();s.UsedForms=new HashSet<string>(UsedForms);s.UsedOrders=new HashSet<string>(UsedOrders);return s;}
+  public HashSet<string> UsedForms=new HashSet<string>(),UsedOrders=new HashSet<string>(),UsedPotentials=new HashSet<string>();
+  public TrainerBattleState Copy(){var s=new TrainerBattleState();s.UsedForms=new HashSet<string>(UsedForms);s.UsedOrders=new HashSet<string>(UsedOrders);s.UsedPotentials=new HashSet<string>(UsedPotentials);return s;}
  }
  public class BattleCommand {
-  public Move Move;public Fighter SwitchIn;public string Form="",Order="";
+  public Move Move;public Fighter SwitchIn;public string Form="",Order="";public string[] PreInputs=new string[0];public Fighter[] Party=new Fighter[0];
   public bool IsSwitch{get{return SwitchIn!=null;}}
  }
  public class TurnResult { public Rules Rules; public Fighter[] Fighters;public TrainerBattleState[] Trainers;public bool[] Switched=new bool[2];public List<string> Log=new List<string>(); }
  public static class Engine {
   public static readonly string[] Names={"체력","공격","방어","특공","특방","속도"};
-  public static int[] Stats(Fighter f,int other,Rules r){var p=f.Data;int low=Math.Min(p.level,other);double c=1+Math.Max(0,p.level-other)*r.LevelCorrection/100;return p.@base.Select((v,i)=>i==0?(int)(r.HPCorrection?Math.Floor((Math.Floor((v*2+p.iv[i])*low/100.0)+10+low)*c):Math.Floor((v*2+p.iv[i])*p.level/100.0+10+p.level)):(int)Math.Floor((Math.Floor((v*2+p.iv[i])*low/100.0)+5)*c)).ToArray();}
+  public static int[] Stats(Fighter f,int other,Rules r){var p=f.Data;int low=Math.Min(p.level,other);double c=1+Math.Max(0,p.level-other)*r.LevelCorrection/100;return p.@base.Select((v,i)=>{int species=v+(i==0?PrivilegeRules.HpBonus(f,r):0);return i==0?(int)(r.HPCorrection?Math.Floor((Math.Floor((species*2+p.iv[i])*low/100.0)+10+low)*c):Math.Floor((species*2+p.iv[i])*p.level/100.0+10+p.level)):(int)Math.Floor((Math.Floor((species*2+p.iv[i])*low/100.0)+5)*c);}).ToArray();}
   public static double Stage(int n){return n>=0?(2+n)/2.0:2.0/(2-n);}
   public static int Effective(Fighter a,Fighter b,int i,Rules r,int role=0){int s=a.Stages[i];double m=a.Multipliers[i];if(r.Critical&&role==1){s=Math.Max(0,s);m=Math.Max(1,m);}if(r.Critical&&role==2){s=Math.Min(0,s);m=Math.Min(1,m);}return Math.Max(1,(int)Math.Floor(Stats(a,b.Data.level,r)[i]*m*Stage(s)*Mechanics.StatFactor(a,b,i,r)));}
   public static double Match(Database db,string[] at,string[] dt){return at.Length==0?1:at.Max(t=>dt.Aggregate(1.0,(n,d)=>n*(db.chart.ContainsKey(d)&&db.chart[d].ContainsKey(t)?db.chart[d][t]:1)));}
@@ -83,12 +83,15 @@ namespace AABattle {
     if(!c.IsSwitch&&c.Move==null)throw new Exception("기술 또는 교대 행동을 선택하세요.");
     if(form.Length>0){if(states[i].UsedForms.Contains(form))throw new Exception(form+"은 이미 사용했습니다.");states[i].UsedForms.Add(form);result.Log.Add("TRAINER "+(i+1)+" — 『"+form+"』 선언!");}
     if(order.Length>0){if(states[i].UsedOrders.Contains(order))throw new Exception(order+"은 이미 사용했습니다.");states[i].UsedOrders.Add(order);result.Log.Add("TRAINER "+(i+1)+" — 『"+order+"』 지령!");deployed[i]=ApplyOrder(f[i],f[1-i],order,r,result.Log);if(deployed[i]==-2)c.Move=null;}
+    foreach(string potential in c.PreInputs??new string[0]){var definition=(f[i].Data.potentials??new Potential[0]).FirstOrDefault(x=>x!=null&&x.name==potential);bool limited=definition!=null&&(definition.uses??"").Contains("1/");if(limited&&states[i].UsedPotentials.Contains(potential))throw new Exception("『"+potential+"』은 이미 사용했습니다.");if(limited)states[i].UsedPotentials.Add(potential);result.Log.Add(f[i].Data.name+" — 선행입력 『"+potential+"』 선언!"+((definition==null?"":definition.description)??""));}
+    if(order.Length>0)RuntimeTriggers.DirectiveReceived(f[i],(c.Party??new Fighter[0]).Where(x=>x!=null&&x.Data.name!=f[i].Data.name).Concat(new[]{f[i]}),order,result.Log.Add);
    }
-   for(int i=0;i<2;i++)if(commands[i].IsSwitch&&!((commands[i].Form??"").Contains("돌아와"))){RuntimeTriggers.Switch(f[i],SwitchReason.Normal,result.Log.Add);f[i]=commands[i].SwitchIn.Copy();result.Fighters=f;result.Switched[i]=true;Mechanics.EnterField(db,f[i],f[1-i],i,r,rng,result.Log);EntryTriggers.Enter(f[i],EntryReason.NormalSwitch,result.Log.Add);result.Log.Add("TRAINER "+(i+1)+"의 통상 교대 — "+f[i].Data.name+" 등장!");}
+   for(int i=0;i<2;i++)if(commands[i].IsSwitch&&!((commands[i].Form??"").Contains("돌아와"))){RuntimeTriggers.Switch(f[i],SwitchReason.Normal,result.Log.Add);f[i]=commands[i].SwitchIn.Copy();result.Fighters=f;result.Switched[i]=true;Mechanics.EnterField(db,f[i],f[1-i],i,r,rng,result.Log);EntryTriggers.Enter(f[i],EntryReason.NormalSwitch,result.Log.Add);RuntimeTriggers.OpponentEntered(f[1-i],f[i],result.Log.Add);result.Log.Add("TRAINER "+(i+1)+"의 통상 교대 — "+f[i].Data.name+" 등장!");}
    var movers=Enumerable.Range(0,2).Where(i=>!commands[i].IsSwitch&&commands[i].Move!=null).ToArray();
    if(movers.Length==2){int delta=Mechanics.Priority(f[0],commands[0].Move).CompareTo(Mechanics.Priority(f[1],commands[1].Move));if(delta==0){delta=Effective(f[0],f[1],5,r).CompareTo(Effective(f[1],f[0],5,r));if(r.TrickRoom>0)delta=-delta;}int first=delta>0?0:delta<0?1:rng()<.5?0:1;movers=new[]{first,1-first};}
    foreach(int i in movers){var a=f[i];var b=f[1-i];var m=commands[i].Move;if(a.HP<=0)continue;
-    if(!Mechanics.BeforeMove(a,b,m,r,rng,result.Log))continue;
+   if(!Mechanics.BeforeMove(a,b,m,r,rng,result.Log))continue;
+    RuntimeTriggers.BeforeMove(a,m,result.Log.Add);
     if(m.name!="방어"&&m.name!="판별")a.Conditions.ProtectChain=0;
     bool target=Mechanics.TargetsOpponent(m);string defendingForm=commands[1-i].Form??"";
     if(target&&((defendingForm.Contains("물러나")&&m.category=="물리")||(defendingForm.Contains("피해라")&&m.category=="특수"))){result.Log.Add(b.Data.name+"은 『"+defendingForm+"』로 공격을 회피했다!");continue;}
@@ -100,11 +103,12 @@ namespace AABattle {
     var d=Calculate(db,a,b,m,r);if(!d.Supported){result.Log.Add(m.name+": 가변 위력 — 수동 판정.");continue;}
     int damage=d.Rolls[Math.Min(15,(int)(rng()*16))],bodyDamage=0;bool sub=b.Conditions.Substitute>0&&!Mechanics.BypassSub(a,m);
     if(sub){b.Conditions.Substitute=Math.Max(0,b.Conditions.Substitute-damage);result.Log.Add(m.name+": 대타에 "+damage+" 대미지. 남은 대타 HP "+b.Conditions.Substitute);}
-    else{int hpBefore=b.HP;if(defendingForm.Contains("버텨라")){damage=(int)Math.Floor(damage/2.0);if(damage>=b.HP)damage=Math.Max(0,b.HP-1);result.Log.Add(b.Data.name+"은 『"+defendingForm+"』로 대미지를 반감하고 버텼다!");}b.HP=Math.Max(0,b.HP-damage);bodyDamage=hpBefore-b.HP;result.Log.Add(a.Data.name+"의 "+m.name+"! "+b.Data.name+"에게 "+damage+" 대미지."+(r.Critical?" 급소!":"")+(d.Type>1?" 효과가 굉장했다!":d.Type<1?" 효과가 별로다.":""));if(b.HP==0){result.Log.Add(b.Data.name+"은 쓰러졌다!");DefeatTriggers.ByMove(a,b,m,hpBefore,damage,result.Log.Add);}}
+    else{int hpBefore=b.HP;if(defendingForm.Contains("버텨라")){damage=(int)Math.Floor(damage/2.0);if(damage>=b.HP)damage=Math.Max(0,b.HP-1);result.Log.Add(b.Data.name+"은 『"+defendingForm+"』로 대미지를 반감하고 버텼다!");}b.HP=Math.Max(0,b.HP-damage);bodyDamage=hpBefore-b.HP;result.Log.Add(a.Data.name+"의 "+m.name+"! "+b.Data.name+"에게 "+damage+" 대미지."+(r.Critical?" 급소!":"")+(d.Type>1?" 효과가 굉장했다!":d.Type<1?" 효과가 별로다.":""));RuntimeTriggers.Damaged(b,bodyDamage,a.Data.name+"의 "+m.name,result.Log.Add);if(b.HP==0){result.Log.Add(b.Data.name+"은 쓰러졌다!");DefeatTriggers.ByMove(a,b,m,hpBefore,damage,result.Log.Add);}}
     if(damage>0)Mechanics.AfterHit(a,b,m,r,rng,result.Log,sub,i);
     RuntimeTriggers.Received(b,a,m,bodyDamage,result.Log.Add);
+    RuntimeTriggers.AttackSucceeded(a,b,m,result.Log.Add);
    }
-   for(int i=0;i<2;i++)if(commands[i].IsSwitch&&(commands[i].Form??"").Contains("돌아와")){if(f[i].HP>0){RuntimeTriggers.Switch(f[i],SwitchReason.Return,result.Log.Add);f[i]=commands[i].SwitchIn.Copy();result.Fighters=f;result.Switched[i]=true;Mechanics.EnterField(db,f[i],f[1-i],i,r,rng,result.Log);EntryTriggers.Enter(f[i],EntryReason.Return,result.Log.Add);result.Log.Add("『돌아와!』 — 상대의 행동 후 "+f[i].Data.name+" 등장!");}else result.Log.Add("『돌아와!』 — 교대 전에 포켓몬이 쓰러졌다.");}
+   for(int i=0;i<2;i++)if(commands[i].IsSwitch&&(commands[i].Form??"").Contains("돌아와")){if(f[i].HP>0){RuntimeTriggers.Switch(f[i],SwitchReason.Return,result.Log.Add);f[i]=commands[i].SwitchIn.Copy();result.Fighters=f;result.Switched[i]=true;Mechanics.EnterField(db,f[i],f[1-i],i,r,rng,result.Log);EntryTriggers.Enter(f[i],EntryReason.Return,result.Log.Add);RuntimeTriggers.OpponentEntered(f[1-i],f[i],result.Log.Add);result.Log.Add("『돌아와!』 — 상대의 행동 후 "+f[i].Data.name+" 등장!");}else result.Log.Add("『돌아와!』 — 교대 전에 포켓몬이 쓰러졌다.");}
    Mechanics.EndTurn(f,r,result.Log,rng);for(int i=0;i<2;i++)if(!result.Switched[i]){if(deployed[i]>=0)f[i].Multipliers[deployed[i]]/=2;else if(deployed[i]==-3)f[i].AccuracyMultiplier/=2;else if(deployed[i]==-4)f[i].EvasionMultiplier/=2;}RuntimeTriggers.TurnEnd(f,r,rng,result.Log.Add);return result;
   }
   static int ApplyOrder(Fighter a,Fighter b,string order,Rules r,List<string> log){
@@ -115,6 +119,7 @@ namespace AABattle {
   }
   static Fighter TriggerFighter(Fighter source,string name,string potential,string trigger){var p=source.Data;return new Fighter(new Pokemon{id="trigger-test",name=name,level=p.level,@base=(int[])p.@base.Clone(),iv=(int[])p.iv.Clone(),types=(string[])p.types.Clone(),moves=(string[])p.moves.Clone(),potentials=new[]{new Potential{name=potential,description="공격이 오른다.",triggers=new[]{trigger}}}});}
   public static string Test(Database db){
+   CatalogTests.Run();
    var a=new Fighter(db.pokemon.First(p=>p.name=="선데이"));var b=new Fighter(db.pokemon.First(p=>p.name=="잭 한마"));var m=db.moves.First(v=>v.name=="파괴광선");var r=new Rules();b.Stages[4]=1;
    BattleStateReport.Test(db);
    Check(Stats(a,b.Data.level,r)[0]==598,"HP");Check(Effective(a,b,1,r)==269,"level correction");var d=Calculate(db,a,b,m,r);Check(d.Min==290&&d.Max==342&&d.Rolls[2]==297,"spreadsheet damage");
@@ -127,6 +132,7 @@ namespace AABattle {
    bool duplicate=false;try{Resolve(db,new[]{a,b},new[]{new BattleCommand{Move=m},new BattleCommand{Move=m,Form="피해라！"}},clean,dodge.Trainers,()=>0);}catch(Exception){duplicate=true;}Check(duplicate,"directive once per battle");
    var endure=b.Copy();endure.HP=1;var held=Resolve(db,new[]{a,endure},new[]{new BattleCommand{Move=fast},new BattleCommand{Move=m,Form="버텨라！"}},clean,states,()=>0);Check(held.Fighters[1].HP==1,"endure trainer protection");
    var reserve=new Fighter(db.pokemon.First(p=>p.name=="원시 가이오가"));int reserveHP=reserve.HP;var returned=Resolve(db,new[]{a,b},new[]{new BattleCommand{SwitchIn=reserve,Form="돌아와！"},new BattleCommand{Move=fast}},clean,states,()=>0);Check(returned.Switched[0]&&returned.Fighters[0].Data.name==reserve.Data.name&&returned.Fighters[0].HP==reserveHP,"return switches after opposing action");
+   var prep=TriggerFighter(a,"선행자","예고",TriggerStructures.AlwaysLabel);prep.Data.potentials[0].activation="선행";prep.Data.potentials[0].uses="1/시";var prepared=Resolve(db,new[]{prep,b},new[]{new BattleCommand{Move=fast,PreInputs=new[]{"예고"},Party=new[]{prep}},new BattleCommand{Move=m}},clean,states,()=>0);Check(prepared.Trainers[0].UsedPotentials.Contains("예고")&&prepared.Log.Any(x=>x.Contains("선행입력 『예고』")),"pre-input potential declaration");
    return "PASS: HP, level correction, spreadsheet 290-342 / .87=297, immunity, triple types, KO order, isolated inputs, structured battle triggers, frostbite, critical ranks, trainer directives and return switch.";
   }
   static void Check(bool ok,string label){if(!ok)throw new Exception("FAIL: "+label);}

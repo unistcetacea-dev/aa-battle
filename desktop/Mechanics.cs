@@ -3,6 +3,11 @@ using System.Linq;
 using System.Collections.Generic;
 
 namespace AABattle {
+ public static class PrivilegeRules {
+  public static bool Has(Fighter fighter,string name){return fighter!=null&&(fighter.Data.potentials??new Potential[0]).Any(p=>p!=null&&p.id=="특권"&&p.name==name);}
+  public static string ContractType(Fighter fighter){var p=fighter==null?null:(fighter.Data.potentials??new Potential[0]).FirstOrDefault(x=>x!=null&&x.id=="특권"&&x.name.StartsWith("계약의 특권"));if(p==null)return "";var match=System.Text.RegularExpressions.Regex.Match(p.name,@"[（(](?<type>[^）)]+)[）)]");return match.Success?match.Groups["type"].Value.Trim():"";}
+  public static int HpBonus(Fighter fighter,Rules rules){return Has(fighter,"주인의 특권")||Has(fighter,"왕자의 특권")?Math.Max(0,rules==null?10:rules.SlightSpeciesBonus):0;}
+ }
  public class ConditionState {
   public int SleepTurns=2,ToxicStage=1,Confusion,Taunt,Reflect,LightScreen,Tailwind,Substitute,ProtectChain;
   public bool Protect,Flinch,Recharge,Seed,Curse,AquaRing,Ingrain,FlashFire,BalloonPopped;
@@ -61,6 +66,7 @@ namespace AABattle {
   public static bool DefensiveNullification(Move move,string reason){if(move==null||move.category=="변화"||string.IsNullOrEmpty(reason)||reason.StartsWith("방어")||reason.StartsWith("대타"))return false;return new[]{"타입 상성","타오르는불꽃","축전","저수","피뢰침","마중물","전기엔진","초식","부유","풍선","방음","방탄","방호 포텐셜"}.Any(reason.Contains);}
   public static string StatusBlock(Fighter target,Fighter source,string status,Rules r){
    if(status=="정상")return "";if(target.HP<=0)return "기절 상태";if(target.Status!="정상")return "이미 상태이상이 있음";
+   if(!Object.ReferenceEquals(target,source)&&PrivilegeRules.Has(target,"왕자의 특권"))return "왕자의 특권: 상대로부터의 상태이상 무효";
    if(r.Terrain=="미스트필드"&&Grounded(target,r))return "미스트필드: 접지 포켓몬의 상태이상 방지";
    if(status=="잠듦"&&r.Terrain=="일렉트릭필드"&&Grounded(target,r))return "일렉트릭필드: 접지 포켓몬의 잠듦 방지";
    if(status=="화상"&&(Has(target,"불꽃")||(!BypassAbility(source)&&Ability(target,"수의베일"))))return "불꽃 타입 / 수의베일: 화상 무효";
@@ -76,9 +82,9 @@ namespace AABattle {
    if(m.name=="객기"&&new[]{"화상","독","맹독","마비"}.Contains(a.Status))v*=2;
    string type=r.Terrain=="그래스필드"?"풀":r.Terrain=="일렉트릭필드"?"전기":r.Terrain=="사이코필드"?"에스퍼":r.SheetTerrain&&r.Terrain=="미스트필드"?"페어리":"";
    if(Grounded(a,r)&&m.types.Contains(type))v*=r.SheetTerrain?1.5:1.3;if(r.Terrain=="미스트필드"&&Grounded(b,r)&&m.types.Contains("드래곤"))v*=.5;if(r.Terrain=="그래스필드"&&Grounded(b,r)&&new[]{"지진","땅고르기","매그니튜드"}.Contains(m.name))v*=.5;if(a.Conditions.FlashFire&&m.types.Contains("불꽃"))v*=1.5;return v;}
-  public static double DamageFactor(Fighter a,Fighter b,Move m,Rules r){if(r.Critical||Ability(a,"틈새포착"))return 1;return m.category=="물리"&&b.Conditions.Reflect>0||m.category=="특수"&&b.Conditions.LightScreen>0?.5:1;}
+  public static double DamageFactor(Fighter a,Fighter b,Move m,Rules r){double v=PrivilegeRules.ContractType(b).Length>0&&m.types.Contains(PrivilegeRules.ContractType(b))?.5:1;if(r.Critical||Ability(a,"틈새포착"))return v;if(m.category=="물리"&&b.Conditions.Reflect>0||m.category=="특수"&&b.Conditions.LightScreen>0)v*=.5;return v;}
   static int Max(Fighter a,Fighter b,Rules r){return Engine.Stats(a,b.Data.level,r)[0];}
-  static void Hurt(Fighter a,int damage,string reason,List<string> log,bool indirect=true){if(a.HP<=0||indirect&&Ability(a,"매직가드"))return;int loss=Math.Min(a.HP,Math.Max(1,damage));a.HP-=loss;log.Add(a.Data.name+" — "+reason+": HP -"+loss);if(a.HP==0)log.Add(a.Data.name+"은 쓰러졌다!");}
+  static void Hurt(Fighter a,int damage,string reason,List<string> log,bool indirect=true){if(a.HP<=0||indirect&&Ability(a,"매직가드"))return;int loss=Math.Min(a.HP,Math.Max(1,damage));a.HP-=loss;log.Add(a.Data.name+" — "+reason+": HP -"+loss);RuntimeTriggers.Damaged(a,loss,reason,log.Add);if(a.HP==0)log.Add(a.Data.name+"은 쓰러졌다!");}
   public static void Heal(Fighter a,Fighter b,Rules r,int amount,string reason,List<string> log){if(a.HP<=0)return;int gain=Math.Min(Max(a,b,r)-a.HP,Math.Max(1,amount));if(gain>0){a.HP+=gain;log.Add(a.Data.name+" — "+reason+": HP +"+gain);}}
   public static void Absorb(Fighter a,Fighter b,string reason,Rules r,List<string> log){if(reason=="축전"||reason=="저수")Heal(b,a,r,Max(b,a,r)/4,reason,log);if(reason=="피뢰침"||reason=="마중물")b.Stages[3]=Math.Min(6,b.Stages[3]+1);if(reason=="전기엔진")b.Stages[5]=Math.Min(6,b.Stages[5]+1);if(reason=="초식")b.Stages[1]=Math.Min(6,b.Stages[1]+1);if(reason=="타오르는불꽃")b.Conditions.FlashFire=true;}
   public static bool BeforeMove(Fighter a,Fighter b,Move m,Rules r,Func<double> rng,List<string> log){var c=a.Conditions;

@@ -46,7 +46,7 @@ namespace AABattle {
    return false;
   }
   static IEnumerable<string> ProtectedEffectTexts(){
-   var options=EditorTemplate.RolePotentials.Concat(EditorTemplate.CommonPotentials).Concat(EditorTemplate.InitiativePotentials).Concat(EditorTemplate.CounterTypeNames().SelectMany(type=>new[]{"회피","내성","격"}.SelectMany(slot=>EditorTemplate.CounterOptions(slot,type))));
+   var options=EditorTemplate.RolePotentials.Concat(EditorTemplate.CommonPotentials).Concat(EditorTemplate.InitiativePotentials).Concat(EditorTemplate.PrivilegePotentials).Concat(EditorTemplate.CounterTypeNames().SelectMany(type=>new[]{"회피","내성","격"}.SelectMany(slot=>EditorTemplate.CounterOptions(slot,type))));
    foreach(var option in options){string trigger,effect;PotentialLibrary.Split(option.effect,out trigger,out effect);foreach(string line in Lines(effect))yield return EffectNormalizer.Normalize(line);if(option.adjunctEffect.Length>0){PotentialLibrary.Split(option.adjunctEffect,out trigger,out effect);foreach(string line in Lines(effect))yield return EffectNormalizer.Normalize(line);}}
    foreach(var record in EditorTemplate.Orders(false).Concat(EditorTemplate.Orders(true)).Concat(EditorTemplate.ExtendedOrders(false)).Concat(EditorTemplate.ExtendedOrders(true))){string trigger,effect;PotentialLibrary.Split(record.effect,out trigger,out effect);foreach(string line in Lines(effect))yield return EffectNormalizer.Normalize(line);}
   }
@@ -63,7 +63,7 @@ namespace AABattle {
     new DexPotential{record=new PotentialRecord{name="C",trigger="필드에 나왔을 때",effect="위력을 강화(2배)한다",uses="2/시"},source="C"}});
    if(data.triggers.Count!=2||data.effects.Count!=2||!data.effects.Any(x=>x.sources.Count==2))throw new Exception("Parts deduplication/provenance failed");
    if(Key("저확률로 회피") == Key("중확률로 회피"))throw new Exception("Probability collapsed");
-   var all=Build(StandardEntries());if(all.triggers.Count<100||all.effects.Count<100||all.triggers.Select(x=>x.key).Distinct().Count()!=all.triggers.Count||all.effects.Select(x=>x.key).Distinct().Count()!=all.effects.Count)throw new Exception("Part catalog uniqueness failed");if(all.effects.Count(x=>x.protectedTemplate)<20||!all.effects.Any(x=>x.protectedTemplate&&x.text.Contains("전능력치"))||all.effects.Any(x=>x.protectedTemplate&&x.excludedFromImplementation))throw new Exception("Template effect protection failed");if(all.effects.Count(x=>x.excludedFromImplementation)!=53)throw new Exception("Unexpected implementation exclusion count");
+   var all=Build(StandardEntries());if(all.triggers.Count<100||all.effects.Count<100||all.triggers.Select(x=>x.key).Distinct().Count()!=all.triggers.Count||all.effects.Select(x=>x.key).Distinct().Count()!=all.effects.Count)throw new Exception("Part catalog uniqueness failed");if(all.effects.Count(x=>x.protectedTemplate)<20||!all.effects.Any(x=>x.protectedTemplate&&x.text.Contains("전능력치"))||all.effects.Any(x=>x.protectedTemplate&&x.excludedFromImplementation))throw new Exception("Template effect protection failed");if(all.effects.Count(x=>x.excludedFromImplementation)!=52)throw new Exception("Unexpected implementation exclusion count");
    string reason;if(!TryExclusionReason("(※1T이 아니라, 1번의 공격에 대해 반응)",out reason)||reason!="독립 주석"||!TryExclusionReason("PT에 참가할 수 없다",out reason)||reason!="편성·공유 규칙"||!TryExclusionReason("속도가 쭉 오른다",out reason)||reason!="삭제된 랭크 표현"||TryExclusionReason("PT 전원이 기술 「파도타기」를 내보낼 수 있다",out reason))throw new Exception("Implementation exclusion classification failed");
   }
  }
