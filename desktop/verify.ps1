@@ -12,8 +12,9 @@ Invoke-BuildCheck 'AABattle.exe' @('--self-test','outputs/verify/battle-test.txt
 Invoke-BuildCheck 'AABattleDataEditor.exe' @('--self-test','outputs/verify/editor-test.txt')
 if ($Visual) {
     Invoke-BuildCheck 'AABattleDataEditor.exe' @('--render-preview','outputs/verify/catalog.png')
+    Invoke-BuildCheck 'AABattle.exe' @('--render-preview','outputs/verify/battle.png')
     Invoke-BuildCheck 'AABattle.exe' @('--flow-preview','outputs/verify/flow')
 }
 Get-Content -LiteralPath (Join-Path $checkDirectory 'battle-test.txt')
 Get-Content -LiteralPath (Join-Path $checkDirectory 'editor-test.txt')
-if ($Visual) { Write-Output "Screenshots: $checkDirectory/catalog.png.moves.png and catalog.png.potentials.png" }
+if ($Visual) { Write-Output "Screenshots: $checkDirectory/battle.png, catalog.png.moves.png and catalog.png.potentials.png" }

@@ -113,6 +113,7 @@ namespace AABattle {
   }
   public static string Test(Database db){
    var a=new Fighter(db.pokemon.First(p=>p.name=="선데이"));var b=new Fighter(db.pokemon.First(p=>p.name=="잭 한마"));var m=db.moves.First(v=>v.name=="파괴광선");var r=new Rules();b.Stages[4]=1;
+   BattleStateReport.Test(db);
    Check(Stats(a,b.Data.level,r)[0]==598,"HP");Check(Effective(a,b,1,r)==269,"level correction");var d=Calculate(db,a,b,m,r);Check(d.Min==290&&d.Max==342&&d.Rolls[2]==297,"spreadsheet damage");
    Check(Match(db,new[]{"노말"},new[]{"고스트"})==0,"immunity");Check(Match(db,new[]{"물"},new[]{"불꽃","땅","바위"})==8,"triple types");
    var ko=b.Copy();ko.HP=1;var fast=new Move{name=m.name,category=m.category,types=m.types,power=m.power,accuracy=100,priority=7,attack=m.attack,defense=m.defense};var t=Resolve(db,new[]{a,ko},new[]{fast,m},r,()=>0);Check(t.Fighters[1].HP==0&&t.Fighters[0].HP==a.HP&&ko.HP==1,"KO order and input isolation");

@@ -1,0 +1,48 @@
+using System;
+using System.Linq;
+using System.Text;
+using System.Drawing;
+using System.Windows.Forms;
+using System.Collections.Generic;
+
+namespace AABattle {
+ class BattleStatePanel:Card {
+  PixelLabel title;PixelText body;
+  public BattleStatePanel(){title=new PixelLabel{Text="전장 전체 현황",Font=Theme.UI(12),Dock=DockStyle.Top,Height=42,TextAlign=ContentAlignment.MiddleCenter};body=new PixelText{Dock=DockStyle.Fill,Font=Theme.UI(9)};Controls.Add(body);Controls.Add(title);body.BringToFront();}
+  public void SetReport(string value){body.Text=value;}
+ }
+
+ static class BattleStateReport {
+  static readonly string[] StatNames={"체력","공격","방어","특공","특방","속도"};
+ public static string Build(Database db,Fighter[] fighters,Rules rules,TurnSelection[] selections,TrainerRecord[] trainers,TrainerBattleState[] trainerStates){
+   var text=new StringBuilder();Field(text,fighters,rules);
+   for(int side=0;side<2;side++){text.AppendLine().Append("━━━━━━━━ ").Append(side+1).Append("팀 ━━━━━━━━\n");FighterBlock(text,db,fighters[side],fighters[1-side],rules,selections[side],side);TrainerBlock(text,trainers[side],trainerStates[side],selections[side]);}
+   text.AppendLine().Append("━━━━━━━━ 설치물 ━━━━━━━━\n");text.AppendLine("현재 실행 상태: 없음");text.AppendLine("스텔스록·압정·독압정·끈적끈적네트는 엔진 상태 미등록");return text.ToString().TrimEnd();
+  }
+  public static void Test(Database db){var a=new Fighter(db.pokemon.First());var b=new Fighter(db.pokemon.Skip(1).First());a.Status="독";a.Stages[1]=2;a.Multipliers[1]=1.5;var r=new Rules{Weather="모래바람",WeatherTurns=3};string report=Build(db,new[]{a,b},r,new[]{new TurnSelection(),new TurnSelection()},new TrainerRecord[2],new[]{new TrainerBattleState(),new TrainerBattleState()});if(!report.Contains("공격+2")||!report.Contains("공격 ×1.5")||!report.Contains("독 HP -")||!report.Contains("날씨: 모래바람 3T")||!report.Contains("기술 적용 배율"))throw new Exception("Battle state report failed");}
+  static void Field(StringBuilder text,Fighter[] f,Rules r){
+   text.AppendLine("【전체 장소】");string effective=Mechanics.Weather(f[0],f[1],r);text.Append("날씨: ").Append(r.Weather);if(r.Weather!="없음")text.Append(" ").Append(r.WeatherTurns).Append("T");if(effective!=r.Weather)text.Append(" → 효과 무효");text.AppendLine();text.Append("필드: ").Append(r.Terrain);if(r.Terrain!="없음")text.Append(" ").Append(r.TerrainTurns).Append("T");text.AppendLine();text.Append("트릭룸: ").Append(r.TrickRoom>0?r.TrickRoom+"T":"없음").Append(" / 중력: ").Append(r.Gravity>0?r.Gravity+"T":"없음").AppendLine();
+  }
+  static void FighterBlock(StringBuilder text,Database db,Fighter a,Fighter b,Rules r,TurnSelection selected,int side){
+   int max=Engine.Stats(a,b.Data.level,r)[0];text.Append("【").Append(a.Data.name).Append("】 HP ").Append(a.HP).Append('/').Append(max).AppendLine();
+   var conditions=a.Conditions.Labels(a).ToArray();text.Append("상태: ").AppendLine(conditions.Length==0?"정상":string.Join(" / ",conditions));
+   var ranks=Enumerable.Range(1,5).Where(i=>a.Stages[i]!=0).Select(i=>StatNames[i]+Signed(a.Stages[i])).ToList();if(a.AccuracyStage!=0)ranks.Add("명중"+Signed(a.AccuracyStage));if(a.EvasionStage!=0)ranks.Add("회피"+Signed(a.EvasionStage));text.Append("랭크: ").AppendLine(ranks.Count==0?"변화 없음":string.Join(" / ",ranks));
+   var scales=Enumerable.Range(1,5).Where(i=>Math.Abs(a.Multipliers[i]-1)>.0001).Select(i=>StatNames[i]+" ×"+N(a.Multipliers[i])).ToList();if(Math.Abs(a.AccuracyMultiplier-1)>.0001)scales.Add("명중 ×"+N(a.AccuracyMultiplier));if(Math.Abs(a.EvasionMultiplier-1)>.0001)scales.Add("회피 ×"+N(a.EvasionMultiplier));text.Append("강화·약화: ").AppendLine(scales.Count==0?"배율 변화 없음":string.Join(" / ",scales));
+   text.AppendLine("실행 중 포텐셜: 없음");text.Append("등록 포텐셜(판정 대기): ");var potentials=(a.Data.potentials??new Potential[0]).Where(x=>x!=null).Select(x=>"『"+x.name+"』").ToArray();text.AppendLine(potentials.Length==0?"없음":string.Join(" ",potentials));
+   text.AppendLine("기술 적용 배율:");MoveBlock(text,db,a,b,r,selected);text.AppendLine("턴 종료 예정:");var residual=Residual(a,b,r).ToArray();if(residual.Length==0)text.AppendLine("  없음");else foreach(string line in residual)text.Append("  ").AppendLine(line);
+  }
+  static void MoveBlock(StringBuilder text,Database db,Fighter a,Fighter b,Rules r,TurnSelection selected){
+   if(selected.SwitchIndex>=0){text.AppendLine("  교대 행동 선택");return;}if(a.Moves==null||a.Moves.Length==0){text.AppendLine("  기술 없음");return;}string name=a.Moves[Math.Max(0,Math.Min(a.Selected,a.Moves.Length-1))];var m=db.moves.FirstOrDefault(x=>x.name==name);if(m==null){text.Append("  ").Append(name).AppendLine(" · 미등록 기술");return;}
+   text.Append("  ").Append(m.name).Append(" · 명중 ").AppendLine((selected.Form??"").Contains("맞춰라")?"필중 (『맞춰라！』)":N(Mechanics.Accuracy(a,b,m,r))+"%");if(m.category=="변화"||m.power<=0){text.Append("  ").AppendLine(Mechanics.KnownMove(m)&&m.name!="날개쉬기"?"상태 효과 자동 처리":"효과 수동 판정");return;}
+   int ai=Math.Max(1,Array.IndexOf(Engine.Names,m.attack??(m.category=="물리"?"공격":"특공"))),di=Math.Max(1,Array.IndexOf(Engine.Names,m.defense??(m.category=="물리"?"방어":"특방")));double basePower=Math.Max(0,Math.Floor(m.power+r.PowerBonus)*r.PowerMultiplier),power=Mechanics.PowerFactor(a,b,m,r),stab=r.Stab>0?r.Stab:m.types.Any(t=>a.Data.types.Contains(t))?1.5:1,type=Mechanics.TypeEffect(db,a,b,m,r),damage=Mechanics.DamageFactor(a,b,m,r);var calculated=Engine.Calculate(db,a,b,m,r);
+   text.Append("  위력 ").Append(N(basePower)).Append(" × 효과 ").Append(N(power)).AppendLine();text.Append("  공격측 ").Append(StatNames[ai]).Append(" 랭크×").Append(N(Engine.Stage(a.Stages[ai]))).Append(" 직접×").Append(N(a.Multipliers[ai])).Append(" 환경×").Append(N(Mechanics.StatFactor(a,b,ai,r))).AppendLine();text.Append("  방어측 ").Append(StatNames[di]).Append(" 랭크×").Append(N(Engine.Stage(b.Stages[di]))).Append(" 직접×").Append(N(b.Multipliers[di])).Append(" 환경×").Append(N(Mechanics.StatFactor(b,a,di,r))).AppendLine();text.Append("  최종 능력값 ").Append(Engine.Effective(a,b,ai,r,1)).Append(" / ").Append(Engine.Effective(b,a,di,r,2)).AppendLine();text.Append("  자속×").Append(N(calculated.Stab)).Append(" 상성×").Append(N(calculated.Type)).Append(" 대미지×").Append(N(r.DamageMultiplier)).Append(" 방호×").Append(N(damage));if(r.Critical)text.Append(" 급소×2");text.AppendLine();if(calculated.Reason.Length>0)text.Append("  무효: ").AppendLine(calculated.Reason);text.Append("  결과 ").Append(calculated.Supported?calculated.Min+"~"+calculated.Max:"수동 판정").AppendLine();
+  }
+  static IEnumerable<string> Residual(Fighter a,Fighter b,Rules r){
+   int max=Engine.Stats(a,b.Data.level,r)[0];bool guard=Mechanics.Ability(a,"매직가드");string weather=Mechanics.Weather(a,b,r);if(!guard&&weather=="모래바람"&&!a.Data.types.Any(t=>new[]{"바위","땅","강철"}.Contains(t))&&!Mechanics.Ability(a,"방진","모래헤치기")&&a.Data.item!="방진고글")yield return "모래바람 HP -"+Math.Max(1,max/16);if(!guard&&weather=="싸라기눈"&&!Mechanics.Has(a,"얼음")&&!Mechanics.Ability(a,"방진")&&a.Data.item!="방진고글")yield return "싸라기눈 HP -"+Math.Max(1,max/16);
+   if(r.Terrain=="그래스필드"&&Mechanics.Grounded(a,r))yield return "그래스필드 HP +"+Math.Max(1,max/16);if(a.Data.item=="먹다남은음식")yield return "먹다남은음식 HP +"+Math.Max(1,max/16);if(a.Data.item=="검은진흙")yield return Mechanics.Has(a,"독")?"검은진흙 HP +"+Math.Max(1,max/16):guard?"검은진흙 대미지 무효 (매직가드)":"검은진흙 HP -"+Math.Max(1,max/8);if(a.Conditions.AquaRing)yield return "아쿠아링 HP +"+Math.Max(1,max/16);if(a.Conditions.Ingrain)yield return "뿌리박기 HP +"+Math.Max(1,max/16);
+   if(a.Conditions.Seed)yield return guard?"씨뿌리기 대미지 무효 (매직가드)":"씨뿌리기 HP -"+Math.Max(1,max/8);if(a.Status=="독")yield return guard?"독 대미지 무효 (매직가드)":"독 HP -"+Math.Max(1,max/8);if(a.Status=="맹독")yield return guard?"맹독 대미지 무효 (매직가드)":"맹독 "+a.Conditions.ToxicStage+"/16 · HP -"+Math.Max(1,(int)Math.Floor(max*a.Conditions.ToxicStage/16.0));if(a.Status=="화상"||a.Status=="동상")yield return guard?a.Status+" 대미지 무효 (매직가드)":a.Status+" HP -"+Math.Max(1,max/16);if(a.Conditions.Curse)yield return guard?"저주 대미지 무효 (매직가드)":"저주 HP -"+Math.Max(1,max/4);
+  }
+  static void TrainerBlock(StringBuilder text,TrainerRecord trainer,TrainerBattleState state,TurnSelection selected){text.Append("이번 선언: ").AppendLine((selected.Form.Length==0&&selected.Order.Length==0)?"없음":("4식 "+(selected.Form.Length>0?selected.Form:"—")+" / 지령 "+(selected.Order.Length>0?selected.Order:"—")));if(trainer==null)return;text.Append("트레이너: ").AppendLine(trainer.name);text.Append("사용 완료: ").AppendLine(state.UsedForms.Concat(state.UsedOrders).Any()?string.Join(" / ",state.UsedForms.Concat(state.UsedOrders)):"없음");}
+  static string Signed(int value){return value>0?"+"+value:value.ToString();}static string N(double value){return value.ToString("0.##",System.Globalization.CultureInfo.InvariantCulture);}
+ }
+}
