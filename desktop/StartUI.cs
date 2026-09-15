@@ -48,7 +48,7 @@ namespace AABattle {
    var selected=saved.teams.Take(2).ToArray();var all=selected.Select(t=>t.members.Select(p=>{string warning;return new Fighter(EditorBridge.ToPokemon(p,db,out warning));}).ToList()).ToArray();using(var battle=new MainForm(db)){battle.LoadTeams(selected,all,new[]{2,4});battle.AssertTeamSetup(7,8);}
    using(var leads=new LeadForm(all,"선발 선택")){leads.Show();Application.DoEvents();Capture(leads,path+".leads.png");leads.Close();}
    using(var start=new StartForm(db)){start.SetProjectForTest(saved);start.Show();Application.DoEvents();Capture(start,path+".start.png");start.Close();}
-   using(var editor=new DataEditorForm()){editor.ImportProject(saved);editor.Show();Application.DoEvents();editor.SelectTabForTest(6);Capture(editor,path+".teams.png");editor.SelectTabForTest(7);Capture(editor,path+".states.png");editor.SelectTabForTest(8);Capture(editor,path+".implementations.png");editor.SelectTabForTest(9);Capture(editor,path+".effects.png");editor.CloseForTest();}
+   using(var editor=new DataEditorForm()){editor.ImportProject(saved);editor.Show();Application.DoEvents();editor.SelectTabForTest(6);Capture(editor,path+".teams.png");editor.SelectTabForTest(7);Capture(editor,path+".states.png");editor.SelectTabForTest(8);Capture(editor,path+".implementations.png");editor.CloseForTest();}
    using(var setup=new TeamSetupForm(saved,saved.teams[0])){setup.Show();Application.DoEvents();Capture(setup,path+".setup.png");setup.Close();}
    using(var intro=new VersusForm(selected)){var timer=new Timer{Interval=1800};timer.Tick+=(s,e)=>{timer.Stop();Capture(intro,path+".versus.png");};intro.Shown+=(s,e)=>timer.Start();intro.ShowDialog();timer.Dispose();}
   }

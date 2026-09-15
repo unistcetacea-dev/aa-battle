@@ -9,9 +9,10 @@ using System.Web.Script.Serialization;
 
 namespace AABattle {
  public class PotentialPart {
-  public string id,key,text,activation,uses,exclusionReason;public bool protectedTemplate,excludedFromImplementation;
+  public string id,key,text,activation,uses,exclusionReason,structureKind,searchText;public int variantCount;public bool protectedTemplate,excludedFromImplementation;
   public List<string> names=new List<string>(),sources=new List<string>(),raws=new List<string>();
-  public string Display {get{var meta=new[]{protectedTemplate?"기본 보호":"",uses,activation}.Where(x=>!string.IsNullOrEmpty(x));string prefix=string.Join(" · ",meta);return (prefix.Length>0?"["+prefix+"] ":"")+text;}}
+  public string Display {get{var meta=new[]{protectedTemplate?"기본 보호":"",!string.IsNullOrEmpty(structureKind)?"구조 템플릿 · "+variantCount+"개 원문":"",uses,activation}.Where(x=>!string.IsNullOrEmpty(x));string prefix=string.Join(" · ",meta);return (prefix.Length>0?"["+prefix+"] ":"")+text;}}
+  public string Search {get{return Display+" "+(searchText??"");}}
  }
  public class PotentialParts {
   public List<PotentialPart> triggers=new List<PotentialPart>(),effects=new List<PotentialPart>();
