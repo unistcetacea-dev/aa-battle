@@ -12,6 +12,8 @@ Windows PowerShell에서 다음 명령을 실행합니다.
 
 결과물은 `outputs/desktop/AABattle.exe`와 `AABattleDataEditor.exe`입니다. 출력 폴더는 Git에서 제외되며 EXE에는 HeadKasen과 Pokemon BW 폰트, 시트 참조 데이터가 포함됩니다.
 
+빌드 없이 실행하려면 저장소의 `release/windows/AABattle.exe`를 내려받습니다. 팀 데이터 편집용 `AABattleDataEditor.exe`도 같은 폴더에 있습니다.
+
 검증:
 
 ```powershell
