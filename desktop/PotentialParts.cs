@@ -36,6 +36,7 @@ namespace AABattle {
   }
   public static bool TryExclusionReason(string text,out string reason){
    string value=Clean(text);reason="";
+   if(value.Contains("고확률")){reason="지원하지 않는 확률 표현";return true;}
    if(Regex.IsMatch(value,@"^[\(（].*[\)）]$")){reason="독립 주석";return true;}
    if(value=="PT포텐셜"){reason="분류 표기";return true;}
    if(Regex.IsMatch(value,@"(대회.*참가할 수 없다|대회.*밖에 참가할 수 없다|PT.*(참가|엔트리|소속).*수 (있|없)다|PT.*(참가|엔트리|소속).*수가 없다|함께 엔트리할 수 없다|배틀에 엔트리할 수 있다|트레이너.*PT.*(참가|소속)|트레이너에게 소속될 수 없다|필요통솔을)")||Regex.IsMatch(value,@"^이 (PT는|포텐셜은 PT의|퍼텐셜은 PT의).*(사용|발동)")){reason="편성·공유 규칙";return true;}

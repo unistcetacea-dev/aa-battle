@@ -8,14 +8,14 @@ using System.Windows.Forms;
 namespace AABattle {
  public class EffectImplementationEntry {public string status,family,effect,interpretation,implementation,sources;}
  public static class EffectImplementationDex {
-  static readonly string[] ChanceWords={"드물게","저확률","중확률","고확률","확률로"};
   static readonly HashSet<string> DirectiveNames=new HashSet<string>(EditorTemplate.Orders(false).Concat(EditorTemplate.Orders(true)).Concat(EditorTemplate.ExtendedOrders(false)).Concat(EditorTemplate.ExtendedOrders(true)).Select(x=>x.name));
   public static List<EffectImplementationEntry> Entries(){return PotentialParts.Build(PotentialParts.StandardEntries()).effects.Where(x=>!x.excludedFromImplementation).Select(Analyze).ToList();}
   public static EffectImplementationEntry Analyze(PotentialPart part){
    string value=part.text??"",family=Family(value),status="미구현",implementation="포텐셜 원문은 배틀 데이터에 전달되지만 효과 실행기에는 연결되지 않았습니다. 현재는 배틀 로그와 상태 창을 보며 수동 판정합니다.";
    int directiveCount=part.names.Count(DirectiveNames.Contains);
    if(directiveCount>0){status=directiveCount==part.names.Count?"자동 구현":"일부 자동 구현";family="트레이너 4식·지령";implementation="이 효과가 트레이너 지령으로 사용될 때 Engine.Resolve가 선언 횟수와 행동 조건을 확인합니다. 4식은 회피·필중·버티기·후공 교대를 처리하고, Engine.ApplyOrder가 능력 랭크·1턴 배율·회복을 적용합니다. 같은 문장을 일반 포켓몬 포텐셜에서 사용하면 아직 자동 실행되지 않습니다.";}
-   else if(ChanceWords.Any(value.Contains)){status="기준 질문 필요";implementation="발동 시점과 효과 문장은 보존되어 있지만 확률 수치와 판정 순서가 정해지지 않아 자동 실행하지 않습니다.";}
+   else if(PotentialProbability.Rate(value).HasValue){status="구현 규칙 준비";family="확률 발동";implementation=PotentialProbability.Help+" 포켓몬 포텐셜 실행기가 연결되면 이 판정기를 호출합니다.";}
+   else if(value.Contains("확률로")){status="기준 질문 필요";family="확률 발동";implementation="확률 수치가 적혀 있지 않아 자동 판정할 수 없습니다.";}
    else if(family!="기타 원문"){status="구현 규칙 준비";implementation=Prepared(family);}
    string interpretation="문장 분류: "+family+". "+Interpret(value)+(part.protectedTemplate?" 기본 템플릿이므로 정리·치환하지 않습니다.":"");
    return new EffectImplementationEntry{status=status,family=family,effect=value,interpretation=interpretation,implementation=implementation,sources=string.Join(" / ",part.sources.Take(4))+(part.sources.Count>4?" 외 "+(part.sources.Count-4)+"곳":"")};
@@ -53,7 +53,7 @@ namespace AABattle {
     default:return "대미지 계산의 위력·명중·급소·최종 대미지 단계 중 어느 위치에 적용할지 구조화할 예정입니다. 문장별 계산 단계 확인이 필요합니다.";
    }
   }
-  static string Interpret(string value){var rate=Regex.Match(value,@"([0-9]+(?:\.[0-9]+)?)배");var rank=Regex.Match(value,@"([0-9]+)랭크");return (rate.Success?"인식 배율 "+rate.Groups[1].Value+"배. ":"")+(rank.Success?"인식 랭크 "+rank.Groups[1].Value+". ":"")+(ChanceWords.Any(value.Contains)?"확률 표현은 수치 기준 미정. ":"")+"원문을 실행 규칙으로 바꾸기 전 검토 결과입니다.";}
+  static string Interpret(string value){var rate=Regex.Match(value,@"([0-9]+(?:\.[0-9]+)?)배");var rank=Regex.Match(value,@"([0-9]+)랭크");var chance=PotentialProbability.Rate(value);return (rate.Success?"인식 배율 "+rate.Groups[1].Value+"배. ":"")+(rank.Success?"인식 랭크 "+rank.Groups[1].Value+". ":"")+(chance.HasValue?"인식 발동률 "+(int)(chance.Value*100)+"%. ":"")+"원문을 실행 규칙으로 바꾸기 전 검토 결과입니다.";}
   public static Control CreateView(){
    var entries=Entries();var host=new Panel{Dock=DockStyle.Fill,BackColor=Color.White};var status=Theme.Combo(new[]{"전체"}.Concat(entries.Select(x=>x.status).Distinct()),"전체");status.Dock=DockStyle.Top;var search=new PixelSearchBox{Dock=DockStyle.Top};var count=Theme.Label("",30);count.Dock=DockStyle.Top;
    var grid=new PixelDexGrid{Dock=DockStyle.Fill,ReadOnly=true,AllowUserToAddRows=false,AllowUserToDeleteRows=false,AllowUserToResizeRows=false,RowHeadersVisible=false,MultiSelect=false,SelectionMode=DataGridViewSelectionMode.FullRowSelect,BackgroundColor=Color.White,BorderStyle=BorderStyle.None,EnableHeadersVisualStyles=false,ColumnHeadersHeight=34,DefaultCellStyle=new DataGridViewCellStyle{Font=new Font("맑은 고딕",9),SelectionBackColor=Color.Black,SelectionForeColor=Color.White},ColumnHeadersDefaultCellStyle=new DataGridViewCellStyle{BackColor=Color.Black,ForeColor=Color.White,Font=Theme.UI(8)}};
@@ -62,7 +62,7 @@ namespace AABattle {
    Action refresh=()=>{string q=search.Text.Trim();var shown=entries.Where(x=>(status.Text=="전체"||x.status==status.Text)&&(x.effect+x.family+x.status+x.interpretation+x.implementation+x.sources).IndexOf(q,StringComparison.OrdinalIgnoreCase)>=0).ToList();grid.Rows.Clear();foreach(var x in shown){int i=grid.Rows.Add(x.status,x.family,x.effect);grid.Rows[i].Tag=x;}count.Text="구현 대상 "+entries.Count+"개 · 현재 표시 "+shown.Count+"개 · "+string.Join(" / ",entries.GroupBy(x=>x.status).Select(x=>x.Key+" "+x.Count()));if(grid.RowCount>0)grid.CurrentCell=grid.Rows[0].Cells[0];show();};
    grid.SelectionChanged+=(s,e)=>show();status.SelectedIndexChanged+=(s,e)=>refresh();search.TextChanged+=(s,e)=>refresh();host.Controls.Add(new PixelGridHost(grid));host.Controls.Add(detail);host.Controls.Add(search);host.Controls.Add(status);host.Controls.Add(count);host.Controls[0].BringToFront();refresh();return host;
   }
-  public static void Test(){var all=Entries();if(all.Count!=3124)throw new Exception("Implementation dex effect count mismatch");if(!all.Any(x=>x.status=="자동 구현"&&x.family=="트레이너 4식·지령")||!all.Any(x=>x.status=="기준 질문 필요")||!all.Any(x=>x.status=="구현 규칙 준비")||!all.Any(x=>x.status=="미구현"))throw new Exception("Implementation dex statuses missing");}
+  public static void Test(){PotentialProbability.Test();var all=Entries();if(all.Count!=3124)throw new Exception("Implementation dex effect count mismatch");if(!all.Any(x=>x.status=="자동 구현"&&x.family=="트레이너 4식·지령")||!all.Any(x=>x.family=="확률 발동"&&x.status=="구현 규칙 준비")||!all.Any(x=>x.status=="구현 규칙 준비")||!all.Any(x=>x.status=="미구현"))throw new Exception("Implementation dex statuses missing");}
  }
  partial class DataEditorForm {void BuildEffectImplementationTab(){var page=Page("효과 구현 방식");page.Controls.Add(EffectImplementationDex.CreateView());}}
 }
