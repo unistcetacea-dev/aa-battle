@@ -27,10 +27,10 @@ namespace AABattle {
   public static string Text(string name){return System.Text.Encoding.UTF8.GetString(Bytes(name));}
  }
  public class Fighter {
-  public Pokemon Data; public string AA="", Status="정상"; public int HP; public int[] Stages=new int[6]; public int AccuracyStage,EvasionStage; public double AccuracyMultiplier=1,EvasionMultiplier=1; public double[] Multipliers={1,1,1,1,1,1};
+  public Pokemon Data; public string AA="", Status="정상"; public int HP; public int[] Stages=new int[6]; public int AccuracyStage,EvasionStage,CriticalStage; public double AccuracyMultiplier=1,EvasionMultiplier=1; public double[] Multipliers={1,1,1,1,1,1};
   public string[] Moves; public int Selected; public ConditionState Conditions=new ConditionState();
   public Fighter(Pokemon p){Data=ClonePokemon(p);Moves=(p.moves??new string[0]).Take(4).ToArray();HP=Engine.Stats(this,p.level,new Rules())[0];}
-  public Fighter Copy(){var f=new Fighter(Data);f.AA=AA;f.Status=Status;f.HP=HP;f.Stages=(int[])Stages.Clone();f.AccuracyStage=AccuracyStage;f.EvasionStage=EvasionStage;f.AccuracyMultiplier=AccuracyMultiplier;f.EvasionMultiplier=EvasionMultiplier;f.Multipliers=(double[])Multipliers.Clone();f.Moves=(string[])Moves.Clone();f.Selected=Selected;f.Conditions=Conditions.Copy();return f;}
+  public Fighter Copy(){var f=new Fighter(Data);f.AA=AA;f.Status=Status;f.HP=HP;f.Stages=(int[])Stages.Clone();f.AccuracyStage=AccuracyStage;f.EvasionStage=EvasionStage;f.CriticalStage=CriticalStage;f.AccuracyMultiplier=AccuracyMultiplier;f.EvasionMultiplier=EvasionMultiplier;f.Multipliers=(double[])Multipliers.Clone();f.Moves=(string[])Moves.Clone();f.Selected=Selected;f.Conditions=Conditions.Copy();return f;}
   static Pokemon ClonePokemon(Pokemon p){return new Pokemon{id=p.id,name=p.name,team=p.team,ability=p.ability,item=p.item,level=p.level,types=(string[])p.types.Clone(),@base=(int[])p.@base.Clone(),iv=(int[])p.iv.Clone(),moves=(string[])p.moves.Clone(),potentials=p.potentials};}
  }
  public class SideFieldState {public bool StealthRock,StickyWeb;public int Spikes,ToxicSpikes;public SideFieldState Copy(){return (SideFieldState)MemberwiseClone();}public void Clear(){StealthRock=StickyWeb=false;Spikes=ToxicSpikes=0;}public bool Any(){return StealthRock||StickyWeb||Spikes>0||ToxicSpikes>0;}}

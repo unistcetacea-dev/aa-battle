@@ -14,6 +14,8 @@ namespace AABattle {
   static readonly Regex RankDown=new Regex("^"+RankTarget+@"(?:을|를|이|가)\s*(?:(?<rank>[123])\s*랭크\s*)?(?<degree>매우 크게|크게)?\s*(?:내린다|떨어진다|저하한다|하락한다|저하시킨다)$",RegexOptions.Compiled);
   public static string Normalize(string text){
    string clean=PotentialParts.Clean(text);
+   clean=Regex.Replace(clean,@"임의의\s*능력치","임의의 능력");
+   clean=Regex.Replace(clean,@"랜덤한\s*능력(?!치)","랜덤한 능력치");
    var rank=RankUp.Match(clean);if(!rank.Success)rank=RankDown.Match(clean);if(rank.Success&&!rank.Groups["target"].Value.Contains("까지")){int amount=rank.Groups["rank"].Success?int.Parse(rank.Groups["rank"].Value):rank.Groups["degree"].Value=="매우 크게"?3:rank.Groups["degree"].Value=="크게"?2:1;return CanonicalRank(rank.Groups["target"].Value,RankDown.IsMatch(clean)?-amount:amount);}return Scalar.Replace(clean,m=>Canonical(m.Groups["target"].Value,m.Groups["action"].Value,double.Parse(m.Groups["rate"].Value,System.Globalization.CultureInfo.InvariantCulture)));
   }
   public static string NormalizeLines(string text){return string.Join("\r\n",(text??"").Replace("\r","").Split('\n').Select(Normalize).Where(x=>x.Length>0));}
@@ -30,7 +32,15 @@ namespace AABattle {
    if(Normalize("자신의 「공격」을 1랭크 올린다.").Contains("강화"))throw new Exception("Rank effect must stay distinct");
    if(Normalize("자신의 「공격」을 상승시킨다")!="자신의 「공격」이 오른다."||Normalize("자신의 「공격」을 크게 올린다")!="자신의 「공격」이 크게 오른다."||Normalize("자신의 「공격」을 3랭크 올린다")!="자신의 「공격」이 매우 크게 오른다.")throw new Exception("Rank wording normalization failed");
    if(Normalize("상대의 「방어」가 떨어진다")!="상대의 「방어」를 내린다."||Normalize("상대의 「방어」를 크게 내린다")!="상대의 「방어」를 크게 내린다."||Normalize("상대의 「방어」를 3랭크 내린다")!="상대의 「방어」를 매우 크게 내린다.")throw new Exception("Rank decrease normalization failed");
+   if(Normalize("자신의 임의의 능력치를 올린다")!="자신의 임의의 능력이 오른다."||!Normalize("자신의 랜덤한 능력을 올린다").Contains("랜덤한 능력치"))throw new Exception("Stat choice wording normalization failed");
   }
+ }
+
+ public static class PotentialStatRules {
+  public static readonly string[] Arbitrary={"공격","방어","특공","특방","속도","명중","회피","C"};
+  public static readonly string[] Random={"공격","방어","특공","특방","속도"};
+  public static string ChooseRandom(Func<double> random){if(random==null)throw new ArgumentNullException("random");double roll=Math.Max(0,Math.Min(.999999999,random()));return Random[(int)(roll*Random.Length)];}
+  public static void Test(){if(Arbitrary.Length!=8||Arbitrary.Last()!="C"||Random.Length!=5||Random.Contains("명중")||ChooseRandom(()=>0)!="공격"||ChooseRandom(()=>.999)!="속도")throw new Exception("Potential stat selection rules failed");}
  }
 
  public static class FractionalHpRule {
@@ -47,7 +57,7 @@ namespace AABattle {
   public static List<PotentialPart> Collapse(IEnumerable<PotentialPart> source){var input=source.Where(x=>!x.excludedFromImplementation).ToList();var result=new List<PotentialPart>();var scalar=input.Where(x=>!x.protectedTemplate&&IsScalar(x.text)).ToList();var fraction=input.Where(x=>!x.protectedTemplate&&TryFractionOnly(x.text)).ToList();var rank=input.Where(x=>!x.protectedTemplate&&IsRank(x.text)).ToList();var grouped=new HashSet<PotentialPart>(scalar.Concat(fraction).Concat(rank));result.AddRange(input.Where(x=>!grouped.Contains(x)));if(scalar.Count>0)result.Add(Template("scalar","수치 배율 — 대상 / 강화·약화 / 배율을 선택",scalar));if(fraction.Count>0)result.Add(Template("fraction","최대 HP의 1/N — 대상 / 회복·대미지 / 빈사 여부를 선택",fraction));if(rank.Count>0)result.Add(Template("rank","능력 랭크 변화 — 대상 / 상승·하락 / 1·2·3랭크를 선택",rank));return result.OrderBy(x=>x.text).ToList();}
   static bool TryFractionOnly(string text){string target,action;int n;return TryFraction(text,out target,out action,out n);}
   static PotentialPart Template(string kind,string text,List<PotentialPart> variants){var p=new PotentialPart{id="structure-"+kind,key="structure-"+kind,text=text,structureKind=kind,variantCount=variants.Count,searchText=string.Join(" ",variants.Select(x=>x.text))};foreach(var x in variants){foreach(var n in x.names)if(!p.names.Contains(n))p.names.Add(n);foreach(var s in x.sources)if(!p.sources.Contains(s))p.sources.Add(s);foreach(var r in x.raws)if(!p.raws.Contains(r))p.raws.Add(r);}return p;}
-  public static void Test(){string target,action;int n;if(!TryFraction("자신의 체력을 1/4 회복한다",out target,out action,out n)||target!="자신"||action!="회복"||n!=4)throw new Exception("Fraction structure failed");var collapsed=Collapse(PotentialParts.Build(PotentialParts.StandardEntries()).effects);if(!collapsed.Any(x=>x.structureKind=="scalar")||!collapsed.Any(x=>x.structureKind=="fraction")||!collapsed.Any(x=>x.structureKind=="rank"))throw new Exception("Effect structure collapse failed");FractionalHpRule.Test();}
+  public static void Test(){string target,action;int n;if(!TryFraction("자신의 체력을 1/4 회복한다",out target,out action,out n)||target!="자신"||action!="회복"||n!=4)throw new Exception("Fraction structure failed");var collapsed=Collapse(PotentialParts.Build(PotentialParts.StandardEntries()).effects);if(!collapsed.Any(x=>x.structureKind=="scalar")||!collapsed.Any(x=>x.structureKind=="fraction")||!collapsed.Any(x=>x.structureKind=="rank"))throw new Exception("Effect structure collapse failed");FractionalHpRule.Test();PotentialStatRules.Test();}
  }
 
  partial class DataEditorForm {
@@ -55,7 +65,7 @@ namespace AABattle {
   Control BuildInlineEffectBuilder(){
    var panel=new Panel{Dock=DockStyle.Bottom,Height=278,Padding=new Padding(2)};var table=Theme.Table();table.Dock=DockStyle.Fill;panel.Controls.Add(table);
    effectKind=Theme.Combo(new[]{"선택 원문 그대로","수치 배율","최대 HP의 1/N","능력 랭크 변화"},"선택 원문 그대로");effectKind.DrawMode=DrawMode.Normal;
-   effectTarget=Theme.Combo(new[]{"자신","상대","아군 1체","아군 전체","자신의 「공격」","자신의 「방어」","자신의 「특공」","자신의 「특방」","자신의 「속도」","자신의 「명중」","자신의 「회피」","자신의 전능력치","자신의 기술의 위력","자신이 주는 대미지","자신이 받는 대미지","상대의 기술의 위력","상대가 주는 대미지","상대가 받는 대미지"},"자신의 기술의 위력");effectTarget.DropDownStyle=ComboBoxStyle.DropDown;
+   effectTarget=Theme.Combo(new[]{"자신","상대","아군 1체","아군 전체","자신의 「공격」","자신의 「방어」","자신의 「특공」","자신의 「특방」","자신의 「속도」","자신의 「명중」","자신의 「회피」","자신의 「C」","자신의 임의의 능력","자신의 랜덤한 능력치","자신의 전능력치","상대의 「공격」","상대의 「방어」","상대의 「특공」","상대의 「특방」","상대의 「속도」","상대의 「명중」","상대의 「회피」","상대의 「C」","상대의 임의의 능력","상대의 랜덤한 능력치","자신의 기술의 위력","자신이 주는 대미지","자신이 받는 대미지","상대의 기술의 위력","상대가 주는 대미지","상대가 받는 대미지"},"자신의 기술의 위력");effectTarget.DropDownStyle=ComboBoxStyle.DropDown;
    effectAction=Theme.Combo(new[]{"강화","약화","회복","대미지","상승","하락"},"강화");effectAction.DrawMode=DrawMode.Normal;effectRate=new NumericUpDown{DecimalPlaces=2,Minimum=.01M,Maximum=10M,Increment=.05M,Value=1.5M,Dock=DockStyle.Fill,Font=new Font("맑은 고딕",10),BorderStyle=BorderStyle.FixedSingle};effectDenominator=new NumericUpDown{Minimum=1,Maximum=999,Value=4,Dock=DockStyle.Fill,Font=new Font("맑은 고딕",10),BorderStyle=BorderStyle.FixedSingle};effectCanFaint=new CheckBox{Text="이 대미지로 빈사 가능",Checked=true,Dock=DockStyle.Fill,Font=Theme.UI(8)};effectPreview=new PixelText{Dock=DockStyle.Fill};
    Theme.Row(table,"구조",effectKind);Theme.Row(table,"대상",effectTarget);Theme.Row(table,"종류",effectAction);Theme.Row(table,"배율 / N·랭크",Pair(effectRate,effectDenominator));Theme.Row(table,"빈사",effectCanFaint);Theme.Row(table,"입력될 효과",effectPreview);
    EventHandler refresh=(s,e)=>RefreshStructuredEffect();effectKind.SelectedIndexChanged+=refresh;effectTarget.TextChanged+=refresh;effectAction.SelectedIndexChanged+=refresh;effectRate.ValueChanged+=refresh;effectDenominator.ValueChanged+=refresh;effectCanFaint.CheckedChanged+=refresh;RefreshStructuredEffect();return panel;

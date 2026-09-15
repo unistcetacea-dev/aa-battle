@@ -31,7 +31,7 @@ namespace AABattle {
    PotentialLibrary.Split("「가열」상태가 된 T 종료시, 아군과 교대한다.",out trigger,out effect);Check(trigger.EndsWith("종료시")&&effect=="아군과 교대한다.","compact turn timing");
    PotentialParts.Test();EffectStructures.Test();EffectImplementationDex.Test();var data=PotentialLibrary.Load();Check(data.Count==4151,"all embedded definitions");Check(data.Any(x=>x.record.name=="선의 선"&&x.record.trigger.Length>0),"research triggers");Check(data.All(x=>x.source.Length>0&&x.urls.Length>0&&x.record.raw.Length>0),"provenance and raw");
    var order=EditorTemplate.BaseOrders().First();Check(order.name=="물러나！"&&order.trigger.Length>0&&order.effect.Contains("한 번"),"user directive semantics");
-   var arbitrary=EditorTemplate.Parse("『검사』… 필드를 떠날 때, 아군의 임의의 능력치를 올린다.","역할");Check(arbitrary.effect.Contains("임의의")&&arbitrary.activation=="","preserve optional target wording");
+   var arbitrary=EditorTemplate.Parse("『검사』… 필드를 떠날 때, 아군의 임의의 능력을 올린다.","역할");Check(arbitrary.effect.Contains("임의의 능력")&&arbitrary.activation=="","preserve optional target wording");
   }
  }
  public static class PotentialLibrary {

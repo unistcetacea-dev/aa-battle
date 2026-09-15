@@ -21,7 +21,7 @@ namespace AABattle {
    return new EffectImplementationEntry{status=status,family=family,effect=value,interpretation=interpretation,implementation=implementation,sources=string.Join(" / ",part.sources.Take(4))+(part.sources.Count>4?" 외 "+(part.sources.Count-4)+"곳":"")};
   }
   static string Family(string value){
-   if(Regex.IsMatch(value,@"(랭크|능력치).*(올린|오른|상승|내린|저하)|전능력치가 오른다"))return "능력 랭크 변화";
+   if(EffectStructures.IsRank(value)||Regex.IsMatch(value,@"(랭크|능력치).*(올린|오른|상승|내린|저하)|전능력치가 오른다"))return "능력 랭크 변화";
    if(Regex.IsMatch(value,@"(강화|약화|완화|반감|배가|[0-9.]+배)"))return "수치 배율 변화";
    if(Regex.IsMatch(value,@"(체력|HP).*(회복|감소)|회복한다"))return "체력 회복·소모";
    if(Regex.IsMatch(value,@"(상태이상|상태변화|화상|독|맹독|마비|잠듦|얼음|동상|혼란|풀죽음).*(한다|된다|해제|회복|무효)"))return "상태이상·상태변화";
@@ -38,7 +38,7 @@ namespace AABattle {
   }
   static string Prepared(string family){
    switch(family){
-    case "능력 랭크 변화":return "대상, 능력 종류, 증감 랭크를 구조화한 뒤 Fighter.Stages 또는 AccuracyStage/EvasionStage에 연결할 예정입니다. 아직 포텐셜에서 자동 적용되지는 않습니다.";
+    case "능력 랭크 변화":return "대상, 능력 종류, 증감 랭크를 구조화한 뒤 Fighter.Stages, AccuracyStage, EvasionStage, CriticalStage에 연결할 예정입니다. 임의의 능력은 공격·방어·특공·특방·속도·명중·회피·C 중 사용자가 선택하고, 랜덤한 능력치는 공격·방어·특공·특방·속도 중 자동 선택합니다. 아직 포텐셜에서 자동 적용되지는 않습니다.";
     case "수치 배율 변화":return "대상 수치와 괄호 안 배율을 구조화한 뒤 Fighter.Multipliers 또는 대미지 계산 배율에 곱하도록 준비한 분류입니다. 적용 기간과 중첩 기준 확정이 필요합니다.";
     case "체력 회복·소모":return "최대 HP/N은 소수점을 버리고 최소 1로 계산합니다. 회복은 최대 HP를 넘지 않고, 대미지는 기본적으로 빈사가 가능하며 ‘빈사로 할 수 없다’가 지정된 경우만 HP 1에서 멈춥니다. 포텐셜 실행기에서 Mechanics.Heal/Hurt에 연결할 예정입니다.";
     case "상태이상·상태변화":return "상태 이름과 부여·해제 대상을 구조화해 Mechanics.ApplyStatus와 ConditionState에 연결할 예정입니다. 기존 타입·특성 면역 판정은 재사용합니다.";
