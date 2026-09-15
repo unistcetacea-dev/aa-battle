@@ -84,7 +84,7 @@ namespace AABattle {
     if(form.Length>0){if(states[i].UsedForms.Contains(form))throw new Exception(form+"은 이미 사용했습니다.");states[i].UsedForms.Add(form);result.Log.Add("TRAINER "+(i+1)+" — 『"+form+"』 선언!");}
     if(order.Length>0){if(states[i].UsedOrders.Contains(order))throw new Exception(order+"은 이미 사용했습니다.");states[i].UsedOrders.Add(order);result.Log.Add("TRAINER "+(i+1)+" — 『"+order+"』 지령!");deployed[i]=ApplyOrder(f[i],f[1-i],order,r,result.Log);if(deployed[i]==-2)c.Move=null;}
    }
-   for(int i=0;i<2;i++)if(commands[i].IsSwitch&&!((commands[i].Form??"").Contains("돌아와"))){RuntimeTriggers.Switch(f[i],SwitchReason.Normal,result.Log.Add);f[i]=commands[i].SwitchIn.Copy();result.Fighters=f;result.Switched[i]=true;Mechanics.EnterField(db,f[i],f[1-i],i,r,rng,result.Log);EntryTriggers.Enter(f[i],EntryReason.Switch,result.Log.Add);result.Log.Add("TRAINER "+(i+1)+"의 통상 교대 — "+f[i].Data.name+" 등장!");}
+   for(int i=0;i<2;i++)if(commands[i].IsSwitch&&!((commands[i].Form??"").Contains("돌아와"))){RuntimeTriggers.Switch(f[i],SwitchReason.Normal,result.Log.Add);f[i]=commands[i].SwitchIn.Copy();result.Fighters=f;result.Switched[i]=true;Mechanics.EnterField(db,f[i],f[1-i],i,r,rng,result.Log);EntryTriggers.Enter(f[i],EntryReason.NormalSwitch,result.Log.Add);result.Log.Add("TRAINER "+(i+1)+"의 통상 교대 — "+f[i].Data.name+" 등장!");}
    var movers=Enumerable.Range(0,2).Where(i=>!commands[i].IsSwitch&&commands[i].Move!=null).ToArray();
    if(movers.Length==2){int delta=Mechanics.Priority(f[0],commands[0].Move).CompareTo(Mechanics.Priority(f[1],commands[1].Move));if(delta==0){delta=Effective(f[0],f[1],5,r).CompareTo(Effective(f[1],f[0],5,r));if(r.TrickRoom>0)delta=-delta;}int first=delta>0?0:delta<0?1:rng()<.5?0:1;movers=new[]{first,1-first};}
    foreach(int i in movers){var a=f[i];var b=f[1-i];var m=commands[i].Move;if(a.HP<=0)continue;
@@ -93,7 +93,7 @@ namespace AABattle {
     bool target=Mechanics.TargetsOpponent(m);string defendingForm=commands[1-i].Form??"";
     if(target&&((defendingForm.Contains("물러나")&&m.category=="물리")||(defendingForm.Contains("피해라")&&m.category=="특수"))){result.Log.Add(b.Data.name+"은 『"+defendingForm+"』로 공격을 회피했다!");continue;}
     string reason=target?Mechanics.Block(db,a,b,m,r):"";
-    if(reason.Length>0){result.Log.Add(a.Data.name+"의 "+m.name+" — "+reason);Mechanics.Absorb(a,b,reason,r,result.Log);continue;}
+    if(reason.Length>0){result.Log.Add(a.Data.name+"의 "+m.name+" — "+reason);Mechanics.Absorb(a,b,reason,r,result.Log);RuntimeTriggers.Nullified(b,a,m,reason,result.Log.Add);continue;}
     if(target&&b.Conditions.Substitute>0&&m.category=="변화"&&!Mechanics.BypassSub(a,m)){result.Log.Add("대타가 "+m.name+"을 막았다.");continue;}
     bool sureHit=(commands[i].Form??"").Contains("맞춰라");if(!sureHit&&rng()*100>=Mechanics.Accuracy(a,b,m,r)){result.Log.Add(a.Data.name+"의 "+m.name+"! 그러나 빗나갔다!");continue;}
     if(m.category=="변화"){Mechanics.StatusMove(a,b,m,r,rng,result.Log,i);continue;}
@@ -104,7 +104,7 @@ namespace AABattle {
     if(damage>0)Mechanics.AfterHit(a,b,m,r,rng,result.Log,sub,i);
     RuntimeTriggers.Received(b,a,m,bodyDamage,result.Log.Add);
    }
-   for(int i=0;i<2;i++)if(commands[i].IsSwitch&&(commands[i].Form??"").Contains("돌아와")){if(f[i].HP>0){RuntimeTriggers.Switch(f[i],SwitchReason.Return,result.Log.Add);f[i]=commands[i].SwitchIn.Copy();result.Fighters=f;result.Switched[i]=true;Mechanics.EnterField(db,f[i],f[1-i],i,r,rng,result.Log);EntryTriggers.Enter(f[i],EntryReason.Switch,result.Log.Add);result.Log.Add("『돌아와!』 — 상대의 행동 후 "+f[i].Data.name+" 등장!");}else result.Log.Add("『돌아와!』 — 교대 전에 포켓몬이 쓰러졌다.");}
+   for(int i=0;i<2;i++)if(commands[i].IsSwitch&&(commands[i].Form??"").Contains("돌아와")){if(f[i].HP>0){RuntimeTriggers.Switch(f[i],SwitchReason.Return,result.Log.Add);f[i]=commands[i].SwitchIn.Copy();result.Fighters=f;result.Switched[i]=true;Mechanics.EnterField(db,f[i],f[1-i],i,r,rng,result.Log);EntryTriggers.Enter(f[i],EntryReason.Return,result.Log.Add);result.Log.Add("『돌아와!』 — 상대의 행동 후 "+f[i].Data.name+" 등장!");}else result.Log.Add("『돌아와!』 — 교대 전에 포켓몬이 쓰러졌다.");}
    Mechanics.EndTurn(f,r,result.Log,rng);for(int i=0;i<2;i++)if(!result.Switched[i]){if(deployed[i]>=0)f[i].Multipliers[deployed[i]]/=2;else if(deployed[i]==-3)f[i].AccuracyMultiplier/=2;else if(deployed[i]==-4)f[i].EvasionMultiplier/=2;}RuntimeTriggers.TurnEnd(f,r,rng,result.Log.Add);return result;
   }
   static int ApplyOrder(Fighter a,Fighter b,string order,Rules r,List<string> log){

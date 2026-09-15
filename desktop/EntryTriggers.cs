@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace AABattle {
- public enum EntryReason {Lead,Switch,Replacement,Forced}
+ public enum EntryReason {Lead,NormalSwitch,Return,Pivot,Potential,Replacement,Forced}
 
  public static class TriggerStructures {
   public const string AlwaysLabel="X";
@@ -15,6 +15,12 @@ namespace AABattle {
   public const string FieldLabel="장소에 있는 한";
   public const string SwitchLabel="아군과 임의교대할 때";
   public const string ReceivedLabel="상대의 공격을 받았을 때";
+  public const string LeaveLabel="장소를 떠날 때";
+  public const string LeadEntryLabel="선발로 장소에 나올 때";
+  public const string ReplacementEntryLabel="죽어내밀기로 장소에 나올 때";
+  public const string VoluntaryEntryLabel="임의교대로 장소에 나올 때";
+  public const string LeadOrReplacementEntryLabel="선발 또는 죽어내밀기로 장소에 나올 때";
+  public const string ReceivedOrNullifiedLabel="상대의 공격을 받았거나 무효화했을 때";
 
   public static string NormalizeLines(string text){return string.Join("\r\n",(text??"").Split(new[]{(char)13,(char)10},StringSplitOptions.RemoveEmptyEntries).Select(Normalize).Distinct());}
   public static string Normalize(string text){
@@ -27,11 +33,23 @@ namespace AABattle {
    if(Regex.IsMatch(key,@"^(?:자신이)?(?:필드|장소)에(?:있는한|있을때)$"))return FieldLabel;
    if(Regex.IsMatch(key,@"^(?:자동)?아군과(?:임의)?교대할때$"))return SwitchLabel;
    if(Regex.IsMatch(key,@"^(?:자동)?상대의공격을(?:받았을때|받으면)$"))return ReceivedLabel;
+   if(Regex.IsMatch(key,@"^(?:필드|장소)를떠날때$"))return LeaveLabel;
+   if(Regex.IsMatch(key,@"^선발로(?:필드|장소)에(?:나올때|나왔을때|나오면)$"))return LeadEntryLabel;
+   if(Regex.IsMatch(key,@"^[「『]?(?:죽어내밀기)[」』]?로(?:필드|장소)?에?(?:나올때|나왔을때|나오면)$"))return ReplacementEntryLabel;
+   if(Regex.IsMatch(key,@"^(?:임의교대로|아군과교대해)(?:필드|장소)에(?:나올때|나왔을때|나오면)$"))return VoluntaryEntryLabel;
+   if(Regex.IsMatch(key,@"^(?:선발\(죽어내밀기\)|[「『]\(선발\)죽어내밀기[」』])로(?:필드|장소)에(?:나올때|나왔을때|나오면)$"))return LeadOrReplacementEntryLabel;
+   if(Regex.IsMatch(key,@"^상대의공격을(?:받았을|받으면)\((?:무효화했을|무효화하면|무효화)\)(?:때)?$"))return ReceivedOrNullifiedLabel;
+   string parsed;if(TryOpponentType(value,out parsed))return OpponentType(parsed);string aptitude,rank;if(TryTrainerAptitude(value,out aptitude,out rank))return TrainerAptitude(aptitude,rank);
    value=Regex.Replace(value,@"(?:필드|장소)에\s*(?:나왔을\s*때(?:에)?|나오면|나온\s*때|나올\s*때|나와)$",EntryLabel);
    value=value.Replace("쓰러트렸을 때","쓰러뜨렸을 때");
    return Regex.Replace(value,@"교대해서\s*","교대해 ");
   }
   public static bool IsAlways(string trigger){return Normalize(trigger)==AlwaysLabel;}
+  public static string OpponentType(string type){return "적진에 「"+PotentialParts.Clean(type)+"」 포켓몬이 있을 때";}
+  public static bool TryOpponentType(string text,out string type){var match=Regex.Match(PotentialParts.Clean(text),@"^적진에\s*「(?<type>[^」]+)」\s*(?:타입\s*)?포켓몬이\s*있을\s*때$");type=match.Success?match.Groups["type"].Value.Trim():"";return match.Success&&type.Length>0;}
+  public static string TrainerAptitude(string aptitude,string rank){return "트레이너가 「"+PotentialParts.Clean(aptitude)+":"+PotentialParts.Clean(rank).TrimEnd('-','+')+"」 이상일 때";}
+  public static bool TryTrainerAptitude(string text,out string aptitude,out string rank){var match=Regex.Match(PotentialParts.Clean(text),@"^트레이너가\s*「(?<aptitude>지시|육성|통솔|능력)\s*:\s*(?<rank>[A-Za-z]+)[-+]?」\s*이상일\s*때$");aptitude=match.Success?match.Groups["aptitude"].Value:"";rank=match.Success?match.Groups["rank"].Value.ToUpperInvariant():"";return match.Success;}
+  public static bool RankBand(string actual,string required){var left=Regex.Match((actual??"").ToUpperInvariant(),@"[A-Z]+").Value;var right=Regex.Match((required??"").ToUpperInvariant(),@"[A-Z]+").Value;return left.Length>0&&left==right;}
   public static IEnumerable<string> Clauses(Potential potential){
    var clauses=(potential.triggers??new string[0]).SelectMany(x=>(x??"").Split(new[]{'\r','\n'},StringSplitOptions.RemoveEmptyEntries)).ToList();string condition,effect;PotentialLibrary.Split(potential.description??"",out condition,out effect);clauses.AddRange(condition.Split(new[]{'\r','\n'},StringSplitOptions.RemoveEmptyEntries));return clauses;
   }
@@ -52,6 +70,10 @@ namespace AABattle {
    foreach(var text in new[]{"필드에 있는 한","필드에 있을 때","장소에 있는 한"})if(Normalize(text)!=FieldLabel)throw new Exception("Field alias: "+text);
    foreach(var text in new[]{"아군과 교대할 때","아군과 임의 교대할 때","자동 아군과 교대할 때"})if(Normalize(text)!=SwitchLabel)throw new Exception("Switch alias: "+text);
    foreach(var text in new[]{"상대의 공격을 받았을 때","상대의 공격을 받으면","자동 상대의 공격을 받았을 때"})if(Normalize(text)!=ReceivedLabel)throw new Exception("Received alias: "+text);
+   if(Normalize("필드를 떠날 때")!=LeaveLabel||Normalize("장소를 떠날 때")!=LeaveLabel)throw new Exception("Leave alias");
+   if(Normalize("선발로 필드에 나오면")!=LeadEntryLabel||Normalize("「죽어내밀기」로 장소에 나올 때")!=ReplacementEntryLabel||Normalize("아군과 교대해 필드에 나올 때")!=VoluntaryEntryLabel||Normalize("선발(죽어내밀기)로 장소에 나올 때")!=LeadOrReplacementEntryLabel)throw new Exception("Entry method aliases");
+   if(Normalize("상대의 공격을 받으면(무효화하면)")!=ReceivedOrNullifiedLabel)throw new Exception("Received or nullified alias");
+   string type,aptitude,rank;if(!TryOpponentType("적진에 「불꽃」 포켓몬이 있을 때",out type)||type!="불꽃"||!TryTrainerAptitude("트레이너가 「통솔:A+」 이상일 때",out aptitude,out rank)||aptitude!="통솔"||rank!="A"||!RankBand("A-","A")||RankBand("AA","A"))throw new Exception("Parameterized trigger parsing");
    if(Normalize("「강철」포켓몬을 쓰러트렸을 때")!="「강철」포켓몬을 쓰러뜨렸을 때")throw new Exception("Typed defeat spelling");
    if(Normalize("×")!=AlwaysLabel||!IsAlways("x"))throw new Exception("Always trigger alias");
    if(Normalize("선발로 필드에 나오면")==EntryLabel||Normalize("상대가 필드에 나오면")==EntryLabel)throw new Exception("Entry specificity lost");
@@ -62,13 +84,16 @@ namespace AABattle {
   public const string Id="field.enter";
   public const string Label=TriggerStructures.EntryLabel;
   public static bool IsEntry(EntryReason reason){return reason!=EntryReason.Forced;}
+  public static string MethodLabel(EntryReason reason){if(reason==EntryReason.Lead)return TriggerStructures.LeadEntryLabel;if(reason==EntryReason.Replacement)return TriggerStructures.ReplacementEntryLabel;if(reason==EntryReason.NormalSwitch||reason==EntryReason.Return||reason==EntryReason.Pivot||reason==EntryReason.Potential)return TriggerStructures.VoluntaryEntryLabel;return "";}
   public static void Enter(Fighter fighter,EntryReason reason,Action<string> log){
    if(!IsEntry(reason))return;
    TriggerStructures.Fire(fighter,Label,fighter.Data.name+" · "+Label+" ["+reason+"]",log);
+   string method=MethodLabel(reason);if(method.Length>0&&TriggerStructures.Has(fighter,method))TriggerStructures.Fire(fighter,method,fighter.Data.name+" · "+method,log);if((reason==EntryReason.Lead||reason==EntryReason.Replacement)&&TriggerStructures.Has(fighter,TriggerStructures.LeadOrReplacementEntryLabel))TriggerStructures.Fire(fighter,TriggerStructures.LeadOrReplacementEntryLabel,fighter.Data.name+" · "+TriggerStructures.LeadOrReplacementEntryLabel,log);
   }
   public static void Test(){
    TriggerStructures.Test();
    foreach(EntryReason reason in Enum.GetValues(typeof(EntryReason))){int count=0;var pokemon=new Pokemon{name="검사",level=100,@base=new[]{100,100,100,100,100,100},iv=new int[6],types=new[]{"노말"},moves=new string[0],potentials=new[]{new Potential{name="등장",description="공격이 오른다.",triggers=new[]{"장소에 나와"}}}};Enter(new Fighter(pokemon),reason,x=>count++);if(count!=(reason==EntryReason.Forced?0:2))throw new Exception("Entry dispatch");}
+   var methodPokemon=new Pokemon{name="선발",level=100,@base=new[]{100,100,100,100,100,100},iv=new int[6],types=new[]{"노말"},moves=new string[0],potentials=new[]{new Potential{name="선봉",description="공격이 오른다.",triggers=new[]{TriggerStructures.LeadEntryLabel}}}};var methodLog=new System.Collections.Generic.List<string>();Enter(new Fighter(methodPokemon),EntryReason.Lead,methodLog.Add);if(!methodLog.Any(x=>x.Contains("『선봉』")))throw new Exception("Entry method dispatch");
    DefeatTriggers.Test();
    RuntimeTriggers.Test();
   }
@@ -86,9 +111,10 @@ namespace AABattle {
   }
  }
 
- public enum SwitchReason {Normal,Return,Pivot,Potential,Forced}
+ public enum SwitchReason {Normal,Return,Pivot,Potential,Fainted,Forced}
  public static class RuntimeTriggers {
-  public static IEnumerable<Potential> Field(Fighter fighter){return fighter==null||fighter.HP<=0?Enumerable.Empty<Potential>():TriggerStructures.Matching(fighter,TriggerStructures.AlwaysLabel).Concat(TriggerStructures.Matching(fighter,TriggerStructures.FieldLabel)).Distinct();}
+  public static IEnumerable<Potential> Field(Fighter fighter,Fighter opponent=null,TrainerRecord trainer=null){if(fighter==null||fighter.HP<=0)return Enumerable.Empty<Potential>();var active=TriggerStructures.Matching(fighter,TriggerStructures.AlwaysLabel).Concat(TriggerStructures.Matching(fighter,TriggerStructures.FieldLabel));if(opponent!=null)active=active.Concat((fighter.Data.potentials??new Potential[0]).Where(p=>p!=null&&TriggerStructures.Clauses(p).Any(c=>{string type;return TriggerStructures.TryOpponentType(c,out type)&&opponent.HP>0&&opponent.Data.types.Contains(type);})));if(trainer!=null)active=active.Concat((fighter.Data.potentials??new Potential[0]).Where(p=>p!=null&&TriggerStructures.Clauses(p).Any(c=>TrainerCondition(c,trainer))));return active.Distinct();}
+  static bool TrainerCondition(string clause,TrainerRecord trainer){string aptitude,rank;if(!TriggerStructures.TryTrainerAptitude(clause,out aptitude,out rank))return false;AptitudeRecord value=aptitude=="지시"?trainer.command:aptitude=="육성"?trainer.training:aptitude=="통솔"?trainer.leadership:trainer.ability;return value!=null&&TriggerStructures.RankBand(value.rank,rank);}
   public static IEnumerable<string> Observers(IEnumerable<Fighter> reserves){return (reserves??Enumerable.Empty<Fighter>()).Where(f=>f.HP>0).SelectMany(f=>TriggerStructures.Matching(f,TriggerStructures.ObserverLabel).Select(p=>f.Data.name+" 『"+p.name+"』"));}
   public static void TurnEnd(Fighter[] fighters,Rules rules,Func<double> rng,Action<string> log){
    var eligible=Enumerable.Range(0,2).Where(i=>fighters[i].HP>0&&TriggerStructures.Has(fighters[i],TriggerStructures.TurnEndLabel)).ToList();
@@ -97,10 +123,12 @@ namespace AABattle {
   }
   public static bool Voluntary(SwitchReason reason){return reason!=SwitchReason.Forced;}
   public static bool Normal(SwitchReason reason){return reason==SwitchReason.Normal||reason==SwitchReason.Return;}
-  public static void Switch(Fighter outgoing,SwitchReason reason,Action<string> log){if(outgoing.HP>0&&Voluntary(reason)&&TriggerStructures.Has(outgoing,TriggerStructures.SwitchLabel))TriggerStructures.Fire(outgoing,TriggerStructures.SwitchLabel,outgoing.Data.name+" · 임의교대 ["+reason+"]",log);}
-  public static void Received(Fighter target,Fighter attacker,Move move,int bodyDamage,Action<string> log){if(target.HP>0&&bodyDamage>0&&TriggerStructures.Has(target,TriggerStructures.ReceivedLabel))TriggerStructures.Fire(target,TriggerStructures.ReceivedLabel,target.Data.name+"이 "+attacker.Data.name+"의 "+move.name+"으로 "+bodyDamage+" 대미지를 받았다.",log);}
+  public static void Leave(Fighter outgoing,SwitchReason reason,Action<string> log){if(reason!=SwitchReason.Forced&&TriggerStructures.Has(outgoing,TriggerStructures.LeaveLabel))TriggerStructures.Fire(outgoing,TriggerStructures.LeaveLabel,outgoing.Data.name+" · "+TriggerStructures.LeaveLabel+" ["+reason+"]",log);}
+  public static void Switch(Fighter outgoing,SwitchReason reason,Action<string> log){Leave(outgoing,reason,log);if(outgoing.HP>0&&Voluntary(reason)&&TriggerStructures.Has(outgoing,TriggerStructures.SwitchLabel))TriggerStructures.Fire(outgoing,TriggerStructures.SwitchLabel,outgoing.Data.name+" · 임의교대 ["+reason+"]",log);}
+  public static void Received(Fighter target,Fighter attacker,Move move,int bodyDamage,Action<string> log){if(target.HP<=0||bodyDamage<=0)return;string message=target.Data.name+"이 "+attacker.Data.name+"의 "+move.name+"으로 "+bodyDamage+" 대미지를 받았다.";if(TriggerStructures.Has(target,TriggerStructures.ReceivedLabel))TriggerStructures.Fire(target,TriggerStructures.ReceivedLabel,message,log);if(TriggerStructures.Has(target,TriggerStructures.ReceivedOrNullifiedLabel))TriggerStructures.Fire(target,TriggerStructures.ReceivedOrNullifiedLabel,message,log);}
+  public static void Nullified(Fighter target,Fighter attacker,Move move,string reason,Action<string> log){if(target.HP>0&&Mechanics.DefensiveNullification(move,reason)&&TriggerStructures.Has(target,TriggerStructures.ReceivedOrNullifiedLabel))TriggerStructures.Fire(target,TriggerStructures.ReceivedOrNullifiedLabel,target.Data.name+"이 "+attacker.Data.name+"의 "+move.name+"을 무효화했다. ["+reason+"]",log);}
   public static void Test(){
-   var p=new Pokemon{name="관측자",level=100,@base=new[]{100,100,100,100,100,120},iv=new int[6],types=new[]{"노말"},moves=new string[0],potentials=new[]{new Potential{name="상시",description="공격이 오른다.",triggers=new[]{"필드에 있는 한"}},new Potential{name="관측",description="아군의 공격이 오른다.",triggers=new[]{"PT에 참가하고 있을 때"}},new Potential{name="종료",description="공격이 오른다.",triggers=new[]{"T종료시"}},new Potential{name="선회",description="공격이 오른다.",triggers=new[]{"아군과 교대할 때"}},new Potential{name="반격",description="공격이 오른다.",triggers=new[]{"상대의 공격을 받으면"}}}};var fighter=new Fighter(p);if(Field(fighter).Count()!=1||Observers(new[]{fighter}).Count()!=1)throw new Exception("Continuous and observer triggers");fighter.HP=0;if(Field(fighter).Any()||Observers(new[]{fighter}).Any())throw new Exception("Fainted continuous trigger");fighter=new Fighter(p);int count=0;Switch(fighter,SwitchReason.Normal,x=>count++);if(count!=2)throw new Exception("Voluntary switch trigger");count=0;Switch(fighter,SwitchReason.Forced,x=>count++);if(count!=0)throw new Exception("Forced switch exclusion");var target=new Fighter(p);count=0;Received(target,fighter,new Move{name="연속공격"},3,x=>count++);if(count!=2)throw new Exception("Received after move trigger");count=0;Received(target,fighter,new Move{name="연속공격"},0,x=>count++);target.HP=0;Received(target,fighter,new Move{name="연속공격"},3,x=>count++);if(count!=0)throw new Exception("No-damage or fainted received trigger");
+   var p=new Pokemon{name="관측자",level=100,@base=new[]{100,100,100,100,100,120},iv=new int[6],types=new[]{"노말"},moves=new string[0],potentials=new[]{new Potential{name="상시",description="공격이 오른다.",triggers=new[]{"필드에 있는 한"}},new Potential{name="관측",description="아군의 공격이 오른다.",triggers=new[]{"PT에 참가하고 있을 때"}},new Potential{name="종료",description="공격이 오른다.",triggers=new[]{"T종료시"}},new Potential{name="선회",description="공격이 오른다.",triggers=new[]{"아군과 교대할 때"}},new Potential{name="퇴장",description="공격이 오른다.",triggers=new[]{"필드를 떠날 때"}},new Potential{name="반격",description="공격이 오른다.",triggers=new[]{"상대의 공격을 받으면"}},new Potential{name="대화",description="공격이 오른다.",triggers=new[]{TriggerStructures.OpponentType("불꽃")}},new Potential{name="통솔",description="공격이 오른다.",triggers=new[]{TriggerStructures.TrainerAptitude("통솔","A")}},new Potential{name="방호",description="공격이 오른다.",triggers=new[]{TriggerStructures.ReceivedOrNullifiedLabel}}}};var fighter=new Fighter(p);if(Field(fighter).Count()!=1||Observers(new[]{fighter}).Count()!=1)throw new Exception("Continuous and observer triggers");var opponent=new Fighter(new Pokemon{name="불꽃",level=100,@base=new[]{100,100,100,100,100,100},iv=new int[6],types=new[]{"불꽃"},moves=new string[0]});var trainer=new TrainerRecord();trainer.leadership.rank="A+";if(Field(fighter,opponent,trainer).Count()!=3)throw new Exception("Type and trainer conditions");trainer.leadership.rank="AA";if(Field(fighter,opponent,trainer).Count()!=2)throw new Exception("Trainer rank band");fighter.HP=0;if(Field(fighter).Any()||Observers(new[]{fighter}).Any())throw new Exception("Fainted continuous trigger");fighter=new Fighter(p);int count=0;Switch(fighter,SwitchReason.Normal,x=>count++);if(count!=4)throw new Exception("Voluntary switch and leave triggers");count=0;Switch(fighter,SwitchReason.Forced,x=>count++);if(count!=0)throw new Exception("Forced switch exclusion");fighter.HP=0;Leave(fighter,SwitchReason.Fainted,x=>count++);if(count!=2)throw new Exception("Fainted leave trigger");var target=new Fighter(p);count=0;Received(target,fighter,new Move{name="연속공격"},3,x=>count++);if(count!=4)throw new Exception("Received after move trigger");count=0;Nullified(target,fighter,new Move{name="공격",category="물리"},"타입 상성에 의한 무효",x=>count++);if(count!=2)throw new Exception("Defensive nullification trigger");count=0;Nullified(target,fighter,new Move{name="공격",category="물리"},"방어가 기술을 막았다",x=>count++);Received(target,fighter,new Move{name="연속공격"},0,x=>count++);target.HP=0;Received(target,fighter,new Move{name="연속공격"},3,x=>count++);if(count!=0)throw new Exception("Excluded nullification, no-damage or fainted received trigger");
   }
  }
 }
