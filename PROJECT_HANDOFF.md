@@ -41,6 +41,8 @@
 
 2026-09-15 현재 정규화 결과는 조건 1,270개 / 효과 3,177개다. 효과 정리 작업 중 역할·범용·선·회피/내성/격·부수·지령 템플릿에서 나온 효과 129개는 `protectedTemplate=true`로 자동 보호하며 도감에 `[기본 보호]`로 표시한다. 보호 효과는 중복 정리나 구현 분류 과정에서 삭제·치환하지 않는다.
 
+효과 정리는 원본 3,177개를 삭제하지 않고 `excludedFromImplementation`과 제외 사유를 기록한다. 독립 주석, 편성/공유 규칙, 배틀 외 경험치/상금 획득 규칙만 구현 효과 도감에서 숨기며 `protectedTemplate` 항목이 항상 우선한다.
+
 도감의 표·상세·검색 표시에는 Pokemon BW 글꼴을 사용한다. 해당 OTF는 기본 GDI 텍스트 렌더러에서 글자가 깨지므로 GDI+로 그린다. 검색 입력 중에는 한글 IME를 지원하는 기본 입력기를 사용하고, 포커스를 벗어나면 도트 글꼴로 표시한다. 이전의 이름·종류·출처 열은 도감에서 제거했으며 원본 자료에는 보존한다.
 
 Codex 작업 지침과 검증 절차는 `AGENTS.md`, `HARNESS.md`, `desktop/verify.ps1`을 참고한다. 구성요소 재생성: `AABattleDataEditor.exe --export-components research/potentials/potential-parts.json`.

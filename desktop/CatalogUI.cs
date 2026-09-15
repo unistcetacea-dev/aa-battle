@@ -184,9 +184,9 @@ namespace AABattle {
   PotentialPart SelectedPart(bool trigger){var grid=trigger?triggerDex:effectDex;return grid==null||grid.CurrentRow==null?null:grid.CurrentRow.Tag as PotentialPart;}
   void FilterParts(bool trigger){
    if(partCatalog==null)return;var grid=trigger?triggerDex:effectDex;var previous=SelectedPart(trigger);string q=PotentialParts.Key((trigger?triggerPartSearch:effectPartSearch).Text);
-   grid.Rows.Clear();foreach(var part in (trigger?partCatalog.triggers:partCatalog.effects).Where(x=>PotentialParts.Key(x.Display).Contains(q))){int i=grid.Rows.Add(part.Display);grid.Rows[i].Tag=part;}
+   grid.Rows.Clear();foreach(var part in (trigger?partCatalog.triggers:partCatalog.effects.Where(x=>!x.excludedFromImplementation)).Where(x=>PotentialParts.Key(x.Display).Contains(q))){int i=grid.Rows.Add(part.Display);grid.Rows[i].Tag=part;}
    if(grid.RowCount>0){var row=previous==null?null:grid.Rows.Cast<DataGridViewRow>().FirstOrDefault(r=>((PotentialPart)r.Tag).id==previous.id);grid.CurrentCell=(row??grid.Rows[0]).Cells[0];}
-   (trigger?triggerPartCount:effectPartCount).Text=(trigger?"트리거 조건":"효과")+" · "+grid.RowCount+"개";ShowPart(trigger);
+   int excluded=trigger?0:partCatalog.effects.Count(x=>x.excludedFromImplementation);(trigger?triggerPartCount:effectPartCount).Text=(trigger?"트리거 조건":"구현 효과")+" · "+grid.RowCount+"개"+(excluded>0?" · 제외 "+excluded+"개":"");ShowPart(trigger);
   }
   void ShowPart(bool trigger){var p=SelectedPart(trigger);(trigger?triggerPartDetail:effectPartDetail).Text=p==null?"검색 결과가 없습니다.":p.Display;}
   void ApplyPart(bool trigger){
@@ -201,6 +201,7 @@ namespace AABattle {
    if(!potentials.Columns.Contains("targetType")||potentials.Columns.Contains("activation")||potentials.Columns.Contains("uses")||!potentials.Columns.Contains("disabled")||!(potentials.Columns["disabled"] is PixelDisableColumn))throw new Exception("Potential editor columns or pixel toggle invalid");
    dexMoveSearch.Text="비바라기";if(moveDex.Rows.Count==0)throw new Exception("Move search failed");moveDex.CurrentCell=moveDex.Rows[0].Cells[0];ShowDexMove();if(!dexMoveDetail.Text.Contains("비바라기"))throw new Exception("Move details missing");
    triggerPartSearch.Text="필드에 나왔을 때";effectPartSearch.Text="회복";if(triggerDex.RowCount==0||effectDex.RowCount==0)throw new Exception("Part search failed");
+   effectPartSearch.Text="PT에 참가할 수 없다";if(effectDex.RowCount!=0)throw new Exception("Excluded implementation effect remained visible");effectPartSearch.Text="회복";
    var row=potentials.Rows.Cast<DataGridViewRow>().First(r=>!r.IsNewRow&&Cell(r,"name")=="샘플의 전도");potentials.CurrentCell=row.Cells["effect"];string before=Cell(row,"raw");ApplyPart(true);string condition=Cell(row,"trigger");ApplyPart(false);if(condition.Length==0||Cell(row,"trigger")!=condition||Cell(row,"raw")!=before)throw new Exception("Independent part apply corrupted data");
    row.Cells["disabled"].Value=true;SaveCurrent();if(CurrentPotentials().First(x=>x.name=="샘플의 전도").enabled)throw new Exception("Never activate toggle failed");
    var selected=SelectedPart(false).id;RefreshPotentialDex();if(SelectedPart(false).id!=selected)throw new Exception("Part refresh lost selection");
