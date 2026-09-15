@@ -38,7 +38,7 @@ namespace AABattle {
   }
   static string Prepared(string family){
    switch(family){
-    case "능력 랭크 변화":return "대상, 능력 종류, 증감 랭크를 구조화한 뒤 Fighter.Stages, AccuracyStage, EvasionStage, CriticalStage에 연결할 예정입니다. 임의의 능력은 공격·방어·특공·특방·속도·명중·회피·C 중 사용자가 선택하고, 랜덤한 능력치는 공격·방어·특공·특방·속도 중 자동 선택합니다. 아직 포텐셜에서 자동 적용되지는 않습니다.";
+    case "능력 랭크 변화":return "대상, 능력 종류, 증감 랭크를 구조화한 뒤 Fighter.Stages, AccuracyStage, EvasionStage, CriticalStage에 연결할 예정입니다. 임의의 능력은 공격·방어·특공·특방·속도·명중·회피·C 중 사용자가 선택하고, 랜덤한 능력치는 공격·방어·특공·특방·속도 중 자동 선택합니다. 가장 높은/낮은 능력은 5개 전투 능력의 현재 랭크·배율·상태·장소 보정을 적용한 실능력값을 비교하고 동률 후보 중 무작위로 정합니다. 아직 포텐셜에서 자동 적용되지는 않습니다.";
     case "수치 배율 변화":return "대상 수치와 괄호 안 배율을 구조화한 뒤 Fighter.Multipliers 또는 대미지 계산 배율에 곱하도록 준비한 분류입니다. 적용 기간과 중첩 기준 확정이 필요합니다.";
     case "체력 회복·소모":return "최대 HP/N은 소수점을 버리고 최소 1로 계산합니다. 회복은 최대 HP를 넘지 않고, 대미지는 기본적으로 빈사가 가능하며 ‘빈사로 할 수 없다’가 지정된 경우만 HP 1에서 멈춥니다. 포텐셜 실행기에서 Mechanics.Heal/Hurt에 연결할 예정입니다.";
     case "상태이상·상태변화":return "상태 이름과 부여·해제 대상을 구조화해 Mechanics.ApplyStatus와 ConditionState에 연결할 예정입니다. 기존 타입·특성 면역 판정은 재사용합니다.";
