@@ -16,13 +16,13 @@ namespace AABattle {
   Panel pokemonInfo,trainerInfo;TableLayoutPanel workspaceStack;
   TextBox triggerArguments;string argumentKind="";bool argumentLoading;
   ListBox editorMenu;
-  int[] editorPages={6,0,1,4,3,7,8};
+  int[] editorPages={7,0,1,4,6,3,8,9};
   void BuildRetroEditor(){
    Size=new Size(1480,960);MinimumSize=new Size(1200,820);Font=Theme.UI(9);ImeMode=ImeMode.NoControl;
    tabs.Appearance=TabAppearance.Normal;tabs.SizeMode=TabSizeMode.Normal;
    var menuFrame=new RetroFrame{Dock=DockStyle.Left,Width=174,Padding=new Padding(12,20,12,12)};
    editorMenu=new ListBox{Dock=DockStyle.Fill,BorderStyle=BorderStyle.None,DrawMode=DrawMode.OwnerDrawFixed,ItemHeight=48,Font=Theme.UI(11),IntegralHeight=false};
-   editorMenu.Items.AddRange(new object[]{"팀 보관함","트레이너","포켓몬","기술 도감","시트 출력","상태·날씨","효과 안내"});
+   editorMenu.Items.AddRange(new object[]{"팀 보관함","트레이너","포켓몬","기술 도감","특성 도감","시트 출력","상태·날씨","효과 안내"});
    editorMenu.DrawItem+=(s,e)=>{if(e.Index<0)return;e.Graphics.FillRectangle(Brushes.White,e.Bounds);bool selected=(e.State&DrawItemState.Selected)!=0;Theme.Text(e.Graphics,(selected?"▶ ":"   ")+editorMenu.Items[e.Index],editorMenu.Font,e.Bounds,Color.Black,ContentAlignment.MiddleLeft);};
    editorMenu.SelectedIndexChanged+=(s,e)=>{if(editorMenu.SelectedIndex>=0)ShowEditorPage(editorPages[editorMenu.SelectedIndex]);};
    editorMenu.KeyDown+=(s,e)=>{if(e.KeyCode==Keys.Space||e.KeyCode==Keys.Enter){ShowEditorPage(editorPages[Math.Max(0,editorMenu.SelectedIndex)]);if(pokemonWorkspace!=null&&pokemonWorkspace.Visible)pokemonWorkspace.SelectNextControl(null,true,true,true,false);else tabs.SelectedTab.SelectNextControl(null,true,true,true,false);e.Handled=e.SuppressKeyPress=true;}};
@@ -115,7 +115,7 @@ namespace AABattle {
    if(!inlineEffect.Text.Contains("공격")||inlineTrigger.Text.Length==0)throw new Exception("Template must populate inline trigger and effect");
    inlineEffect.Text="한글 입력 검증";if(Cell(row,"effect")!="한글 입력 검증")throw new Exception("Inline Korean text must persist");
    row.Cells["name"].Value=name;RefreshInline();if(inlineEffect.Text!=Cell(row,"effect")||inlineTrigger.Text!=Cell(row,"trigger"))throw new Exception("Template and inline editor synchronization");
-   if(editorMenu.Items.Count!=7||inlineEffect.ImeMode==ImeMode.Disable||potentials.Columns["targetType"].Visible||triggerKind.Items.Count<ConfirmedTriggerCatalog.Items.Length)throw new Exception("Integrated menu, trigger catalog and IME configuration");
+   if(editorMenu.Items.Count!=8||inlineEffect.ImeMode==ImeMode.Disable||potentials.Columns["targetType"].Visible||triggerKind.Items.Count<ConfirmedTriggerCatalog.Items.Length)throw new Exception("Integrated menu, trigger catalog and IME configuration");
   }
   protected override bool ProcessCmdKey(ref Message msg,Keys keyData){
    if(keyData==Keys.F6){editorMenu.Focus();return true;}

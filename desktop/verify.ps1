@@ -19,4 +19,4 @@ if ($Visual) {
 }
 Get-Content -LiteralPath (Join-Path $checkDirectory 'battle-test.txt')
 Get-Content -LiteralPath (Join-Path $checkDirectory 'editor-test.txt')
-if ($Visual) { Write-Output "Editor screenshots: $checkDirectory/catalog.png, catalog.png.moves.png and catalog.png.potentials.png" }
+if ($Visual) { Write-Output "Editor screenshots: $checkDirectory/catalog.png, catalog.png.moves.png, catalog.png.potentials.png and catalog.png.abilities.png" }

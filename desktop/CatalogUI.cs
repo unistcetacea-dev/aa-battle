@@ -23,7 +23,7 @@ namespace AABattle {
  public static class CatalogTests {
   static void Check(bool value,string message){if(!value)throw new Exception("Catalog test failed: "+message);}
   public static void Run(){
-   string trigger,effect;PotentialLibrary.Split("자신의 기술의 위력을 강화(1.2배)한다.",out trigger,out effect);Check(trigger==""&&effect.StartsWith("자신의"),"do not split 자신의");
+   AbilityCatalog.Test();string trigger,effect;PotentialLibrary.Split("자신의 기술의 위력을 강화(1.2배)한다.",out trigger,out effect);Check(trigger==""&&effect.StartsWith("자신의"),"do not split 자신의");
    PotentialLibrary.Split("선발로 필드에 나오면, 자신의 공격이 오른다.",out trigger,out effect);Check(trigger=="선발로 필드에 나오면"&&effect=="자신의 공격이 오른다.","entry condition");
    PotentialLibrary.Split("필드에 있는 한, 상대는 교대할 수 없다.",out trigger,out effect);Check(trigger=="필드에 있는 한"&&!effect.Contains("있는 한"),"continuous condition");
    PotentialLibrary.Split("「여기다！」일 때, 필드에 나오면 자신의 공격이 오른다.",out trigger,out effect);Check(trigger.Contains("여기다")&&trigger.Contains("필드에 나오면")&&effect=="자신의 공격이 오른다.","chained conditions");
@@ -149,8 +149,8 @@ namespace AABattle {
  }
 
  partial class DataEditorForm {
-  DataGridView moveDex;PixelSearchBox dexMoveSearch;PixelText dexMoveDetail,triggerPreview;ComboBox triggerKind,triggerSubject,triggerEntryMethod,triggerType,triggerAptitude,triggerRank,triggerActivation,triggerMove,effectSubject;TextBox triggerGranted;FlatButton triggerStatusButton;string[] triggerStatusNames=new string[0];TableLayoutPanel triggerTable;
-  Label moveCount;
+  DataGridView moveDex,abilityDex;PixelSearchBox dexMoveSearch,abilitySearch;PixelText dexMoveDetail,abilityDetail,triggerPreview;ComboBox triggerKind,triggerSubject,triggerEntryMethod,triggerType,triggerAptitude,triggerRank,triggerActivation,triggerMove,effectSubject;TextBox triggerGranted;FlatButton triggerStatusButton;string[] triggerStatusNames=new string[0];TableLayoutPanel triggerTable;
+  Label moveCount,abilityCount;
   DataGridView DexGrid(){return new PixelDexGrid{Dock=DockStyle.Fill,ReadOnly=true,AllowUserToAddRows=false,AllowUserToDeleteRows=false,AllowUserToResizeRows=false,RowHeadersVisible=false,MultiSelect=false,SelectionMode=DataGridViewSelectionMode.FullRowSelect,BackgroundColor=Color.White,BorderStyle=BorderStyle.None,EnableHeadersVisualStyles=false,ColumnHeadersHeight=34,RowTemplate={Height=36},DefaultCellStyle=new DataGridViewCellStyle{Font=Theme.UI(10),SelectionBackColor=Color.Black,SelectionForeColor=Color.White},ColumnHeadersDefaultCellStyle=new DataGridViewCellStyle{BackColor=Color.Black,ForeColor=Color.White,Font=Theme.UI(8)}};}
   void DexColumn(DataGridView grid,string title,int width){grid.Columns.Add(new DataGridViewTextBoxColumn{HeaderText=title,Width=width,MinimumWidth=width,AutoSizeMode=title.StartsWith("효과")?DataGridViewAutoSizeColumnMode.Fill:DataGridViewAutoSizeColumnMode.None,SortMode=DataGridViewColumnSortMode.NotSortable});}
   void BuildCatalogTab(){
@@ -163,6 +163,7 @@ namespace AABattle {
    columns.Controls.Add(BuildPartPanel(true),0,0);columns.Controls.Add(BuildPartPanel(false),1,0);
    var compose=Button("선택한 조건 + 효과로 포텐셜 만들기",360,ComposePotential);compose.Dock=DockStyle.Bottom;
    page.Controls.Add(columns);page.Controls.Add(compose);columns.BringToFront();RefreshPotentialDex();
+   page=Page("특성 도감");var abilityHeader=new Panel{Dock=DockStyle.Top,Height=78};abilitySearch=new PixelSearchBox{Dock=DockStyle.Bottom,Font=Theme.UI(8)};abilityCount=Theme.Label("특성 도감",36);abilityHeader.Controls.Add(abilitySearch);abilityHeader.Controls.Add(abilityCount);abilityDex=DexGrid();DexColumn(abilityDex,"특성",180);DexColumn(abilityDex,"효과",720);abilityDetail=new PixelText{Dock=DockStyle.Bottom,Height=175};var useAbility=Button("선택 특성을 포켓몬에 설정",240,AddDexAbility);useAbility.Dock=DockStyle.Bottom;page.Controls.Add(new PixelGridHost(abilityDex));page.Controls.Add(abilityDetail);page.Controls.Add(useAbility);page.Controls.Add(abilityHeader);page.Controls[0].BringToFront();abilitySearch.TextChanged+=(s,e)=>RefreshAbilityDex();abilityDex.SelectionChanged+=(s,e)=>ShowDexAbility();abilityDex.CurrentCellChanged+=(s,e)=>ShowDexAbility();abilityDex.CellDoubleClick+=(s,e)=>{if(e.RowIndex>=0)AddDexAbility();};RefreshAbilityDex();
   }
   Panel BuildPartPanel(bool trigger){
    return trigger?BuildStructuredTriggerPanel():BuildStructuredEffectPanel();
@@ -178,6 +179,10 @@ namespace AABattle {
   Move SelectedDexMove(){return moveDex.CurrentRow==null?null:moveDex.CurrentRow.Tag as Move;}
   void ShowDexMove(){var m=SelectedDexMove();dexMoveDetail.Text=m==null?"검색 결과가 없습니다.":"【"+m.name+"】  "+string.Join(" / ",m.types??new string[0])+" · "+m.category+"\r\n위력 "+m.power+"   명중 "+m.accuracy+"   우선도 "+m.priority+"\r\n판정 "+m.attack+" / "+m.defense+"   태그 "+string.Join(", ",m.tags??new string[0])+"\r\n효과: "+m.effect;}
   void AddDexMove(){var m=SelectedDexMove();if(m==null)return;if(!(Current is PokemonRecord)){MessageBox.Show(this,"포켓몬을 선택한 뒤 기술을 추가하세요.");return;}var names=pMoves.Lines.Where(x=>x.Trim().Length>0).Select(x=>x.Trim()).ToList();if(names.Contains(m.name))return;if(names.Count>=4){MessageBox.Show(this,"기술은 4개까지 넣을 수 있습니다.");return;}names.Add(m.name);pMoves.Text=string.Join("\r\n",names);}
+  void RefreshAbilityDex(){string q=abilitySearch.Text.Trim();abilityDex.Rows.Clear();foreach(var ability in AbilityCatalog.All.Where(x=>(x.name+" "+x.effect).IndexOf(q,StringComparison.OrdinalIgnoreCase)>=0)){int i=abilityDex.Rows.Add(ability.name,ability.effect);abilityDex.Rows[i].Tag=ability;}if(abilityDex.RowCount>0)abilityDex.CurrentCell=abilityDex.Rows[0].Cells[0];abilityCount.Text="특성 도감 · "+abilityDex.RowCount+"개 · 이름 / 효과 검색";ShowDexAbility();}
+  AbilityDefinition SelectedDexAbility(){return abilityDex.CurrentRow==null?null:abilityDex.CurrentRow.Tag as AbilityDefinition;}
+  void ShowDexAbility(){var ability=SelectedDexAbility();abilityDetail.Text=ability==null?"검색 결과가 없습니다.":"【"+ability.name+"】\r\n"+ability.effect;}
+  void AddDexAbility(){var ability=SelectedDexAbility();if(ability==null)return;if(!(Current is PokemonRecord)){MessageBox.Show(this,"포켓몬을 선택한 뒤 특성을 설정하세요.");return;}pAbility.Text=ability.name;SaveCurrent();ShowEditorPage(1);}
   void RefreshPotentialDex(){
    RefreshStructuredTrigger();RefreshStructuredEffect();
   }
@@ -192,7 +197,8 @@ namespace AABattle {
   void ComposePotential(){AddPotential(new PotentialRecord{name="새 포텐셜",slot=Current is TrainerRecord?"고유":"종족 ①",activation="자동",triggerSubject=triggerSubject==null?"":triggerSubject.Text,effectSubject=effectSubject==null?"":effectSubject.Text,trigger=ConfiguredTrigger(),effect=ConfiguredEffect(),raw=""});}
   public void TestCatalogUi(){
    TestRetroEditor();
-   if(tabs.TabPages[4].Text!="기술 도감"||triggerKind==null||triggerKind.Items.Count<31||!ConfirmedTriggerCatalog.Items.All(x=>triggerKind.Items.Contains(x))||effectKind==null||triggerSubject==null||effectSubject==null)throw new Exception("Structured trigger, subject and effect UI missing");
+   if(tabs.TabPages[4].Text!="기술 도감"||tabs.TabPages[6].Text!="특성 도감"||abilityDex==null||triggerKind==null||triggerKind.Items.Count<31||!ConfirmedTriggerCatalog.Items.All(x=>triggerKind.Items.Contains(x))||effectKind==null||triggerSubject==null||effectSubject==null)throw new Exception("Structured trigger, subject and effect UI missing");
+   abilitySearch.Text="가뭄";var drought=abilityDex.Rows.Cast<DataGridViewRow>().FirstOrDefault(x=>!x.IsNewRow&&((AbilityDefinition)x.Tag).name=="가뭄");if(drought==null||!((AbilityDefinition)drought.Tag).effect.Contains("쾌청"))throw new Exception("Ability dex search and effect missing");abilityDex.CurrentCell=drought.Cells[0];AddDexAbility();if(pAbility.Text!="가뭄")throw new Exception("Ability dex must link to the current pokemon");
    tabs.SelectedIndex=1;Application.DoEvents();
    if(!potentials.Columns.Contains("targetType")||potentials.Columns["targetType"].Visible||potentials.Columns.Contains("activation")||potentials.Columns.Contains("uses")||!potentials.Columns.Contains("disabled")||!(potentials.Columns["disabled"] is PixelDisableColumn))throw new Exception("Potential editor columns or pixel toggle invalid");
    dexMoveSearch.Text="비바라기";if(moveDex.Rows.Count==0)throw new Exception("Move search failed");moveDex.CurrentCell=moveDex.Rows[0].Cells[0];ShowDexMove();if(!dexMoveDetail.Text.Contains("비바라기"))throw new Exception("Move details missing");
