@@ -16,6 +16,7 @@ namespace AABattle {
    if(directiveCount>0){status=directiveCount==part.names.Count?"자동 구현":"일부 자동 구현";family="트레이너 4식·지령";implementation="이 효과가 트레이너 지령으로 사용될 때 Engine.Resolve가 선언 횟수와 행동 조건을 확인합니다. 4식은 회피·필중·버티기·후공 교대를 처리하고, Engine.ApplyOrder가 능력 랭크·1턴 배율·회복을 적용합니다. 같은 문장을 일반 포켓몬 포텐셜에서 사용하면 아직 자동 실행되지 않습니다.";}
    else if(PotentialProbability.Rate(value).HasValue){status="구현 규칙 준비";family="확률 발동";implementation=PotentialProbability.Help+" 포켓몬 포텐셜 실행기가 연결되면 이 판정기를 호출합니다.";}
    else if(value.Contains("확률로")){status="기준 질문 필요";family="확률 발동";implementation="확률 수치가 적혀 있지 않아 자동 판정할 수 없습니다.";}
+   else if(EffectStructures.IsSwitchRestriction(value)){status="자동 구현";family="교대·등장";implementation="활성 상태의 ‘장소에 있는 한’ 교대 제한을 Engine의 교대 요청에 적용합니다. 일반 교대와 『돌아와！』, 강제교대는 허용하고 유턴·포텐셜 교대만 제한합니다.";}
    else if(family!="기타 원문"){status="구현 규칙 준비";implementation=Prepared(family);}
    string interpretation="문장 분류: "+family+". "+Interpret(value)+(part.protectedTemplate?" 기본 템플릿이므로 정리·치환하지 않습니다.":"");
    return new EffectImplementationEntry{status=status,family=family,effect=value,interpretation=interpretation,implementation=implementation,sources=string.Join(" / ",part.sources.Take(4))+(part.sources.Count>4?" 외 "+(part.sources.Count-4)+"곳":"")};

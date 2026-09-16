@@ -35,7 +35,7 @@ namespace AABattle {
    StyleEditor(this);aa.Font=new Font(Fonts.AA,16,FontStyle.Regular,GraphicsUnit.Pixel);tAA.Font=aa.Font;
    InstallSelector(pTypes,"타입 찾기",PickTypes);InstallSelector(pAbility,"특성 찾기",PickAbility);InstallSelector(pMoves,"기술 찾기",PickMoves);
    RefreshTriggerArguments();
-   InstallPixelChoice(triggerKind);InstallPixelChoice(triggerActivation);InstallPixelChoice(triggerSubject);InstallPixelChoice(effectSubject);
+   InstallPixelChoice(triggerKind);InstallPixelChoice(triggerMoveKind);InstallPixelChoice(triggerActivation);InstallPixelChoice(triggerSubject);InstallPixelChoice(effectSubject);
    potentials.CellPainting+=(s,e)=>{if(e.RowIndex!=-1||e.ColumnIndex<0)return;e.PaintBackground(e.ClipBounds,false);Theme.Text(e.Graphics,Convert.ToString(e.FormattedValue),Theme.UI(8),e.CellBounds,Color.White,ContentAlignment.MiddleLeft);e.Handled=true;};
    tree.ItemHeight=32;tree.ShowLines=false;tree.ShowPlusMinus=false;tree.ShowRootLines=false;tree.FullRowSelect=true;
    foreach(TabPage page in tabs.TabPages)page.Paint+=(s,e)=>Theme.Frame(e.Graphics,((Control)s).ClientRectangle,false);
@@ -124,6 +124,7 @@ namespace AABattle {
    inlineEffect.Text="한글 입력 검증";if(Cell(row,"effect")!="한글 입력 검증")throw new Exception("Inline Korean text must persist");
    row.Cells["name"].Value=name;RefreshInline();if(inlineEffect.Text!=Cell(row,"effect")||inlineTrigger.Text!=Cell(row,"trigger"))throw new Exception("Template and inline editor synchronization");
    row.Cells["name"].Value="탐사대원";RefreshInline();string explorerEffect=EffectNormalizer.CanonicalRank("자신의 임의의 능력",1);if(Cell(row,"trigger")!=TriggerStructures.EntryLabel||Cell(row,"effect")!=explorerEffect||triggerKind.Text!=TriggerStructures.EntryLabel||effectKind.Text!="능력 랭크 변화"||effectTarget.Text!="자신의 임의의 능력"||effectAction.Text!="상승"||effectDenominator.Value!=1)throw new Exception("Structured explorer role template loading");
+   row.Cells["name"].Value="추적대원";RefreshInline();string trackerEffect=EffectNormalizer.CanonicalSwitchRestriction()+" (필요 「통솔：A」 이상)";if(Cell(row,"trigger")!=TriggerStructures.FieldLabel||Cell(row,"effect")!=trackerEffect||triggerKind.Text!=TriggerStructures.FieldLabel||effectKind.Text!="교대 제한"||effectTarget.Text!="상대"||effectAction.Text!="통상교대 외 수단 제한"||ConfiguredEffect()!=EffectNormalizer.CanonicalSwitchRestriction())throw new Exception("Structured tracker role template loading");
    row.Cells["name"].Value=name;RefreshInline();
    if(editorMenu.Items.Count!=8||inlineEffect.ImeMode==ImeMode.Disable||potentials.Columns["targetType"].Visible||triggerKind.Items.Count<ConfirmedTriggerCatalog.Items.Length)throw new Exception("Integrated menu, trigger catalog and IME configuration");
   }

@@ -45,9 +45,19 @@ namespace AABattle {
    if(!value.Contains("교대")||(!value.Contains("아군")&&!value.Contains("임의교대")))return false;
    return !value.Contains("교대할수없다")&&!value.Contains("교대를제한")&&!value.Contains("강제교대");
   }
-  public static bool IsSwitchEffect(Potential potential){return potential!=null&&IsSwitchEffect(potential.description);}
+   public static bool IsSwitchEffect(Potential potential){return potential!=null&&IsSwitchEffect(potential.description);}
 
-  static bool Mentioned(IEnumerable<string> lines,string name){
+   public static bool HasSwitchRestriction(Fighter holder){
+    if(holder==null||holder.Data==null||holder.HP<=0||!holder.OnField)return false;
+    return (holder.Data.potentials??new Potential[0]).Any(x=>x!=null&&EffectStructures.IsSwitchRestriction(x.description)&&TriggerStructures.Has(holder,TriggerStructures.FieldLabel));
+   }
+
+   public static bool CanSwitch(Fighter restrictionHolder,SwitchReason reason){
+    if(reason==SwitchReason.Normal||reason==SwitchReason.Return||reason==SwitchReason.Forced)return true;
+    return !HasSwitchRestriction(restrictionHolder);
+   }
+
+   static bool Mentioned(IEnumerable<string> lines,string name){
    if(string.IsNullOrWhiteSpace(name))return false;string token="『"+name+"』";
    return (lines??Enumerable.Empty<string>()).Any(x=>(x??"").Contains(token)&&x.Contains("트리거"));
   }
