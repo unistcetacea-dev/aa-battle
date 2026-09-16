@@ -92,8 +92,9 @@ namespace AABattle {
    tabs.Parent.Controls.Add(pokemonWorkspace);pokemonWorkspace.Visible=false;
   }
   void ShowEditorPage(int page){
+   if(page==2||page==5)page=1;
    if(navigating)return;navigating=true;
-   try{if(page==2||page==5)page=1;
+   try{SelectRecordForPage(page);
     tabs.SelectedIndex=page;
     bool integrated=(page==1||page==0)&&pokemonWorkspace!=null;
     if(integrated){var wanted=page==0?trainerInfo:pokemonInfo;var other=page==0?pokemonInfo:trainerInfo;if(other.Parent==workspaceStack)workspaceStack.Controls.Remove(other);if(wanted.Parent!=workspaceStack)workspaceStack.Controls.Add(wanted,0,0);wanted.Visible=true;}
@@ -103,18 +104,27 @@ namespace AABattle {
     int index=Array.IndexOf(editorPages,page);if(index>=0&&editorMenu.SelectedIndex!=index)editorMenu.SelectedIndex=index;
    }finally{navigating=false;}
   }
+  void SelectRecordForPage(int page){
+   if((page!=0&&page!=1)||tree==null||project==null)return;bool pokemon=page==1;object selected=Current;
+   if((pokemon&&selected is PokemonRecord)||(!pokemon&&selected is TrainerRecord))return;
+   object target=pokemon?project.pokemon.Cast<object>().FirstOrDefault():project.trainers.Cast<object>().FirstOrDefault();if(target==null)return;
+   SaveCurrent();TreeNode node=tree.Nodes.Cast<TreeNode>().SelectMany(x=>x.Nodes.Cast<TreeNode>()).FirstOrDefault(x=>Object.ReferenceEquals(x.Tag,target));if(node!=null)tree.SelectedNode=node;
+  }
   void RefreshInline(){if(inlineTrigger==null||inlineLoading)return;var row=SelectedPotentialRow();inlineLoading=true;inlineTrigger.Enabled=inlineEffect.Enabled=row!=null;string slot=row==null?"":Cell(row,"slot");inlineTitle.Text=row==null?"위 목록에서 포텐셜을 선택하세요":"『"+Cell(row,"name")+"』 · "+slot;inlineTrigger.Text=row==null?"":Cell(row,"trigger");inlineEffect.Text=row==null?"":Cell(row,"effect");bool typed=row!=null&&(EditorTemplate.IsCounterSlot(slot)||EditorTemplate.IsTypedPotential(slot,Cell(row,"name")));inlineTemplateType.Visible=typed;if(typed&&inlineTemplateType.Items.Contains(Cell(row,"targetType")))inlineTemplateType.SelectedItem=Cell(row,"targetType");inlineLoading=false;}
   void ApplyInlineTemplateType(){if(inlineLoading||!inlineTemplateType.Visible)return;var row=SelectedPotentialRow();if(row==null)return;inlineLoading=true;row.Cells["targetType"].Value=inlineTemplateType.Text;inlineLoading=false;RefreshInline();}
   void WriteInline(string column,string text){if(inlineLoading||loading)return;var row=SelectedPotentialRow();if(row==null)return;inlineLoading=true;row.Cells[column].Value=text;GridChanged();inlineLoading=false;}
   void TestRetroEditor(){
-   ShowEditorPage(1);Application.DoEvents();if(!pokemonWorkspace.Visible||!potentials.Visible||!inlineEffect.Visible)throw new Exception("Pokemon and potential editors must be visible together");
-   triggerKind.SelectedItem="날씨가 「비」일 때";triggerArguments.Text="쾌청";if(ConfiguredTrigger()!="날씨가 「쾌청」일 때")throw new Exception("Weather parameter editing");
+    ShowEditorPage(1);Application.DoEvents();if(!pokemonWorkspace.Visible||!potentials.Visible||!inlineEffect.Visible)throw new Exception("Pokemon and potential editors must be visible together");
+    var trainerNode=tree.Nodes.Cast<TreeNode>().SelectMany(x=>x.Nodes.Cast<TreeNode>()).First(x=>x.Tag is TrainerRecord);tree.SelectedNode=trainerNode;Application.DoEvents();ShowEditorPage(1);Application.DoEvents();var slotColumn=(DataGridViewComboBoxColumn)potentials.Columns["slot"];if(!(Current is PokemonRecord)||!slotColumn.Items.Contains("역할"))throw new Exception("Pokemon potential slots must follow Pokemon navigation");
+    triggerKind.SelectedItem="날씨가 「비」일 때";triggerArguments.Text="쾌청";if(ConfiguredTrigger()!="날씨가 「쾌청」일 때")throw new Exception("Weather parameter editing");
    triggerKind.SelectedItem="자신의 체력이 1/2 이하가 되었을 때";triggerArguments.Text="1/4";if(ConfiguredTrigger()!="자신의 체력이 1/4 이하가 되었을 때")throw new Exception("HP threshold parameter editing");
    var row=potentials.Rows.Cast<DataGridViewRow>().First(x=>!x.IsNewRow&&Cell(x,"slot")=="역할");potentials.CurrentCell=row.Cells["name"];
    string name=Cell(row,"name");row.Cells["name"].Value="귀인";RefreshInline();
    if(!inlineEffect.Text.Contains("공격")||inlineTrigger.Text.Length==0)throw new Exception("Template must populate inline trigger and effect");
    inlineEffect.Text="한글 입력 검증";if(Cell(row,"effect")!="한글 입력 검증")throw new Exception("Inline Korean text must persist");
    row.Cells["name"].Value=name;RefreshInline();if(inlineEffect.Text!=Cell(row,"effect")||inlineTrigger.Text!=Cell(row,"trigger"))throw new Exception("Template and inline editor synchronization");
+   row.Cells["name"].Value="탐사대원";RefreshInline();string explorerEffect=EffectNormalizer.CanonicalRank("자신의 임의의 능력",1);if(Cell(row,"trigger")!=TriggerStructures.EntryLabel||Cell(row,"effect")!=explorerEffect||triggerKind.Text!=TriggerStructures.EntryLabel||effectKind.Text!="능력 랭크 변화"||effectTarget.Text!="자신의 임의의 능력"||effectAction.Text!="상승"||effectDenominator.Value!=1)throw new Exception("Structured explorer role template loading");
+   row.Cells["name"].Value=name;RefreshInline();
    if(editorMenu.Items.Count!=8||inlineEffect.ImeMode==ImeMode.Disable||potentials.Columns["targetType"].Visible||triggerKind.Items.Count<ConfirmedTriggerCatalog.Items.Length)throw new Exception("Integrated menu, trigger catalog and IME configuration");
   }
   protected override bool ProcessCmdKey(ref Message msg,Keys keyData){

@@ -45,7 +45,7 @@ namespace AABattle {
   public static IEnumerable<Potential> Field(Fighter owner,Fighter opponent,Rules rules){
    if(owner==null||opponent==null||rules==null||owner.HP<=0)return Enumerable.Empty<Potential>();int max=Mechanics.MaxHP(owner,opponent,rules);
    string weather=Mechanics.Weather(owner,opponent,rules);
-   return Potentials(owner).Where(p=>TriggerStructures.Clauses(p).Any(c=>{string key=Key(c);return IsFull(key)&&owner.HP>=max||FractionAtMost(key,owner.HP,max)||StageTotalCondition(key,owner)||IsWeatherNow(key,weather)||IsTerrainNow(key,rules.Terrain)||HasCurrentItem(key,owner)||HasCurrentAbility(key,owner)||HasNamedPotential(key,owner)||key.Contains("순풍")&&owner.Conditions.Tailwind>0; }));
+   return Potentials(owner).Where(p=>TriggerStructures.Clauses(p).Any(c=>{string key=Key(c);return IsFull(key)&&owner.HP>=max||FractionAtMost(key,owner.HP,max)||StageTotalCondition(key,owner)||IsWeatherNow(key,weather)||IsTerrainNow(key,rules.Terrain)||HasCurrentItem(key,owner)||HasCurrentAbility(key,owner)||HasNamedPotential(key,owner)||key.Contains("순풍")&&rules.Sides.Any(x=>x.Tailwind>0); }));
   }
   public static void HpChanged(Fighter target,Fighter other,Rules rules,int before,int after,string reason,Action<string> log){
    if(target==null||other==null||rules==null||after>=before)return;int max=Mechanics.MaxHP(target,other,rules);
