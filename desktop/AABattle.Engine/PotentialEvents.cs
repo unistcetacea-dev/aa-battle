@@ -157,6 +157,8 @@ namespace AABattle {
   public static readonly string[] FollowUpStarts = { "이때", "이 때", "이 효과로", "이효과로" };
   // 「임의의」 대상 선택(사용자 선택). 테스트에서 바꿔 끼울 수 있다. 기본은 첫 후보
   public static Func<PotentialInstance, List<Fighter>, Fighter> ChooseTarget = (source, candidates) => candidates.FirstOrDefault();
+  // 「임의의 능력」 선택(사용자 선택). null이면 판정 대기로 남긴다
+  public static Func<PotentialInstance, Fighter, string[], string> ChooseStat;
 
   [ThreadStatic] static int nextEvent;
   [ThreadStatic] static Frame current;
@@ -264,7 +266,10 @@ namespace AABattle {
    var steps = new List<Step>();
    effect = Regex.Replace(effect ?? "", @"[.．。]\s*(이 대미지로는 빈사로 할 수 없다)", " $1");
    foreach (string raw in (effect ?? "").Replace("\r", "").Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries)) {
-    foreach (string sentence in Regex.Split(raw.Trim(), @"(?<=[.．。])\s+")) {
+    // 수집 원문 변형도 편집기 모듈 표준 문장으로 바꾼 뒤 실행기에 넘긴다
+    string normalized = EffectNormalizer.Normalize(raw.Trim());
+    if (normalized.Length == 0) normalized = raw.Trim();
+    foreach (string sentence in Regex.Split(normalized, @"(?<=[.．。])\s+")) {
      string text = sentence.Trim();
      if (text.Length == 0) continue;
      // 확률은 큐가 포텐셜당 1회 판정하므로 실행기에는 확률 접두어를 뗀 문장을 넘긴다
@@ -419,6 +424,161 @@ namespace AABattle {
     PotentialExecutors.Register("상태 부여",
      c => StateEffects.Parse(c.Line) != null && StateEffects.Find(StateEffects.Parse(c.Line).State) != null,
      c => StateEffects.Apply(c.Line, c.Owner, c.Opponent, c.Rules, c.Rng, c.Log, c.Source.Label));
+    // F2 능력 랭크 변화(기간이 붙은 랭크는 되돌리는 규칙이 없어 판정 대기)
+    PotentialExecutors.Register("능력 랭크 변화",
+     c => { RankEffect r; int turns; return Duration(c.Line, out turns) == c.Line && EffectModules.TryRank(c.Line, out r); },
+     RunRank);
+    // F2 수치 배율: 사건으로 걸리면 기간(NT동안·T종료시까지)·이번 T(기술 관련 사건)·필드를 떠날 때까지 유지
+    PotentialExecutors.Register("수치 배율",
+     c => { ScalarEffect s; int turns; return EffectModules.TryScalar(Duration(c.Line, out turns), out s); },
+     RunScalar);
+    // F2 종족치 변경(확정 13: 가장 최근 효과로 덮어쓰고 교대하면 원래 값)
+    PotentialExecutors.Register("종족치 변경",
+     c => { SpeciesEffect s; return EffectModules.TrySpecies(c.Line, out s); },
+     RunSpecies);
+    // F3 최대 HP의 1/N: 회복(빈사 제외) · 대미지(간접, 매직가드에 막힘) · 소비(대가, 매직가드 무시, 부족하면 실패)
+    PotentialExecutors.Register("최대 HP의 1/N",
+     c => { FractionEffect f; return EffectModules.TryFraction(c.Line, out f); },
+     RunFraction);
+    // F3 상태이상 치유
+    PotentialExecutors.Register("상태이상 치유",
+     c => { string t; return EffectModules.TryCure(c.Line, out t); },
+     c => {
+      string t; EffectModules.TryCure(c.Line, out t);
+      var target = t == "상대" ? c.Opponent : c.Owner;
+      if (target == null || target.HP <= 0 || target.Status == "정상") return EffectOutcome.Failed;
+      c.Say(target.Data.name + ": " + target.Status + " 치유 (" + c.Source.Label + ")");
+      target.Status = "정상"; target.Conditions.ToxicStage = 1; target.Conditions.SleepFromRest = false;
+      return EffectOutcome.Success;
+     });
+   }
+
+   // 「NT동안 / T종료시까지」 접두어를 떼고 기간을 돌려준다(없으면 0, T종료시까지는 1)
+   static string Duration(string line, out int turns) {
+    turns = 0;
+    var m = Regex.Match(line ?? "", @"^(?:(?<n>\d+)\s*T\s*(?:동안|간)|(?<end>T\s*종료\s*시\s*까지))\s*,?\s*");
+    if (!m.Success) return line;
+    turns = m.Groups["end"].Success ? 1 : int.Parse(m.Groups["n"].Value);
+    return line.Substring(m.Length);
+   }
+
+   static Fighter Recipient(EffectCall c, string subject) { return subject == "상대" ? c.Opponent : c.Owner; }
+
+   // 기술·피격 관련 사건으로 걸린 배율은 이번 T만(확정: 조건이 사라질 때까지)
+   static bool ActionEvent(PotentialEvent e) {
+    string label = e.Label ?? "";
+    return e.Move != null || PriorityEffectRuntime.SelectionLabel(label) || label == TriggerStructures.AttackSuccessLabel || label == TriggerStructures.ReceivedLabel || label == TriggerStructures.ReceivedOrNullifiedLabel || label == TriggerStructures.DamagedLabel;
+   }
+
+   static EffectOutcome RunRank(EffectCall c) {
+    RankEffect r; EffectModules.TryRank(c.Line, out r);
+    var target = Recipient(c, r.Subject);
+    if (target == null || target.HP <= 0) return EffectOutcome.Failed;
+    var other = ReferenceEquals(target, c.Owner) ? c.Opponent : c.Owner;
+    var stats = r.Stats.ToList();
+    if (r.Mode == "랜덤") stats = new List<int> { EffectModules.StatIndex(PotentialStatRules.ChooseRandom(c.Rng ?? (() => .5))) };
+    else if (r.Mode == "최고" || r.Mode == "최저") stats = new List<int> { EffectModules.StatIndex(PotentialStatRules.ChooseExtreme(target, other ?? target, c.Rules, r.Mode == "최고", c.Rng ?? (() => .5))) };
+    else if (r.Mode == "임의") {
+     if (ChooseStat == null) { c.Say(c.Source.Label + ": 임의의 능력은 사용자가 고른다 — 판정 대기"); return EffectOutcome.Pending; }
+     string chosen = ChooseStat(c.Source, target, PotentialStatRules.Arbitrary);
+     if (string.IsNullOrEmpty(chosen)) return EffectOutcome.Pending;
+     stats = new List<int> { EffectModules.StatIndex(chosen) };
+    }
+    bool changed = false;
+    var log = c.Log ?? new List<string>();
+    foreach (int index in stats) {
+     if (index >= 1 && index <= 5) changed |= Mechanics.ChangeStage(target, other ?? target, index, r.Amount, c.Rules, c.Source.Label, log);
+     else if (index == 6 || index == 7 || index == 8) {
+      int before = index == 6 ? target.AccuracyStage : index == 7 ? target.EvasionStage : target.CriticalStage;
+      int after = index == 8 ? Math.Max(0, Math.Min(3, before + r.Amount)) : Math.Max(-6, Math.Min(6, before + r.Amount));
+      if (after == before) continue;
+      if (index == 6) target.AccuracyStage = after; else if (index == 7) target.EvasionStage = after; else target.CriticalStage = after;
+      log.Add(target.Data.name + ": " + (index == 6 ? "명중" : index == 7 ? "회피" : "급소") + " " + (r.Amount > 0 ? "+" : "") + (after - before) + " (" + c.Source.Label + ")");
+      if (index != 8) AnsweredTriggers.StageChanged(target, other, index, before, after, log.Add);
+      changed = true;
+     }
+    }
+    return changed ? EffectOutcome.Success : EffectOutcome.Failed;
+   }
+
+   static EffectOutcome RunScalar(EffectCall c) {
+    int turns; string body = Duration(c.Line, out turns);
+    ScalarEffect s; EffectModules.TryScalar(body, out s);
+    if (s.Condition.Placeholder) { c.Say(c.Source.Label + ": 기술 조건의 타입이 비어 있다 — 판정 대기"); return EffectOutcome.Pending; }
+    if (turns == 0 && ActionEvent(c.Event)) turns = 1;
+    var owner = c.Owner;
+    if (owner == null || owner.HP <= 0) return EffectOutcome.Failed;
+    PotentialModifiers.Add(owner, new ActiveModifier { Key = c.Source.Key, Text = body, Source = c.Source.Label, Turns = turns == 0 ? -1 : turns });
+    c.Say(owner.Data.name + ": " + body + (turns > 0 ? " (" + turns + "T)" : " (필드를 떠날 때까지)"));
+    return EffectOutcome.Success;
+   }
+
+   static EffectOutcome RunSpecies(EffectCall c) {
+    SpeciesEffect s; EffectModules.TrySpecies(c.Line, out s);
+    var target = Recipient(c, s.Subject);
+    if (target == null || target.HP <= 0) return EffectOutcome.Failed;
+    var b = target.Data.@base;
+    if (target.Conditions.OriginalBase == null) target.Conditions.OriginalBase = (int[])b.Clone();
+    int trainerFloor = -1;
+    if (s.Operation == "트레이너") {
+     var scope = EffectScope.Current;
+     int side = target.FieldSide;
+     var trainer = scope != null && scope.States != null && side >= 0 && side < scope.States.Length && scope.States[side] != null ? scope.States[side].Trainer : null;
+     var aptitude = trainer == null ? null : s.Aptitude == "지시" ? trainer.command : s.Aptitude == "육성" ? trainer.training : s.Aptitude == "통솔" ? trainer.leadership : trainer.ability;
+     try { trainerFloor = aptitude == null || string.IsNullOrEmpty(aptitude.rank) ? -1 : SpeciesStatRanks.LabelRange(aptitude.rank.Trim())[0]; } catch { trainerFloor = -1; }
+     if (trainerFloor < 0) { c.Say(c.Source.Label + ": 트레이너 「" + s.Aptitude + "」 등급을 알 수 없다 — 판정 대기"); return EffectOutcome.Pending; }
+    }
+    bool changed = false;
+    foreach (int i in s.Stats) {
+     int current = b[i], next = current;
+     int floor = s.Grade.Length > 0 ? (s.Value >= 0 ? s.Value : SpeciesStatRanks.LabelRange(s.Grade)[0]) : s.Value;
+     switch (s.Operation) {
+      case "변경": next = floor; break;
+      case "상승": next = Math.Max(current, floor); break;
+      case "하락": next = Math.Min(current, s.Value >= 0 ? s.Value : SpeciesStatRanks.LabelRange(s.Grade)[1]); break;
+      case "랭크": next = SpeciesStatRanks.RaisedRange(current, s.Ranks)[0]; break;
+      case "수치": next = s.Value; break;
+      case "최고 복사": next = PotentialStatRules.CopyBase(target.Data, EffectModules.StatIndex(PotentialStatRules.ChooseExtremeBase(target.Data, true, c.Rng ?? (() => .5)))); break;
+      case "최저 복사": next = PotentialStatRules.CopyBase(target.Data, EffectModules.StatIndex(PotentialStatRules.ChooseExtremeBase(target.Data, false, c.Rng ?? (() => .5)))); break;
+      case "복사": next = b[s.Source]; break;
+      case "트레이너": next = Math.Max(current, trainerFloor); break;
+     }
+     if (next == current) continue;
+     b[i] = next; changed = true;
+     c.Say(target.Data.name + ": " + Engine.Names[i] + " 종족치 " + current + "→" + next + " (" + c.Source.Label + ")");
+    }
+    if (!changed && target.Conditions.OriginalBase != null && target.Conditions.OriginalBase.SequenceEqual(b)) target.Conditions.OriginalBase = null;
+    if (changed && s.Stats.Contains(0)) target.HP = Math.Min(target.HP, Engine.Stats(target, (c.Opponent ?? target).Data.level, c.Rules ?? new Rules())[0]);
+    return changed ? EffectOutcome.Success : EffectOutcome.Failed;
+   }
+
+   static EffectOutcome RunFraction(EffectCall c) {
+    FractionEffect f; EffectModules.TryFraction(c.Line, out f);
+    var target = f.Target == "상대" ? c.Opponent : c.Owner;
+    if (target == null) return EffectOutcome.Failed;
+    var other = ReferenceEquals(target, c.Owner) ? c.Opponent ?? target : c.Owner;
+    var rules = c.Rules ?? new Rules();
+    var log = c.Log ?? new List<string>();
+    int max = Mechanics.MaxHP(target, other, rules);
+    int amount = FractionalHpRule.Amount(max, f.Denominator);
+    if (f.Action == "회복") {
+     if (target.HP <= 0) { c.Say(target.Data.name + ": 빈사라 회복할 수 없다"); return EffectOutcome.Failed; }
+     return Mechanics.Heal(target, other, rules, amount, c.Source.Label, log) > 0 ? EffectOutcome.Success : EffectOutcome.Failed;
+    }
+    if (f.Action == "소비") {
+     if (target.HP <= amount) { c.Say(target.Data.name + ": 체력이 부족해 " + amount + "을 소비할 수 없다"); return EffectOutcome.Failed; }
+     int before = target.HP;
+     target.HP -= amount;
+     c.Say(target.Data.name + " — " + c.Source.Label + " 대가: HP -" + amount);
+     AnsweredTriggers.HpChanged(target, other, rules, before, target.HP, c.Source.Label, log.Add);
+     return EffectOutcome.Success;
+    }
+    if (target.HP <= 0) return EffectOutcome.Failed;
+    if (Mechanics.Ability(target, "매직가드")) { c.Say(target.Data.name + ": 매직가드로 대미지를 받지 않는다"); return EffectOutcome.Failed; }
+    if (!f.CanFaint) amount = Math.Min(amount, target.HP - 1);
+    if (amount <= 0) return EffectOutcome.Failed;
+    Mechanics.Hurt(target, other, rules, amount, c.Source.Label, log);
+    return EffectOutcome.Success;
    }
   }
  }

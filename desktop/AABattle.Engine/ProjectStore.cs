@@ -113,12 +113,19 @@ namespace AABattle {
    return sameName.FirstOrDefault(x => Content(x, id) == content) ?? sameName[0];
   }
 
-  // id를 빼고 비교하기 위한 내용 문자열
+  // id를 빼고 비교하기 위한 내용 문자열. 리플렉션의 필드 순서는 첫 호출과 이후가 다를 수 있으므로 키를 정렬한다
   static string Content<T>(T value, Func<T, string> id) {
    var serializer = new JavaScriptSerializer { MaxJsonLength = MaxJson };
    var map = serializer.Deserialize<Dictionary<string, object>>(serializer.Serialize(value));
    map.Remove("id");
-   return serializer.Serialize(map);
+   return serializer.Serialize(Sorted(map));
+  }
+  static object Sorted(object value) {
+   var map = value as IDictionary<string, object>;
+   if (map != null) { var sorted = new SortedDictionary<string, object>(StringComparer.Ordinal); foreach (var pair in map) sorted[pair.Key] = Sorted(pair.Value); return sorted; }
+   var list = value as System.Collections.IList;
+   if (list != null && !(value is string)) return list.Cast<object>().Select(Sorted).ToList();
+   return value;
   }
 
   static void Adopt<T>(List<T> list, T value, string prefix, Func<T, string> id, Action<T, string> setId) {

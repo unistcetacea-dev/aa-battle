@@ -46,8 +46,15 @@ namespace AABattle {
   public static IEnumerable<Potential> Field(Fighter owner,Fighter opponent,Rules rules){
    if(owner==null||opponent==null||rules==null||owner.HP<=0)return Enumerable.Empty<Potential>();int max=Mechanics.MaxHP(owner,opponent,rules);
    string weather=Mechanics.Weather(owner,opponent,rules);
-   return Potentials(owner).Where(p=>TriggerStructures.Clauses(p).Any(c=>{string key=Key(c);return IsFull(key)&&owner.HP>=max||FractionAtMost(key,owner.HP,max)||StageTotalCondition(key,owner)||IsWeatherNow(key,weather)||IsTerrainNow(key,rules.Terrain)||HasCurrentItem(key,owner)||HasCurrentAbility(key,owner)||HasNamedPotential(key,owner)||key.Contains("순풍")&&rules.Sides.Any(x=>x.Tailwind>0); }));
+   return Potentials(owner).Where(p=>TriggerStructures.Clauses(p).Any(c=>StateHolds(c,owner,opponent,rules)));
   }
+  // 상태 조건 절 하나가 지금 성립하는가(체력·능력 변화 합계·날씨·지형·소지품·특성·포텐셜 보유·순풍·상대 타입)
+  public static bool StateHolds(string clause,Fighter owner,Fighter opponent,Rules rules){
+   if(owner==null||rules==null||owner.HP<=0)return false;string key=Key(clause);var other=opponent??owner;int max=Mechanics.MaxHP(owner,other,rules);string weather=Mechanics.Weather(owner,other,rules);
+   return IsFull(key)&&owner.HP>=max||FractionAtMost(key,owner.HP,max)||StageTotalCondition(key,owner)||IsWeatherNow(key,weather)||IsTerrainNow(key,rules.Terrain)||HasCurrentItem(key,owner)||HasCurrentAbility(key,owner)||HasNamedPotential(key,owner)||key.Contains("순풍")&&rules.Sides.Any(x=>x.Tailwind>0)||OpponentType(key,opponent);
+  }
+  // 「적진에 「불꽃」 포켓몬이 있을 때」: 장소의 상대가 그 타입(여럿이면 하나라도)
+  static bool OpponentType(string key,Fighter opponent){var match=Regex.Match(key,@"^(?:적진|상대)(?:에|의)?「(?<t>[^」]+)」(?:타입)?(?:의|인)?포켓몬이(?:있을때|있는한|일때)$");if(!match.Success||opponent==null||opponent.HP<=0||!opponent.OnField)return false;var types=match.Groups["t"].Value.Split('/');return (opponent.Data.types??new string[0]).Any(types.Contains);}
   public static void HpChanged(Fighter target,Fighter other,Rules rules,int before,int after,string reason,Action<string> log){
    if(target==null||other==null||rules==null||after>=before)return;int max=Mechanics.MaxHP(target,other,rules);
    Fire(target,x=>FractionCrossed(x,before,after,max),target.Data.name+"의 HP가 "+before+"→"+after+" ("+reason+")",log);
