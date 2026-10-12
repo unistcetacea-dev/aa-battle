@@ -506,6 +506,7 @@ namespace AABattle {
       if (g.Side < 0) return EffectOutcome.Failed;
       g.Owner = c.Owner; g.Source = c.Source.Label;
       scope.ExtraActions.Add(g);
+      c.Owner.Conditions.PendingAction = true;
       c.Say(c.Owner.Data.name + ": 추가행동을 얻었다 (" + (g.First ? "바로 다음" : "턴 마지막") + ")");
       return EffectOutcome.Success;
      });

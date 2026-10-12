@@ -164,6 +164,36 @@ namespace AABattle {
    Assert.That(EffectNormalizer.Normalize(raw), Is.EqualTo(expected));
   }
 
+  // 추가효과 모듈
+  [TestCase("자신의 기술에 「1할：풀죽음」의 추가효과를 부여한다", "자신의 기술에 「1할:풀죽음」의 추가효과를 부여한다.")]
+  [TestCase("아군의 「기능확장」에 「2할:마비」를 부여한다", "자신의 「기능확장」 기술에 「2할:마비」의 추가효과를 부여한다.")]
+  [TestCase("자신의 공격에 「3할:화상」의 추가효과를 부여한다", "자신의 공격에 「3할:화상」의 추가효과를 부여한다.")]
+  public void NormalizesSecondaryEffect(string raw, string expected) {
+   Assert.That(EffectNormalizer.Normalize(raw), Is.EqualTo(expected));
+   Assert.That(EffectModules.Classify(expected), Is.EqualTo("추가효과 부여"));
+  }
+
+  // 왕의징표석: 먼저 맞힌 상대는 풀죽어 행동하지 못한다
+  [Test] public void KingsRockFlinchesSlowerTarget() {
+   var holder = F("왕의징표석"); holder.Data.@base[5] = 200; var target = F();
+   var turn = Turn(holder, target, M("몸통박치기"), M("몸통박치기"), null);
+   var rolled = Engine.Resolve(TestData.Db, new[] { holder, target }, new[] { M("몸통박치기"), M("몸통박치기") }, new Rules(), () => .05);
+   Assert.That(rolled.Log.Any(x => x.Contains("풀죽어서 움직일 수 없다")), Is.True, string.Join("\n", rolled.Log));
+   Assert.That(turn.Log.Any(x => x.Contains("풀죽어서")), Is.False, "roll .5 does not flinch");
+  }
+
+  // 행동 순서: 교대는 먼저 행동한 것으로 치지 않는다(사용자 결정)
+  [Test] public void ActionOrderConditionsIgnoreSwitching() {
+   Potential P(string trigger, string effect) { return new Potential { id = "종족 ①", name = "검사", description = effect, triggers = trigger.Split('\n') }; }
+   var slow = new Fighter(new Pokemon { id = "slow", name = "느림", level = 100, types = new[] { "노말" }, item = "", @base = new[] { 100, 100, 100, 100, 100, 10 }, iv = new int[6], moves = new[] { "몸통박치기" }, potentials = new[] { P("T 종료 시\n상대가 자신보다 먼저 행동할 때", "자신의 「공격」이 오른다."), P("상대가 자신보다 먼저 행동했을 때", "자신의 「방어」가 오른다.") } });
+   var turn = Turn(slow, F(), M("몸통박치기"), M("몸통박치기"));
+   Assert.That(turn.Fighters[0].Stages[1], Is.EqualTo(1), "state at turn end");
+   Assert.That(turn.Fighters[0].Stages[2], Is.EqualTo(1), "event before own action");
+   var reserve = F();
+   var switched = Engine.Resolve(TestData.Db, new[] { slow.Copy(), F() }, new[] { new BattleCommand { Move = M("몸통박치기") }, new BattleCommand { SwitchIn = reserve } }, new Rules(), null, () => .5);
+   Assert.That(switched.Fighters[0].Stages[1], Is.EqualTo(0), "switching is not acting first");
+  }
+
   // 기술머신(X): 배틀 중 한 번 X를 기능확장으로 내보낸다
   [Test] public void TechnicalMachineIsOneExtension() {
    var holder = F("기술머신(전광석화)");

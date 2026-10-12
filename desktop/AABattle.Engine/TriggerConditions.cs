@@ -16,7 +16,7 @@ namespace AABattle {
    { "「방어」 등의 기술로 상대의 공격을 무효화했을 때", "방어 성공" }, { "「방어」 등의 기술로 상대의 기술을 무효화했을 때", "방어 성공" }, { "자신의 방어 상태가 공격을 막았을 때", "방어 성공" },
    { "상대가 공격 이외의 대미지를 받았을 때", "간접 대미지" }, { "상대의 체력을 드레인했을 때", "드레인" }
   };
-  public static readonly string[] ConditionModules = { "상시", "PT 참가", "여기다", "해석 상태", "부여", "적진 타입", "트레이너 자질", "플레이버", "포텐셜 보유", "소지품", "특성", "생존", "빈사 수", "진영", "공격하지 않음", "능력 변화 합" };
+  public static readonly string[] ConditionModules = { "행동 선후", "상시", "PT 참가", "여기다", "해석 상태", "부여", "적진 타입", "트레이너 자질", "플레이버", "포텐셜 보유", "소지품", "특성", "생존", "빈사 수", "진영", "공격하지 않음", "능력 변화 합" };
   static readonly string[] SideNames = { "스텔스록", "압정", "독압정", "끈적끈적네트", "순풍", "리플렉터", "빛의장막" };
 
   static bool TryParseCondition(string t, out TriggerSpec spec) {
@@ -65,6 +65,9 @@ namespace AABattle {
    m = Regex.Match(t, @"^(?:(?<s>자신|상대)의\s*)?특성이\s*「(?<v>[^」]+)」\s*일\s*때$");
    if (!m.Success) m = Regex.Match(t, @"^(?:(?<s>자신|상대)(?:이|가)\s*)?「(?<v>[^」]+)」\s*특성을\s*가지고\s*있을\s*때$");
    if (m.Success) { spec = new TriggerSpec { Module = "특성", Subject = m.Groups["s"].Success ? m.Groups["s"].Value : "자신", Names = new[] { m.Groups["v"].Value.Trim() } }; return true; }
+   // 행동 선후(교대는 행동이 아니다, 사용자 결정)
+   m = Regex.Match(t, @"^(?<s>상대|자신)(?:이|가)\s*(?:자신|상대)?(?:보다)?\s*먼저\s*행동(?<v>할|했을)\s*때$");
+   if (m.Success) { bool opp = m.Groups["s"].Value == "상대"; spec = m.Groups["v"].Value == "할" ? new TriggerSpec { Module = "행동 선후", Op = opp ? "상대 먼저" : "자신 먼저" } : new TriggerSpec { Module = "먼저 행동함", Opponent = opp }; return true; }
    // 빗나감(명중 판정으로 빗나갔을 때)
    if (Regex.IsMatch(t, @"^(?:자신의\s*기술이|(?:명중률에\s*의해\s*)?기술이)\s*빗나갔을\s*때$")) { spec = new TriggerSpec { Module = "빗나감" }; return true; }
    // 특성 발동(확정 15: 실제로 발동한 순간)
@@ -107,6 +110,8 @@ namespace AABattle {
     case "소지품": return s.Names.Length == 0 ? "자신이 소지품을 가지고 있을 때" : Of(s.Subject) + " 소지품이 「" + s.Names[0] + "」일 때";
     case "특성": return Of(s.Subject) + " 특성이 「" + s.Names[0] + "」일 때";
     case "빗나감": return "자신의 기술이 빗나갔을 때";
+    case "행동 선후": return s.Op == "상대 먼저" ? "상대가 자신보다 먼저 행동할 때" : "자신이 상대보다 먼저 행동할 때";
+    case "먼저 행동함": return s.Opponent ? "상대가 자신보다 먼저 행동했을 때" : "자신이 상대보다 먼저 행동했을 때";
     case "특성 발동": return s.Names.Length == 0 ? "자신의 특성이 발동했을 때" : "자신의 「" + s.Names[0] + "」 특성이 발동했을 때";
     case "생존": return s.Op == "최후" ? "자신만 생존해 있을 때" : "아군에 「" + s.Names[0] + "」" + Particle(s.Names[0], "이", "가") + " 생존해 있을 때";
     case "빈사 수": return "아군의 빈사 수가 상대보다 " + s.Op + " 때";
@@ -155,6 +160,10 @@ namespace AABattle {
      var value = s.Names[0] == "지시" ? trainer.command : s.Names[0] == "육성" ? trainer.training : s.Names[0] == "통솔" ? trainer.leadership : trainer.ability;
      return value != null && TriggerStructures.RankBand(value.rank, s.Names[1]);
     }
+    case "행동 선후": {
+     int mine = owner.Conditions.ActionOrder, theirs = opponent == null ? 0 : opponent.Conditions.ActionOrder;
+     return s.Op == "상대 먼저" ? theirs > 0 && (mine == 0 || theirs < mine) : mine > 0 && (theirs == 0 || mine < theirs);
+    }
     case "여기다": { var state = BattleRecords.StateOf(owner); return state != null && state.Here; }
     case "해석 상태": {
      if (s.Op == "상대 해석됨") return opponent != null && opponent.OnField && BattleRecords.IsAnalyzed(BattleRecords.StateOf(owner), opponent);
@@ -194,6 +203,7 @@ namespace AABattle {
    if (s.Module == "특성 발동") return f.Kind == "특성 발동" && f.Self && (s.Names.Length == 0 || s.Names.Contains(f.Method));
    if (s.Module == "해석당함") return f.Kind == "해석당함" && f.Self;
    if (s.Module == "빗나감") return f.Kind == "빗나감" && f.Self;
+   if (s.Module == "먼저 행동함") return f.Kind == "먼저 행동함" && f.Self != s.Opponent;
    return false;
   }
  }

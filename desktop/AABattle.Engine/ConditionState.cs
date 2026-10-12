@@ -25,6 +25,7 @@ namespace AABattle {
   public EntryReason PendingEntry=EntryReason.Lead;
   public List<string> ExtensionMoves=new List<string>();               // 사건으로 얻은 기능확장 기술(장소를 떠날 때까지)
   public string AbilityBefore;public int AbilityTurns;                    // 특성 변경 전 특성 / 남은 T(0 = 장소를 떠날 때까지)
+  public int ActionOrder;public bool PendingAction;                      // 이번 T에 몇 번째로 행동했나(0 = 아직, 교대는 행동이 아니다) / 아직 기술 행동이 남았나(행동권)
   public bool StageByOpponent;                                           // 직전 랭크 변화가 상대에 의한 것(주눅구슬 등)
   public string ChoiceMove="";                                          // 구애: 장소에 나와 처음 내보낸 기술(떠나면 해제)
   public bool NotAttacking;                                            // 이번 T에 공격기술을 고르지 않았다(교대·변화기술 포함, 확정 12)

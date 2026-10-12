@@ -310,6 +310,8 @@ namespace AABattle {
     return Scalar(Subj(m.Groups["s"].Value) + "의 " + st, action, rate);
    }
    // F4b 타입·상성
+   string secondary = SecondaryEffects.Normalize(text);
+   if (secondary != null) return secondary;
    string misc = MiscModules.Normalize(text);
    if (misc != null) return misc;
    string cure = StateCure.Normalize(text);
@@ -599,6 +601,7 @@ namespace AABattle {
   }
   static string ClassifySentence(string s) {
    ScalarEffect scalar; SpeciesEffect species; FractionEffect fraction; RankEffect rank; string target;
+   if (SecondaryEffects.IsModule(s)) return "추가효과 부여";
    string miscKind = MiscModules.Classify(s);
    if (miscKind.Length > 0) return miscKind;
    string cureTarget; string[] cureNames; bool cureRelease;
