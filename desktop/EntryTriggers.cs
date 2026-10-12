@@ -28,17 +28,19 @@ namespace AABattle {
   public const string AnalyzedLabel="상대의 데이터를 해석했을 때";
   public const string BattleStartLabel="배틀 시작 시";
   public const string OpponentEntryLabel="상대가 장소에 나왔을 때";
+  public const string SelfAndOpponentEntryLabel=EntryLabel+"\r\n"+OpponentEntryLabel;
   public const string MoveUseLabel="기술을 내보낼 때";
   public const string AttackMoveUseLabel="공격기술을 내보낼 때";
   public const string StatusMoveUseLabel="변화기술을 내보낼 때";
   public const string AttackSuccessLabel="공격이 성공했을 때";
   public const string DamagedLabel="대미지를 받았을 때";
 
-  public static string NormalizeLines(string text){return string.Join("\r\n",(text??"").Split(new[]{(char)13,(char)10},StringSplitOptions.RemoveEmptyEntries).Select(Normalize).Where(x=>x.Length>0).Distinct());}
+  public static string NormalizeLines(string text){return string.Join("\r\n",(text??"").Split(new[]{(char)13,(char)10},StringSplitOptions.RemoveEmptyEntries).SelectMany(x=>Normalize(x).Split(new[]{(char)13,(char)10},StringSplitOptions.RemoveEmptyEntries)).Where(x=>x.Length>0).Distinct());}
   public static string Normalize(string text){
    string value=PotentialParts.Clean(text);string key=Regex.Replace(value,@"\s+","");
    if(key=="X"||key=="x"||key=="×")return AlwaysLabel;
    if(key=="턴중선언시")return "";
+   if(Regex.IsMatch(key,@"^자신\(상대\)이?(?:필드|장소)에(?:나와|나오면|나왔을때|나왔을때에|나올때|나온때)$"))return SelfAndOpponentEntryLabel;
    if(Regex.IsMatch(key,@"^(?:자신이?|자신의포켓몬이)?(?:필드|장소)에(?:나와|나오면|나왔을때|나왔을때에|나올때|나온때)$"))return EntryLabel;
    if(Regex.IsMatch(key,@"^(?:자동)?(?:자신이)?상대를쓰러(?:뜨|트)렸을때$"))return DefeatLabel;
    if(Regex.IsMatch(key,@"^(?:자동)?(?:자신이)?PT에(?:참여|참가)(?:하고있을때|하고있는한|중일때)$"))return ObserverLabel;
@@ -88,7 +90,7 @@ namespace AABattle {
   public static bool TryTrainerAptitude(string text,out string aptitude,out string rank){var match=Regex.Match(PotentialParts.Clean(text),@"^트레이너가\s*「(?<aptitude>지시|육성|통솔|능력)\s*:\s*(?<rank>[A-Za-z]+)[-+]?」\s*이상일\s*때$");aptitude=match.Success?match.Groups["aptitude"].Value:"";rank=match.Success?match.Groups["rank"].Value.ToUpperInvariant():"";return match.Success;}
   public static bool RankBand(string actual,string required){var left=Regex.Match((actual??"").ToUpperInvariant(),@"[A-Z]+").Value;var right=Regex.Match((required??"").ToUpperInvariant(),@"[A-Z]+").Value;return left.Length>0&&left==right;}
   public static IEnumerable<string> Clauses(Potential potential){
-   var clauses=(potential.triggers??new string[0]).SelectMany(x=>(x??"").Split(new[]{'\r','\n'},StringSplitOptions.RemoveEmptyEntries)).ToList();string condition,effect;PotentialLibrary.Split(potential.description??"",out condition,out effect);clauses.AddRange(condition.Split(new[]{'\r','\n'},StringSplitOptions.RemoveEmptyEntries));return clauses;
+   var clauses=(potential.triggers??new string[0]).SelectMany(x=>(x??"").Split(new[]{'\r','\n'},StringSplitOptions.RemoveEmptyEntries)).ToList();string condition,effect;PotentialLibrary.Split(potential.description??"",out condition,out effect);clauses.AddRange(condition.Split(new[]{'\r','\n'},StringSplitOptions.RemoveEmptyEntries));return clauses.SelectMany(x=>Normalize(x).Split(new[]{'\r','\n'},StringSplitOptions.RemoveEmptyEntries)).ToList();
   }
   public static IEnumerable<Potential> Matching(Fighter fighter,string label){return (fighter.Data.potentials??new Potential[0]).Where(p=>p!=null&&Clauses(p).Any(x=>Normalize(x)==label));}
   public static bool Has(Fighter fighter,string label){return fighter!=null&&Matching(fighter,label).Any();}
@@ -101,6 +103,7 @@ namespace AABattle {
   }
   public static void Test(){
    foreach(var text in new[]{"필드에 나왔을때","장소에 나와","필드에 나오면","자신이 장소에 나왔을 때"})if(Normalize(text)!=EntryLabel)throw new Exception("Entry alias: "+text);
+   if(Normalize("자신(상대)이 장소에 나왔을 때")!=SelfAndOpponentEntryLabel)throw new Exception("Self and opponent entry alias");
    foreach(var text in new[]{"상대를 쓰러뜨렸을 때","상대를 쓰러트렸을 때","자신이 상대를 쓰러트렸을 때","자동 상대를 쓰러뜨렸을 때"})if(Normalize(text)!=DefeatLabel)throw new Exception("Defeat alias: "+text);
    foreach(var text in new[]{"PT에 참가하고 있을 때","PT에 참가하고 있는 한","자신이 PT에 참여중일 때"})if(Normalize(text)!=ObserverLabel)throw new Exception("Observer alias: "+text);
    foreach(var text in new[]{"T종료시","T종료시에","매T종료 시에","턴 종료시"})if(Normalize(text)!=TurnEndLabel)throw new Exception("Turn end alias: "+text);
@@ -120,15 +123,29 @@ namespace AABattle {
   }
  }
 
+ public static class OptionalEffectRuntime {
+  public static void Activate(Fighter owner,Fighter target,string label,Rules rules,Action<string> log){
+   if(owner==null||target==null||owner.HP<=0||target.HP<=0)return;
+   foreach(var potential in (owner.Data.potentials??new Potential[0]).Where(x=>x!=null&&EffectStructures.IsAnalysisPermission(x.description)&&TriggerStructures.Clauses(x).Any(c=>TriggerStructures.Normalize(c)==label))){
+    if(rules==null||rules.OptionalEffectPrompt==null)continue;
+    if(rules.OptionalEffectPrompt(owner,target,potential)){if(log!=null){RuntimeTriggers.Analyzed(owner,new[]{owner},target,log);log("『"+potential.name+"』 선택 발동 · "+target.Data.name+"의 데이터를 해석한다.");}}
+   }
+  }
+ }
+
  public static class EntryTriggers {
   public const string Id="field.enter";
   public const string Label=TriggerStructures.EntryLabel;
   public static bool IsEntry(EntryReason reason){return reason!=EntryReason.Forced;}
   public static string MethodLabel(EntryReason reason){if(reason==EntryReason.Lead)return TriggerStructures.LeadEntryLabel;if(reason==EntryReason.Replacement)return TriggerStructures.ReplacementEntryLabel;if(reason==EntryReason.NormalSwitch||reason==EntryReason.Return||reason==EntryReason.Pivot||reason==EntryReason.Potential)return TriggerStructures.VoluntaryEntryLabel;return "";}
   public static void Enter(Fighter fighter,EntryReason reason,Action<string> log){
+   Enter(fighter,null,null,null,reason,log);
+  }
+  public static void Enter(Fighter fighter,Fighter opponent,Rules rules,Func<double> rng,EntryReason reason,Action<string> log){
    if(!IsEntry(reason))return;
-   TriggerStructures.Fire(fighter,Label,fighter.Data.name+" · "+Label+" ["+reason+"]",log);PriorityEffectRuntime.ActivateEvent(fighter,null,Label,fighter.Data.name+" · "+Label+" ["+reason+"]",log);
+   TriggerStructures.Fire(fighter,Label,fighter.Data.name+" · "+Label+" ["+reason+"]",log);PriorityEffectRuntime.ActivateEvent(fighter,null,Label,fighter.Data.name+" · "+Label+" ["+reason+"]",log);OptionalEffectRuntime.Activate(fighter,opponent,Label,rules,log);
    string method=MethodLabel(reason);if(method.Length>0&&TriggerStructures.Has(fighter,method)){TriggerStructures.Fire(fighter,method,fighter.Data.name+" · "+method,log);PriorityEffectRuntime.ActivateEvent(fighter,null,method,fighter.Data.name+" · "+method,log);}if((reason==EntryReason.Lead||reason==EntryReason.Replacement)&&TriggerStructures.Has(fighter,TriggerStructures.LeadOrReplacementEntryLabel)){TriggerStructures.Fire(fighter,TriggerStructures.LeadOrReplacementEntryLabel,fighter.Data.name+" · "+TriggerStructures.LeadOrReplacementEntryLabel,log);PriorityEffectRuntime.ActivateEvent(fighter,null,TriggerStructures.LeadOrReplacementEntryLabel,fighter.Data.name+" · "+TriggerStructures.LeadOrReplacementEntryLabel,log);}
+   RoleEntryRuntime.Enter(fighter,opponent,rules,rng,log);
   }
   public static void Test(){
    TriggerStructures.Test();
@@ -138,6 +155,17 @@ namespace AABattle {
    RuntimeTriggers.Test();
    AnsweredTriggers.Test();
    TriggerBatchTests.Run();
+  }
+ }
+
+ public static class RoleEntryRuntime {
+  static bool IsRole(Fighter fighter,string name){return fighter!=null&&fighter.Data!=null&&(fighter.Data.potentials??new Potential[0]).Any(p=>p!=null&&p.id=="역할"&&p.name==name&&TriggerStructures.Clauses(p).Any(x=>TriggerStructures.Normalize(x)==TriggerStructures.EntryLabel));}
+  static void Raise(Fighter fighter,Fighter opponent,Rules rules,int stat,int amount,string role,List<string> log){if(stat<1||stat>5)return;if(Mechanics.ChangeStage(fighter,opponent,stat,amount,rules,role,log))log.Add("『"+role+"』: "+Engine.Names[stat]+" "+(amount>1?"크게 ":"")+"상승");}
+  public static void Enter(Fighter fighter,Fighter opponent,Rules rules,Func<double> rng,Action<string> log){
+   if(fighter==null||opponent==null||rules==null||log==null||fighter.HP<=0||fighter.Conditions.RoleEntryApplied)return;fighter.Conditions.RoleEntryApplied=true;var lines=new List<string>();
+   if(IsRole(fighter,"탐사대원")||IsRole(fighter,"야생 포켓몬")){string role=IsRole(fighter,"야생 포켓몬")?"야생 포켓몬":"탐사대원";int amount=role=="야생 포켓몬"?2:1;string stat=PotentialStatRules.ChooseRandom(rng??(()=>0));Raise(fighter,opponent,rules,Array.IndexOf(Engine.Names,stat),amount,role,lines);}
+   if(IsRole(fighter,"야생의 두목"))foreach(int stat in Enumerable.Range(1,5))Raise(fighter,opponent,rules,stat,2,"야생의 두목",lines);
+   foreach(string line in lines)log(line);
   }
  }
 
@@ -183,7 +211,8 @@ namespace AABattle {
   public static void DirectiveReceived(Fighter target,IEnumerable<Fighter> party,string order,Action<string> log){if(target!=null&&target.HP>0&&TriggerStructures.Has(target,TriggerStructures.SelfOrderLabel))TriggerStructures.Fire(target,TriggerStructures.SelfOrderLabel,target.Data.name+"이 『"+order+"』을 받았다.",log);foreach(var owner in (party??Enumerable.Empty<Fighter>()).Where(x=>x!=null&&x.HP>0&&TriggerStructures.Has(x,TriggerStructures.AllyOrderLabel)).Distinct())TriggerStructures.Fire(owner,TriggerStructures.AllyOrderLabel,"아군 "+target.Data.name+"이 『"+order+"』을 받았다.",log);}
   public static void Analyzed(Fighter analyst,IEnumerable<Fighter> party,Fighter target,Action<string> log){if(analyst!=null&&analyst.HP>0&&TriggerStructures.Has(analyst,TriggerStructures.AnalyzedLabel))TriggerStructures.Fire(analyst,TriggerStructures.AnalyzedLabel,analyst.Data.name+"이 "+target.Data.name+"의 데이터를 처음 해석했다.",log);}
   public static void BattleStart(TrainerRecord[] trainers,IEnumerable<Fighter>[] parties,Action<string> log){for(int side=0;side<2;side++){var trainer=trainers!=null&&side<trainers.Length?trainers[side]:null;TrainerTriggers.Fire(trainer,TriggerStructures.BattleStartLabel,(side+1)+"팀 배틀 시작",log);foreach(var owner in parties!=null&&side<parties.Length?parties[side]:Enumerable.Empty<Fighter>())if(owner!=null&&owner.HP>0&&TriggerStructures.Has(owner,TriggerStructures.BattleStartLabel))TriggerStructures.Fire(owner,TriggerStructures.BattleStartLabel,"배틀이 시작됐다.",log);}}
-  public static void OpponentEntered(Fighter observer,Fighter entering,Action<string> log){if(observer!=null&&observer.HP>0&&entering!=null&&TriggerStructures.Has(observer,TriggerStructures.OpponentEntryLabel))TriggerStructures.Fire(observer,TriggerStructures.OpponentEntryLabel,entering.Data.name+"이 장소에 나왔다.",log);if(observer!=null&&observer.HP>0&&entering!=null)PriorityEffectRuntime.ActivateEvent(observer,entering,TriggerStructures.OpponentEntryLabel,entering.Data.name+"이 장소에 나왔다.",log);}
+  public static void OpponentEntered(Fighter observer,Fighter entering,Action<string> log){OpponentEntered(observer,entering,null,log);}
+  public static void OpponentEntered(Fighter observer,Fighter entering,Rules rules,Action<string> log){if(observer!=null&&observer.HP>0&&entering!=null&&TriggerStructures.Has(observer,TriggerStructures.OpponentEntryLabel))TriggerStructures.Fire(observer,TriggerStructures.OpponentEntryLabel,entering.Data.name+"이 장소에 나왔다.",log);if(observer!=null&&observer.HP>0&&entering!=null){PriorityEffectRuntime.ActivateEvent(observer,entering,TriggerStructures.OpponentEntryLabel,entering.Data.name+"이 장소에 나왔다.",log);OptionalEffectRuntime.Activate(observer,entering,TriggerStructures.OpponentEntryLabel,rules,log);}}
   public static void BeforeMove(Fighter user,Move move,Action<string> log){if(user==null||user.HP<=0||move==null)return;foreach(string label in new[]{TriggerStructures.MoveUseLabel,move.category=="변화"?TriggerStructures.StatusMoveUseLabel:TriggerStructures.AttackMoveUseLabel})if(TriggerStructures.Has(user,label))TriggerStructures.Fire(user,label,user.Data.name+"이 "+move.name+"을 내보낸다.",log);foreach(var p in user.Data.potentials??new Potential[0])if(p!=null&&TriggerStructures.Clauses(p).Any(c=>{string value;return TriggerStructures.TryMoveType(c,out value)&&(move.types??new string[0]).Contains(value)||TriggerStructures.TryMoveName(c,out value)&&move.name==value;}))log("『"+p.name+"』 "+TriggerStructures.Normalize(TriggerStructures.Clauses(p).First(c=>{string value;return TriggerStructures.TryMoveType(c,out value)&&(move.types??new string[0]).Contains(value)||TriggerStructures.TryMoveName(c,out value)&&move.name==value;}))+" 트리거 충족 · 효과 판정 대기: "+p.description);}
   public static void AttackSucceeded(Fighter user,Fighter target,Move move,Action<string> log){if(user!=null&&user.HP>0&&move!=null&&move.category!="변화"&&TriggerStructures.Has(user,TriggerStructures.AttackSuccessLabel))TriggerStructures.Fire(user,TriggerStructures.AttackSuccessLabel,user.Data.name+"의 "+move.name+" 공격이 "+target.Data.name+"에게 명중했다.",log);if(user!=null&&user.HP>0&&move!=null&&move.category!="변화")PriorityEffectRuntime.ActivateEvent(user,target,TriggerStructures.AttackSuccessLabel,user.Data.name+"의 "+move.name+" 공격이 "+target.Data.name+"에게 명중했다.",log);}
   public static void Damaged(Fighter target,int amount,string reason,Action<string> log){if(target!=null&&amount>0&&TriggerStructures.Has(target,TriggerStructures.DamagedLabel))TriggerStructures.Fire(target,TriggerStructures.DamagedLabel,target.Data.name+"이 "+reason+"로 "+amount+" 대미지를 받았다.",log);if(target!=null&&amount>0)PriorityEffectRuntime.ActivateEvent(target,null,TriggerStructures.DamagedLabel,target.Data.name+"이 "+reason+"로 "+amount+" 대미지를 받았다.",log);}

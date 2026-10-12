@@ -10,7 +10,7 @@ namespace AABattle {
  }
  public class ConditionState {
   public int SleepTurns=2,ToxicStage=1,Confusion,Taunt,Substitute,ProtectChain,PriorityModifier,PriorityModifierTurns;
-  public bool Protect,Flinch,Recharge,Seed,Curse,AquaRing,Ingrain,FlashFire,BalloonPopped,AbilityEntryApplied;
+  public bool Protect,Flinch,Recharge,Seed,Curse,AquaRing,Ingrain,FlashFire,BalloonPopped,AbilityEntryApplied,RoleEntryApplied;
   public List<DelayedAttackState> DelayedAttacks=new List<DelayedAttackState>();
   public ConditionState Copy(){var copy=(ConditionState)MemberwiseClone();copy.DelayedAttacks=(DelayedAttacks??new List<DelayedAttackState>()).Where(x=>x!=null).Select(x=>x.Copy()).ToList();return copy;}
   public IEnumerable<string> Labels(Fighter f){if(f.Status!="정상")yield return f.Status+(f.Status=="잠듦"?" "+SleepTurns:f.Status=="맹독"?" "+ToxicStage:"");if(Confusion>0)yield return "혼란 "+Confusion;if(Taunt>0)yield return "도발 "+Taunt;if(Protect)yield return "방어";if(Flinch)yield return "풀죽음";if(Recharge)yield return "반동대기";if(Substitute>0)yield return "대타 "+Substitute;if(Seed)yield return "씨뿌리기";if(Curse)yield return "저주";if(AquaRing)yield return "아쿠아링";if(Ingrain)yield return "뿌리박기";if(FlashFire)yield return "타오르는불꽃";if(PriorityModifier!=0)yield return "기술 우선도 "+(PriorityModifier>0?"+":"")+PriorityModifier+" (이번 T)";foreach(var attack in DelayedAttacks??new List<DelayedAttackState>())if(attack!=null&&attack.Move!=null)yield return attack.Move.name+" "+Math.Max(1,attack.TurnsRemaining)+"T";}
@@ -138,7 +138,7 @@ namespace AABattle {
     case "대타출동":int cost=Math.Max(1,max/4);if(c.Substitute>0||a.HP<=cost){log.Add("대타출동 실패: HP 부족 또는 이미 대타 존재.");break;}a.HP-=cost;c.Substitute=cost;log.Add(a.Data.name+": 대타 HP "+cost);break;
     case "자기재생":case "태만함":Heal(a,b,r,max/2,m.name,log);break;
     case "날개쉬기":log.Add("날개쉬기: 비행 타입 일시 제거까지 포함하므로 현재 수동 판정.");break;
-    case "아쿠아링":c.AquaRing=true;log.Add(a.Data.name+": 아쿠아링");break;
+    case "아쿠아링":if(c.AquaRing)log.Add(a.Data.name+": 아쿠아링 실패: 이미 상태변화가 있다.");else{c.AquaRing=true;log.Add(a.Data.name+": 아쿠아링");}break;
     case "뿌리박기":c.Ingrain=true;log.Add(a.Data.name+": 뿌리박기 (접지)");break;
     case "리플렉터":r.Sides[targetSide].Reflect=5;log.Add((targetSide+1)+"팀 진영: 리플렉터 5턴");break;
     case "빛의장막":r.Sides[targetSide].LightScreen=5;log.Add((targetSide+1)+"팀 진영: 빛의장막 5턴");break;

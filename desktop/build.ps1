@@ -13,6 +13,7 @@ $sources += 'desktop\AbilityCatalog.cs'
 $sources += 'desktop\SwitchRuntime.cs'
 $sources += 'desktop\SwitchRuntimeTests.cs'
 $sources += 'desktop\FieldStateTests.cs'
+$sources += 'desktop\FieldEffects.cs'
 Push-Location $projectRoot
 try {
     & $compiler /nologo /target:winexe /platform:anycpu /optimize+ /utf8output /main:AABattle.Program "/out:$outputDirectory\AABattle.exe" /win32manifest:desktop\app.manifest $references $resources $sources

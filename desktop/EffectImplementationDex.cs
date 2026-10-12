@@ -16,12 +16,16 @@ namespace AABattle {
    if(directiveCount>0){status=directiveCount==part.names.Count?"자동 구현":"일부 자동 구현";family="트레이너 4식·지령";implementation="이 효과가 트레이너 지령으로 사용될 때 Engine.Resolve가 선언 횟수와 행동 조건을 확인합니다. 4식은 회피·필중·버티기·후공 교대를 처리하고, Engine.ApplyOrder가 능력 랭크·1턴 배율·회복을 적용합니다. 같은 문장을 일반 포켓몬 포텐셜에서 사용하면 아직 자동 실행되지 않습니다.";}
    else if(PotentialProbability.Rate(value).HasValue){status="구현 규칙 준비";family="확률 발동";implementation=PotentialProbability.Help+" 포켓몬 포텐셜 실행기가 연결되면 이 판정기를 호출합니다.";}
    else if(value.Contains("확률로")){status="기준 질문 필요";family="확률 발동";implementation="확률 수치가 적혀 있지 않아 자동 판정할 수 없습니다.";}
+   else if(EffectStructures.IsAnalysisPermission(value)){status="일부 자동 구현";family="정보·해석";implementation="등장 이벤트에서 선택 발동 여부를 묻고, 수락하면 상대의 데이터 해석 창을 엽니다.";}
+   else if(EffectStructures.IsSwitchEffect(value)||EffectStructures.IsPivotGrant(value)){status="자동 구현";family="교대·등장";implementation=EffectStructures.IsPivotGrant(value)?"확정된 기술 처리 로그 뒤 유턴 효과 부여를 확인해 교대 요청을 만들고, 선택한 아군을 같은 등장 경로로 처리합니다.":"확정된 교대 트리거 로그 뒤 아군 임의교대 효과를 확인해 교대 요청을 만들고, 선택한 아군을 같은 등장 경로로 처리합니다.";}
    else if(EffectStructures.IsSwitchRestriction(value)){status="자동 구현";family="교대·등장";implementation="활성 상태의 ‘장소에 있는 한’ 교대 제한을 Engine의 교대 요청에 적용합니다. 일반 교대와 『돌아와！』, 강제교대는 허용하고 유턴·포텐셜 교대만 제한합니다.";}
+   else if(EffectStructures.IsStatIgnore(value)){status="자동 구현";family="능력치 무시";implementation="피격 시 공격·특공, 명중 시 방어·특방, 속도 비교 시의 상승(랭크)·강화(배율)를 구조화된 대상과 능력치 범위에 따라 무시합니다. 기술 우선도는 속도와 별도 계산으로 유지합니다.";}
    else if(family!="기타 원문"){status="구현 규칙 준비";implementation=Prepared(family);}
    string interpretation="문장 분류: "+family+". "+Interpret(value)+(part.protectedTemplate?" 기본 템플릿이므로 정리·치환하지 않습니다.":"");
    return new EffectImplementationEntry{status=status,family=family,effect=value,interpretation=interpretation,implementation=implementation,sources=string.Join(" / ",part.sources.Take(4))+(part.sources.Count>4?" 외 "+(part.sources.Count-4)+"곳":"")};
   }
   static string Family(string value){
+   if(EffectStructures.IsStatIgnore(value))return "능력치 무시";
    if(Regex.IsMatch(value,@"종족치.*(오른|올린|상승|동랭크|로 한다|취급한다)"))return "종족치 변경";
    if(EffectStructures.IsRank(value)||Regex.IsMatch(value,@"(랭크|능력치).*(올린|오른|상승|내린|저하)|전능력치가 오른다"))return "능력 랭크 변화";
    if(Regex.IsMatch(value,@"(강화|약화|완화|반감|배가|[0-9.]+배)"))return "수치 배율 변화";
@@ -65,7 +69,7 @@ namespace AABattle {
    Action refresh=()=>{string q=search.Text.Trim();var shown=entries.Where(x=>(status.Text=="전체"||x.status==status.Text)&&(x.effect+x.family+x.status+x.interpretation+x.implementation+x.sources).IndexOf(q,StringComparison.OrdinalIgnoreCase)>=0).ToList();grid.Rows.Clear();foreach(var x in shown){int i=grid.Rows.Add(x.status,x.family,x.effect);grid.Rows[i].Tag=x;}count.Text="구현 대상 "+entries.Count+"개 · 현재 표시 "+shown.Count+"개 · "+string.Join(" / ",entries.GroupBy(x=>x.status).Select(x=>x.Key+" "+x.Count()));if(grid.RowCount>0)grid.CurrentCell=grid.Rows[0].Cells[0];show();};
    grid.SelectionChanged+=(s,e)=>show();status.SelectedIndexChanged+=(s,e)=>refresh();search.TextChanged+=(s,e)=>refresh();host.Controls.Add(new PixelGridHost(grid));host.Controls.Add(detail);host.Controls.Add(search);host.Controls.Add(status);host.Controls.Add(count);host.Controls[0].BringToFront();refresh();return host;
   }
-  public static void Test(){PotentialProbability.Test();var all=Entries();int expected=PotentialParts.Build(PotentialParts.StandardEntries()).effects.Count(x=>!x.excludedFromImplementation);if(all.Count!=expected)throw new Exception("Implementation dex effect count mismatch");if(!all.Any(x=>x.status=="자동 구현"&&x.family=="트레이너 4식·지령")||!all.Any(x=>x.family=="확률 발동"&&x.status=="구현 규칙 준비")||!all.Any(x=>x.status=="구현 규칙 준비")||!all.Any(x=>x.status=="미구현"))throw new Exception("Implementation dex statuses missing");}
+  public static void Test(){PotentialProbability.Test();var all=Entries();int expected=PotentialParts.Build(PotentialParts.StandardEntries()).effects.Count(x=>!x.excludedFromImplementation);if(all.Count!=expected)throw new Exception("Implementation dex effect count mismatch");if(!all.Any(x=>x.status=="자동 구현"&&x.family=="트레이너 4식·지령")||!all.Any(x=>x.family=="확률 발동"&&x.status=="구현 규칙 준비")||!all.Any(x=>x.status=="구현 규칙 준비")||!all.Any(x=>x.status=="미구현"))throw new Exception("Implementation dex statuses missing");var switchEntry=Analyze(new PotentialPart{text=EffectNormalizer.CanonicalSwitch()});var pivotEntry=Analyze(new PotentialPart{text=EffectNormalizer.CanonicalPivotGrant()});var ignoreEntry=Analyze(new PotentialPart{text=EffectNormalizer.CanonicalStatIgnore("『야생의 두목』","능력","상승(강화)")});if(switchEntry.status!="자동 구현"||pivotEntry.status!="자동 구현"||ignoreEntry.status!="자동 구현"||ignoreEntry.family!="능력치 무시")throw new Exception("Structured effect implementation status missing");var analysisEntry=Analyze(new PotentialPart{text=EffectNormalizer.CanonicalAnalysisPermission()});if(analysisEntry.status!="일부 자동 구현"||analysisEntry.family!="정보·해석")throw new Exception("Analysis effect implementation status missing");}
  }
  partial class DataEditorForm {void BuildEffectImplementationTab(){var page=Page("효과 구현 방식");page.Controls.Add(EffectImplementationDex.CreateView());}}
 }

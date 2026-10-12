@@ -13,7 +13,8 @@ namespace AABattle {
   TextBox inlineTrigger,inlineEffect;
   Label inlineTitle;ComboBox inlineTemplateType;
   bool inlineLoading;Panel pokemonWorkspace;
-  Panel pokemonInfo,trainerInfo;TableLayoutPanel workspaceStack;
+  SplitContainer inlineSplit;bool responsiveLayoutPending;
+  Panel pokemonInfo,trainerInfo;TableLayoutPanel workspaceStack,inlineCatalog;
   TextBox triggerArguments;string argumentKind="";bool argumentLoading;
   ListBox editorMenu;
   int[] editorPages={7,0,1,4,6,3,8,9};
@@ -35,13 +36,17 @@ namespace AABattle {
    StyleEditor(this);aa.Font=new Font(Fonts.AA,16,FontStyle.Regular,GraphicsUnit.Pixel);tAA.Font=aa.Font;
    InstallSelector(pTypes,"타입 찾기",PickTypes);InstallSelector(pAbility,"특성 찾기",PickAbility);InstallSelector(pMoves,"기술 찾기",PickMoves);
    RefreshTriggerArguments();
-   InstallPixelChoice(triggerKind);InstallPixelChoice(triggerMoveKind);InstallPixelChoice(triggerActivation);InstallPixelChoice(triggerSubject);InstallPixelChoice(effectSubject);
+   InstallPixelChoice(triggerKind);InstallPixelChoice(triggerMoveKind);InstallPixelChoice(triggerActivation);InstallPixelChoice(triggerSubject);InstallPixelChoice(effectProbability);InstallPixelChoice(effectSubject);
    potentials.CellPainting+=(s,e)=>{if(e.RowIndex!=-1||e.ColumnIndex<0)return;e.PaintBackground(e.ClipBounds,false);Theme.Text(e.Graphics,Convert.ToString(e.FormattedValue),Theme.UI(8),e.CellBounds,Color.White,ContentAlignment.MiddleLeft);e.Handled=true;};
    tree.ItemHeight=32;tree.ShowLines=false;tree.ShowPlusMinus=false;tree.ShowRootLines=false;tree.FullRowSelect=true;
+   potentials.RowTemplate.Height=42;
+   potentials.RowsAdded+=(s,e)=>RequestResponsiveLayout();potentials.RowsRemoved+=(s,e)=>RequestResponsiveLayout();
    foreach(TabPage page in tabs.TabPages)page.Paint+=(s,e)=>Theme.Frame(e.Graphics,((Control)s).ClientRectangle,false);
    foreach(Control bar in tabs.TabPages[1].Controls.Cast<Control>().Where(x=>x.Dock==DockStyle.Bottom).ToArray())bar.SendToBack();
    var moveTable=pMoves.Parent as TableLayoutPanel;if(moveTable!=null)moveTable.RowStyles[moveTable.GetRow(pMoves)].Height=80;
-   Shown+=(s,e)=>{var host=tree.Parent.Parent as SplitContainer;if(host!=null)host.SplitterDistance=170;var pokemonSplit=tabs.TabPages[1].Controls.OfType<SplitContainer>().FirstOrDefault();if(pokemonSplit!=null)pokemonSplit.SplitterDistance=(int)(pokemonSplit.Width*.60);};
+   pMoves.TextChanged+=(s,e)=>RequestResponsiveLayout();
+   Resize+=(s,e)=>RequestResponsiveLayout();
+   Shown+=(s,e)=>{var host=tree.Parent.Parent as SplitContainer;if(host!=null)host.SplitterDistance=170;var pokemonSplit=tabs.TabPages[1].Controls.OfType<SplitContainer>().FirstOrDefault();if(pokemonSplit!=null)pokemonSplit.SplitterDistance=(int)(pokemonSplit.Width*.60);RequestResponsiveLayout();};
   }
   void InstallSelector(TextBox box,string title,Action action){var table=box.Parent as TableLayoutPanel;if(table==null)return;int column=table.GetColumn(box),row=table.GetRow(box);var panel=new Panel{Dock=DockStyle.Fill};table.Controls.Remove(box);var button=Button(title,105,action);button.Dock=DockStyle.Right;panel.Controls.Add(box);panel.Controls.Add(button);table.Controls.Add(panel,column,row);}
   void InstallPixelChoice(ComboBox combo){if(combo==null)return;var table=combo.Parent as TableLayoutPanel;if(table==null)return;int row=table.GetRow(combo),column=table.GetColumn(combo);var choice=new FlatButton{Dock=DockStyle.Fill,Font=Theme.UI(8),Text=combo.Text+" ▼"};table.Controls.Remove(combo);choice.Controls.Add(combo);combo.Visible=false;table.Controls.Add(choice,column,row);combo.SelectedIndexChanged+=(s,e)=>choice.Text=combo.Text+" ▼";choice.Click+=(s,e)=>{using(var dialog=new SearchToggleForm("선택 · 검색 / SPACE",combo.Items.Cast<object>().Select(x=>x.ToString()),new[]{combo.Text},1))if(dialog.ShowDialog(this)==DialogResult.OK&&dialog.Selected.Length>0)combo.SelectedItem=dialog.Selected[0];};}
@@ -60,7 +65,7 @@ namespace AABattle {
   }
   void BuildInlinePotentials(){
    var page=tabs.TabPages[2];var oldControls=page.Controls.Cast<Control>().ToArray();
-   var split=new SplitContainer{Dock=DockStyle.Fill,Orientation=Orientation.Horizontal,Size=new Size(950,820),SplitterDistance=260,Panel1MinSize=180,Panel2MinSize=280,SplitterWidth=8};
+   var split=new SplitContainer{Dock=DockStyle.Fill,Orientation=Orientation.Vertical,Size=new Size(950,820),SplitterDistance=420,Panel1MinSize=360,Panel2MinSize=430,SplitterWidth=8};inlineSplit=split;
    foreach(var control in oldControls)split.Panel1.Controls.Add(control);
    page.Controls.Add(split);split.BringToFront();
    potentials.Columns["raw"].Visible=false;potentials.Columns["targetType"].Visible=false;potentials.Columns["trigger"].Width=220;potentials.Columns["effect"].Width=270;
@@ -70,7 +75,7 @@ namespace AABattle {
    inlineTrigger=Box(true);inlineEffect=Box(true);inputs.Controls.Add(Theme.Label("트리거 조건",26),0,0);inputs.Controls.Add(Theme.Label("효과",26),1,0);inputs.Controls.Add(inlineTrigger,0,1);inputs.Controls.Add(inlineEffect,1,1);
    lower.Controls.Add(inputs);inputs.BringToFront();
    var scroll=new Panel{Dock=DockStyle.Fill,AutoScroll=true};lower.Controls.Add(scroll);scroll.BringToFront();
-   var catalog=tabs.TabPages[5];foreach(var c in catalog.Controls.Cast<Control>().ToArray()){if(c is TableLayoutPanel){c.Dock=DockStyle.Top;c.Height=690;scroll.Controls.Add(c);foreach(Control panel in c.Controls)foreach(Control table in panel.Controls){var layout=table as TableLayoutPanel;if(layout!=null&&layout.ColumnStyles.Count>0){layout.Padding=new Padding(4);layout.ColumnStyles[0].Width=105;}}}else{c.Visible=false;}}
+    var catalog=tabs.TabPages[5];foreach(var c in catalog.Controls.Cast<Control>().ToArray()){if(c is TableLayoutPanel){inlineCatalog=c as TableLayoutPanel;c.Dock=DockStyle.Top;c.Height=690;scroll.Controls.Add(c);foreach(Control panel in c.Controls)foreach(Control table in panel.Controls){var layout=table as TableLayoutPanel;if(layout!=null&&layout.ColumnStyles.Count>0){layout.Padding=new Padding(4);layout.ColumnStyles[0].Width=105;}}}else{c.Visible=false;}}
    inlineTrigger.TextChanged+=(s,e)=>WriteInline("trigger",inlineTrigger.Text);inlineEffect.TextChanged+=(s,e)=>WriteInline("effect",inlineEffect.Text);
    potentials.SelectionChanged+=(s,e)=>RefreshInline();potentials.CellValueChanged+=(s,e)=>RefreshInline();
    inlineTemplateType.SelectedIndexChanged+=(s,e)=>ApplyInlineTemplateType();
@@ -104,6 +109,70 @@ namespace AABattle {
     int index=Array.IndexOf(editorPages,page);if(index>=0&&editorMenu.SelectedIndex!=index)editorMenu.SelectedIndex=index;
    }finally{navigating=false;}
   }
+
+  void RequestResponsiveLayout(){
+   if(loading||IsDisposed||!IsHandleCreated||responsiveLayoutPending)return;
+   responsiveLayoutPending=true;
+   BeginInvoke((Action)(()=>{responsiveLayoutPending=false;if(!IsDisposed)UpdateResponsiveLayout();}));
+  }
+
+  void UpdateResponsiveLayout(){
+   if(IsDisposed)return;
+   Control moveHost=pMoves;
+   while(moveHost!=null&&!(moveHost.Parent is TableLayoutPanel))moveHost=moveHost.Parent;
+   var moveTable=moveHost==null?null:moveHost.Parent as TableLayoutPanel;
+   int moveLines=pMoves==null?1:Math.Max(1,pMoves.Lines.Length);
+   if(moveTable!=null){
+    int row=moveTable.GetRow(moveHost);
+    moveTable.RowStyles[row].Height=Math.Min(280,Math.Max(80,36+moveLines*28));
+    moveTable.PerformLayout();
+   }
+   foreach(var stat in stats){
+    var statTable=stat==null?null:stat.Parent as TableLayoutPanel;
+    if(statTable!=null)statTable.RowStyles[statTable.GetRow(stat)].Height=52;
+   }
+   int potentialRows=potentials==null?0:potentials.Rows.Cast<DataGridViewRow>().Count(x=>!x.IsNewRow);
+   if(workspaceStack!=null){
+    int infoHeight=Math.Min(900,Math.Max(760,560+moveLines*32));
+    int potentialHeight=Math.Min(1500,Math.Max(820,560+potentialRows*42));
+    workspaceStack.RowStyles[0].Height=infoHeight;
+    workspaceStack.RowStyles[1].Height=potentialHeight;
+    workspaceStack.Height=workspaceStack.Padding.Vertical+infoHeight+potentialHeight;
+    if(inlineSplit!=null&&inlineSplit.Orientation==Orientation.Vertical&&inlineSplit.Width>=inlineSplit.Panel1MinSize+inlineSplit.Panel2MinSize+inlineSplit.SplitterWidth){
+     int maxLeft=Math.Max(inlineSplit.Panel1MinSize,inlineSplit.Width-inlineSplit.Panel2MinSize-inlineSplit.SplitterWidth);
+     int desiredLeft=Math.Min(maxLeft,Math.Max(inlineSplit.Panel1MinSize,420));
+     inlineSplit.SplitterDistance=desiredLeft;
+    }
+    ArrangeInlineCatalog();
+   }
+   GrowEditorWindow();
+  }
+
+  void ArrangeInlineCatalog(){
+   if(inlineCatalog==null||inlineSplit==null||inlineSplit.Panel2.ClientSize.Width<=0)return;
+   var panels=inlineCatalog.Controls.Cast<Control>().ToArray();
+   inlineCatalog.SuspendLayout();
+   inlineCatalog.ColumnStyles.Clear();inlineCatalog.RowStyles.Clear();
+   inlineCatalog.ColumnCount=2;inlineCatalog.RowCount=1;
+   inlineCatalog.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));inlineCatalog.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));
+   inlineCatalog.RowStyles.Add(new RowStyle(SizeType.Percent,100));
+   for(int i=0;i<panels.Length;i++)inlineCatalog.SetCellPosition(panels[i],new TableLayoutPanelCellPosition(i,0));
+   inlineCatalog.Height=690;
+   inlineCatalog.ResumeLayout(true);
+  }
+
+  void GrowEditorWindow(){
+   if(!IsHandleCreated||WindowState==FormWindowState.Maximized)return;
+   int desiredWidth=Width;
+   if(potentials!=null)desiredWidth=Math.Max(desiredWidth,174+potentials.Columns.Cast<DataGridViewColumn>().Where(x=>x.Visible).Sum(x=>x.Width)+70);
+   int desiredHeight=Height;
+   if(pokemonWorkspace!=null&&pokemonWorkspace.Visible&&workspaceStack!=null)desiredHeight=Math.Max(desiredHeight,workspaceStack.Height+130);
+   var area=Screen.FromControl(this).WorkingArea;
+   int maxWidth=Math.Max(MinimumSize.Width,area.Width-24),maxHeight=Math.Max(MinimumSize.Height,area.Height-24);
+   int width=Math.Min(maxWidth,desiredWidth),height=Math.Min(maxHeight,desiredHeight);
+   if(width>Width||height>Height)Size=new Size(Math.Max(Width,width),Math.Max(Height,height));
+  }
+
   void SelectRecordForPage(int page){
    if((page!=0&&page!=1)||tree==null||project==null)return;bool pokemon=page==1;object selected=Current;
    if((pokemon&&selected is PokemonRecord)||(!pokemon&&selected is TrainerRecord))return;
@@ -125,6 +194,10 @@ namespace AABattle {
    row.Cells["name"].Value=name;RefreshInline();if(inlineEffect.Text!=Cell(row,"effect")||inlineTrigger.Text!=Cell(row,"trigger"))throw new Exception("Template and inline editor synchronization");
    row.Cells["name"].Value="탐사대원";RefreshInline();string explorerEffect=EffectNormalizer.CanonicalRank("자신의 임의의 능력",1);if(Cell(row,"trigger")!=TriggerStructures.EntryLabel||Cell(row,"effect")!=explorerEffect||triggerKind.Text!=TriggerStructures.EntryLabel||effectKind.Text!="능력 랭크 변화"||effectTarget.Text!="자신의 임의의 능력"||effectAction.Text!="상승"||effectDenominator.Value!=1)throw new Exception("Structured explorer role template loading");
    row.Cells["name"].Value="추적대원";RefreshInline();string trackerEffect=EffectNormalizer.CanonicalSwitchRestriction()+" (필요 「통솔：A」 이상)";if(Cell(row,"trigger")!=TriggerStructures.FieldLabel||Cell(row,"effect")!=trackerEffect||triggerKind.Text!=TriggerStructures.FieldLabel||effectKind.Text!="교대 제한"||effectTarget.Text!="상대"||effectAction.Text!="통상교대 외 수단 제한"||ConfiguredEffect()!=EffectNormalizer.CanonicalSwitchRestriction())throw new Exception("Structured tracker role template loading");
+   row.Cells["name"].Value="야생 포켓몬";RefreshInline();LoadPotentialStructureSettings();RefreshStructuredTrigger();RefreshStructuredEffect();RefreshStatIgnoreEffect();if(Cell(row,"trigger")!=TriggerStructures.EntryLabel||Cell(row,"effect")!=EffectNormalizer.CanonicalRank("자신의 임의의 능력",2)||effectKind.Text!="능력 랭크 변화"||effectTarget.Text!="자신의 임의의 능력"||effectAction.Text!="상승"||effectDenominator.Value!=2)throw new Exception("Structured wild random role template loading");
+   row.Cells["name"].Value="야생의 두목";RefreshInline();LoadPotentialStructureSettings();RefreshStructuredTrigger();RefreshStructuredEffect();RefreshStatIgnoreEffect();if(Cell(row,"trigger")!=TriggerStructures.EntryLabel||Cell(row,"effect")!=EffectNormalizer.CanonicalRank("자신의 전능력치",2)||effectKind.Text!="능력 랭크 변화"||effectTarget.Text!="자신의 전능력치"||effectAction.Text!="상승"||effectDenominator.Value!=2)throw new Exception("Structured wild boss role template loading");
+   row.Cells["name"].Value="수렵대원";RefreshInline();LoadPotentialStructureSettings();RefreshStructuredTrigger();RefreshStructuredEffect();RefreshStatIgnoreEffect();string hunterEffect=EffectNormalizer.CanonicalStatIgnore("『야생의 두목』","능력","상승(강화)")+" (필요 「통솔：A」 이상)";if(Cell(row,"trigger")!=TriggerStructures.FieldLabel||Cell(row,"effect")!=hunterEffect||effectKind.Text!="능력 상승·강화 무시"||effectTarget.Text!="『야생의 두목』"||effectIgnoreStat.Text!="능력"||effectAction.Text!="상승(강화) 무시"||ConfiguredEffect()!=EffectNormalizer.CanonicalStatIgnore("『야생의 두목』","능력","상승(강화)"))throw new Exception("Structured hunter stat-ignore template loading");
+   row.Cells["name"].Value="조사대원";RefreshInline();LoadPotentialStructureSettings();RefreshStructuredTrigger();RefreshStructuredEffect();string researcherEffect=EffectNormalizer.CanonicalAnalysisPermission()+" (필요 「통솔：A」 이상)";if(Cell(row,"trigger")!=TriggerStructures.SelfAndOpponentEntryLabel||Cell(row,"effect")!=researcherEffect||triggerSubject.Text!="자신(상대)"||effectKind.Text!="데이터 해석"||effectTarget.Text!="상대"||effectAction.Text!="해석할 수 있다"||ConfiguredEffect()!=EffectNormalizer.CanonicalAnalysisPermission())throw new Exception("Structured researcher analysis template loading");
    row.Cells["name"].Value=name;RefreshInline();
    if(editorMenu.Items.Count!=8||inlineEffect.ImeMode==ImeMode.Disable||potentials.Columns["targetType"].Visible||triggerKind.Items.Count<ConfirmedTriggerCatalog.Items.Length)throw new Exception("Integrated menu, trigger catalog and IME configuration");
   }

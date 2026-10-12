@@ -82,4 +82,12 @@ namespace AABattle {
 
   public static bool Limited(Potential potential){return potential!=null&&(potential.uses??"").Contains("1/");}
  }
+
+ public static class StatIgnoreRuntime {
+  public static bool IsWildBoss(Fighter fighter){return fighter!=null&&fighter.Data!=null&&fighter.HP>0&&fighter.OnField&&(fighter.Data.potentials??new Potential[0]).Any(x=>x!=null&&x.id=="역할"&&x.name=="야생의 두목");}
+  static bool Covers(string stats,int index){if(index<1||index>5)return false;string value=PotentialParts.Clean(stats??"").Replace(" ","").Replace("　","").Replace("「","").Replace("」","");if(value=="능력"||value=="전능력치")return true;if(value=="공/특공"||value=="공격/특공")return index==1||index==3;if(value=="방/특방"||value=="방어/특방")return index==2||index==4;if(value=="속도/회피")return index==5;return value==Engine.Names[index];}
+  static bool HasRole(Fighter fighter,string role){return fighter!=null&&fighter.Data!=null&&(fighter.Data.potentials??new Potential[0]).Any(x=>x!=null&&x.id=="역할"&&x.name==role);}
+  static bool TargetMatches(Fighter holder,Fighter source,string target){if(target=="상대")return !Object.ReferenceEquals(holder,source);if(target=="자신")return Object.ReferenceEquals(holder,source);if(target!=null&&target.Length>2&&target[0]=='『'&&target[target.Length-1]=='』')return HasRole(source,target.Substring(1,target.Length-2));return false;}
+  public static bool TryIgnorePositive(Fighter holder,Fighter source,int statIndex,out bool ignoreRank,out bool ignoreBoost){ignoreRank=ignoreBoost=false;if(holder==null||source==null||holder.Data==null||source.Data==null||holder.HP<=0||source.HP<=0||!holder.OnField||!TriggerStructures.Has(holder,TriggerStructures.FieldLabel))return false;foreach(var potential in holder.Data.potentials??new Potential[0]){string target,stats,mode;if(potential==null||!EffectStructures.TryStatIgnore(potential.description,out target,out stats,out mode)||!TargetMatches(holder,source,target)||!Covers(stats,statIndex))continue;if(mode=="강화")ignoreBoost=true;else ignoreRank=ignoreBoost=true;}return ignoreRank||ignoreBoost;}
+ }
 }
