@@ -279,6 +279,7 @@ namespace AABattle {
      if (s.Ain && !f.OtherAin) return false;
      if (s.Attack && move.category == "변화") return false;
      if (move.category != "변화" && !f.Damaged && !(s.Condition.Tags.Contains("접촉") && !f.Substitute)) return false;
+     if (s.Condition.Tags.Contains("접촉") && MoveModules.IgnoresContact(f.User)) return false;
      return s.Condition.Matches(move, f.User, f.TypeEffect);
     case "명중":
      if (f.Kind != "명중" || !f.Self || move == null) return false;

@@ -58,6 +58,8 @@ namespace AABattle {
    if (m.Success) { spec = new TriggerSpec { Module = "포텐셜 보유", Names = new[] { m.Groups["v"].Value.Trim() } }; return true; }
    // 소지품(확정 30·31)
    if (Regex.IsMatch(t, @"^(?:자신이\s*)?(?:「?소지품」?(?:을|를)\s*가지고\s*있을\s*때|소지품이\s*있을\s*때)$")) { spec = new TriggerSpec { Module = "소지품" }; return true; }
+   m = Regex.Match(t, @"^(?:(?<s>자신|상대)(?:이|가|의)\s*)?(?:「?소지품」?(?:을|를)\s*가지고\s*있지\s*않을\s*때|소지품이\s*없을\s*때)$");
+   if (m.Success) { spec = new TriggerSpec { Module = "소지품", Op = "없음", Subject = m.Groups["s"].Success ? m.Groups["s"].Value : "자신" }; return true; }
    m = Regex.Match(t, @"^(?:(?<s>자신|상대)의\s*)?소지품이\s*「(?<v>[^」]+)」\s*일\s*때$");
    if (!m.Success) m = Regex.Match(t, @"^(?:(?<s>자신|상대)(?:이|가)\s*)?「(?<v>[^」]+)」\s*소지품을\s*가지고\s*있을\s*때$");
    if (m.Success) { spec = new TriggerSpec { Module = "소지품", Subject = m.Groups["s"].Success ? m.Groups["s"].Value : "자신", Names = new[] { m.Groups["v"].Value.Trim() } }; return true; }
@@ -107,7 +109,7 @@ namespace AABattle {
     case "해석 상태": return s.Op == "상대 해석됨" ? "적진에 데이터가 해석된 상대가 있을 때" : s.Op == "자신 해석 안 됨" ? "자신의 데이터가 해석되지 않았을 때" : "자신의 데이터가 해석되어 있을 때";
     case "해석당함": return "자신의 데이터가 해석되었을 때";
     case "포텐셜 보유": return "자신이 『" + s.Names[0] + "』" + Particle(s.Names[0], "을", "를") + " 보유하고 있을 때";
-    case "소지품": return s.Names.Length == 0 ? "자신이 소지품을 가지고 있을 때" : Of(s.Subject) + " 소지품이 「" + s.Names[0] + "」일 때";
+    case "소지품": if (s.Op == "없음") return s.Subject + (s.Subject == "상대" ? "가" : "이") + " 소지품을 가지고 있지 않을 때"; return s.Names.Length == 0 ? "자신이 소지품을 가지고 있을 때" : Of(s.Subject) + " 소지품이 「" + s.Names[0] + "」일 때";
     case "특성": return Of(s.Subject) + " 특성이 「" + s.Names[0] + "」일 때";
     case "빗나감": return "자신의 기술이 빗나갔을 때";
     case "행동 선후": return s.Op == "상대 먼저" ? "상대가 자신보다 먼저 행동할 때" : "자신이 상대보다 먼저 행동할 때";
@@ -174,7 +176,7 @@ namespace AABattle {
     }
     case "부여":
     case "포텐셜 보유": return (owner.Data.potentials ?? new Potential[0]).Any(p => p != null && (p.name == s.Names[0] || (p.name ?? "").StartsWith(s.Names[0] + " (") || (p.name ?? "").StartsWith(s.Names[0] + "（")));
-    case "소지품": return target != null && (s.Names.Length == 0 ? !string.IsNullOrEmpty(target.Data.item) : target.Data.item == s.Names[0]);
+    case "소지품": if (s.Op == "없음") return target != null && string.IsNullOrEmpty(target.Data.item); return target != null && (s.Names.Length == 0 ? !string.IsNullOrEmpty(target.Data.item) : target.Data.item == s.Names[0]);
     case "특성": return target != null && AbilityRuntime.Name(target) == s.Names[0];
     case "생존": {
      var party = Party(rules, side, owner).ToList();

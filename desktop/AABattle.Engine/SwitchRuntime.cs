@@ -56,7 +56,7 @@ namespace AABattle {
     string block;return CanSwitch(restrictionHolder,null,reason,out block);
    }
    public static bool CanSwitch(Fighter restrictionHolder,Fighter user,SwitchReason reason,out string block){
-    block="";if((reason==SwitchReason.Normal||reason==SwitchReason.Return)&&user!=null){if(user.Conditions.MeanLook)block="「검은눈빛」: 통상교대 불가";else if(user.Conditions.Bound>0)block="「조이기」: 통상교대 불가";if(block.Length>0)return false;}
+    block="";if((reason==SwitchReason.Normal||reason==SwitchReason.Return)&&user!=null){if(user.Conditions.MeanLook)block="「검은눈빛」: 통상교대 불가";else if(user.Conditions.Bound>0)block="「조이기」: 통상교대 불가";else if(user.Conditions.HeldInSky)block="「하늘 위」: 붙잡혀 교대 불가";if(block.Length>0)return false;}
     if(reason==SwitchReason.Normal||reason==SwitchReason.Return||reason==SwitchReason.Forced)return true;
     if(HasSwitchRestriction(restrictionHolder)){block="상대의 교대 제한 효과로 비통상 교대를 할 수 없다.";return false;}return true;
    }
