@@ -16,7 +16,7 @@ namespace AABattle {
    { "「방어」 등의 기술로 상대의 공격을 무효화했을 때", "방어 성공" }, { "「방어」 등의 기술로 상대의 기술을 무효화했을 때", "방어 성공" }, { "자신의 방어 상태가 공격을 막았을 때", "방어 성공" },
    { "상대가 공격 이외의 대미지를 받았을 때", "간접 대미지" }, { "상대의 체력을 드레인했을 때", "드레인" }
   };
-  public static readonly string[] ConditionModules = { "상시", "PT 참가", "부여", "적진 타입", "트레이너 자질", "플레이버", "포텐셜 보유", "소지품", "특성", "생존", "빈사 수", "진영", "공격하지 않음", "능력 변화 합" };
+  public static readonly string[] ConditionModules = { "상시", "PT 참가", "여기다", "해석 상태", "부여", "적진 타입", "트레이너 자질", "플레이버", "포텐셜 보유", "소지품", "특성", "생존", "빈사 수", "진영", "공격하지 않음", "능력 변화 합" };
   static readonly string[] SideNames = { "스텔스록", "압정", "독압정", "끈적끈적네트", "순풍", "리플렉터", "빛의장막" };
 
   static bool TryParseCondition(string t, out TriggerSpec spec) {
@@ -36,12 +36,19 @@ namespace AABattle {
    m = Regex.Match(t, @"^(?<o>상대\s*)?트레이너가\s*「(?<a>지시|육성|통솔|능력)\s*[:：]\s*(?<r>[A-Za-z]+)[-+]?」\s*이상일\s*때$");
    if (m.Success) { spec = new TriggerSpec { Module = "트레이너 자질", Subject = m.Groups["o"].Success ? "상대" : "자신", Names = new[] { m.Groups["a"].Value, m.Groups["r"].Value.ToUpperInvariant() } }; return true; }
    // 플레이버(확정 39: 상시)
-   m = Regex.Match(t, @"^(?:소속|위치)이\s*《\s*(?<v>[^》]+?)\s*》\s*일\s*때$");
+   m = Regex.Match(t, @"^소속이\s*《\s*(?<v>[^》]+?)\s*》\s*일\s*때$");
    if (m.Success) { spec = new TriggerSpec { Module = "플레이버", Place = "소속이 《" + m.Groups["v"].Value + "》일 때" }; return true; }
    m = Regex.Match(t, @"^「(?<v>[^」]+)」(?:이|가)\s*트레이너일\s*때$");
    if (m.Success) { spec = new TriggerSpec { Module = "플레이버", Place = "「" + m.Groups["v"].Value + "」" + Particle(m.Groups["v"].Value, "이", "가") + " 트레이너일 때" }; return true; }
    m = Regex.Match(t, @"^트레이너가\s*「(?<v>남성|여성)」\s*일\s*때$");
    if (m.Success) { spec = new TriggerSpec { Module = "플레이버", Place = "트레이너가 「" + m.Groups["v"].Value + "」일 때" }; return true; }
+   // 「여기다！」(진영 기록)
+   if (t == TriggerStructures.HereLabel || Regex.IsMatch(t, @"^(?:필드가\s*)?「여기다\s*[!！]?」\s*일\s*때$")) { spec = new TriggerSpec { Module = "여기다" }; return true; }
+   // 해석(확정 42·43: 진영의 완전 해석 기록)
+   if (Regex.IsMatch(t, @"^(?:적진에\s*데이터가\s*해석된\s*상대가\s*있을\s*때|상대의\s*데이터가\s*(?:이미\s*)?해석된\s*상태일\s*때)$")) { spec = new TriggerSpec { Module = "해석 상태", Op = "상대 해석됨" }; return true; }
+   if (Regex.IsMatch(t, @"^자신의\s*데이터가\s*해석되지\s*않았을\s*때$")) { spec = new TriggerSpec { Module = "해석 상태", Op = "자신 해석 안 됨" }; return true; }
+   if (Regex.IsMatch(t, @"^자신의\s*데이터가\s*해석되어\s*있을\s*때$")) { spec = new TriggerSpec { Module = "해석 상태", Op = "자신 해석됨" }; return true; }
+   if (Regex.IsMatch(t, @"^(?:자신의\s*데이터가\s*해석되었을\s*때|자신이\s*「?해석」?\s*됐을\s*때)$")) { spec = new TriggerSpec { Module = "해석당함" }; return true; }
    // 부여된 포텐셜(『계약의 특권』 등)
    m = Regex.Match(t, @"^『(?<v>[^』]+)』(?:이|가)\s*부여되어\s*있을\s*때$");
    if (m.Success) { spec = new TriggerSpec { Module = "부여", Names = new[] { m.Groups["v"].Value.Trim() } }; return true; }
@@ -91,6 +98,9 @@ namespace AABattle {
     case "적진 타입": return "적진에 「" + string.Join("/", s.Names) + "」 포켓몬이 있을 때";
     case "트레이너 자질": return (s.Subject == "상대" ? "상대 " : "") + "트레이너가 「" + s.Names[0] + ":" + s.Names[1] + "」 이상일 때";
     case "부여": return TriggerStructures.Granted(s.Names[0]);
+    case "여기다": return TriggerStructures.HereLabel;
+    case "해석 상태": return s.Op == "상대 해석됨" ? "적진에 데이터가 해석된 상대가 있을 때" : s.Op == "자신 해석 안 됨" ? "자신의 데이터가 해석되지 않았을 때" : "자신의 데이터가 해석되어 있을 때";
+    case "해석당함": return "자신의 데이터가 해석되었을 때";
     case "포텐셜 보유": return "자신이 『" + s.Names[0] + "』" + Particle(s.Names[0], "을", "를") + " 보유하고 있을 때";
     case "소지품": return s.Names.Length == 0 ? "자신이 소지품을 가지고 있을 때" : Of(s.Subject) + " 소지품이 「" + s.Names[0] + "」일 때";
     case "특성": return Of(s.Subject) + " 특성이 「" + s.Names[0] + "」일 때";
@@ -142,6 +152,14 @@ namespace AABattle {
      var value = s.Names[0] == "지시" ? trainer.command : s.Names[0] == "육성" ? trainer.training : s.Names[0] == "통솔" ? trainer.leadership : trainer.ability;
      return value != null && TriggerStructures.RankBand(value.rank, s.Names[1]);
     }
+    case "여기다": { var state = BattleRecords.StateOf(owner); return state != null && state.Here; }
+    case "해석 상태": {
+     if (s.Op == "상대 해석됨") return opponent != null && opponent.OnField && BattleRecords.IsAnalyzed(BattleRecords.StateOf(owner), opponent);
+     var analyzer = opponent == null ? null : BattleRecords.StateOf(opponent);
+     if (analyzer == null) { var scope = EffectScope.Current; int other = 1 - owner.FieldSide; analyzer = scope == null || scope.States == null || other < 0 || other >= scope.States.Length ? null : scope.States[other]; }
+     bool analyzed = BattleRecords.IsAnalyzed(analyzer, owner);
+     return s.Op == "자신 해석됨" ? analyzed : !analyzed;
+    }
     case "부여":
     case "포텐셜 보유": return (owner.Data.potentials ?? new Potential[0]).Any(p => p != null && (p.name == s.Names[0] || (p.name ?? "").StartsWith(s.Names[0] + " (") || (p.name ?? "").StartsWith(s.Names[0] + "（")));
     case "소지품": return target != null && (s.Names.Length == 0 ? !string.IsNullOrEmpty(target.Data.item) : target.Data.item == s.Names[0]);
@@ -171,6 +189,7 @@ namespace AABattle {
 
   static bool MatchesCondition(TriggerSpec s, TriggerFact f) {
    if (s.Module == "특성 발동") return f.Kind == "특성 발동" && f.Self && (s.Names.Length == 0 || s.Names.Contains(f.Method));
+   if (s.Module == "해석당함") return f.Kind == "해석당함" && f.Self;
    return false;
   }
  }

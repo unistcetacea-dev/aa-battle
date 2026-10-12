@@ -127,6 +127,36 @@ namespace AABattle {
    Assert.That(Turn(owner, F(), Idle(), Idle()).Fighters[0].Stages[2], Is.EqualTo(1));
   }
 
+  // 「여기다！」: 엔진이 진영 기록으로 판정(처음 4체 → 남은 2체 이하), 한 번 성립하면 유지
+  [Test] public void HereIsJudgedByEngineAndKept() {
+   var owner = F("노말", P("T 종료 시\n「여기다！」일 때"));
+   var ally = F(); var down1 = F(); var down2 = F(); down1.HP = 0; down2.HP = 0;
+   var rules = new Rules(); var foe = F();
+   Mechanics.SetParties(rules, new[] { owner, foe }, new IEnumerable<Fighter>[] { new[] { ally, down1, down2 }, new[] { F(), F(), F() } });
+   var states = new[] { new TrainerBattleState(), new TrainerBattleState() };
+   var turn = Engine.Resolve(TestData.Db, new[] { owner, foe }, new[] { new BattleCommand { Move = Idle() }, new BattleCommand { Move = Idle() } }, rules, states, () => .5);
+   Assert.That(turn.Trainers[0].Here, Is.True, string.Join("\n", turn.Log));
+   Assert.That(turn.Trainers[1].Here, Is.False);
+   Assert.That(turn.Fighters[0].Stages[1], Is.EqualTo(1), "「여기다！」일 때 조건 성립");
+  }
+
+  // 해석 기록(확정 42·43): 포텐셜 해석은 진영 기록에 남고, 해석된 쪽의 트리거·상태 조건이 이 기록을 본다
+  [Test] public void AnalysisIsRecordedPerSide() {
+   var analyst = F("노말", P(TriggerStructures.EntryLabel, "종족 ①", EffectNormalizer.CanonicalAnalysisPermission()), P("T 종료 시\n적진에 데이터가 해석된 상대가 있을 때", "종족 ②", "자신의 「방어」가 오른다."));
+   var target = F("노말", P("자신의 데이터가 해석되었을 때"));
+   var rules = new Rules { OptionalEffectPrompt = (s, t, p) => true };
+   var turn = Engine.Resolve(TestData.Db, new[] { analyst, target }, new[] { new BattleCommand { Move = Idle() }, new BattleCommand { Move = Idle() } }, rules, null, () => .5);
+   Assert.That(BattleRecords.IsAnalyzed(turn.Trainers[0], turn.Fighters[1]), Is.True, string.Join("\n", turn.Log));
+   Assert.That(turn.Fighters[1].Stages[1], Is.EqualTo(1), "analyzed side trigger");
+   Assert.That(turn.Fighters[0].Stages[2], Is.EqualTo(1), "analyzed opponent state");
+  }
+
+  [TestCase("「여기다!」일 때", "「여기다！」일 때")]
+  [TestCase("상대의 데이터가 이미 해석된 상태일 때", "적진에 데이터가 해석된 상대가 있을 때")]
+  [TestCase("자신의 데이터가 해석되지 않았을 때", "자신의 데이터가 해석되지 않았을 때")]
+  [TestCase("자신이 「해석」됐을 때", "자신의 데이터가 해석되었을 때")]
+  public void NormalizesHereAndAnalysisWording(string raw, string expected) { NormalizesCollectedWording(raw, expected); }
+
   [Test] public void FaintedOwnerTriggersOnBecomingFainted() {
    var owner = F("노말", P("쓰러졌을 때", "종족 ①", "상대에게 최대 HP의 1/4 대미지를 준다.")); owner.HP = 1;
    var attacker = F();

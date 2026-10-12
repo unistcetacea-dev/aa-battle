@@ -420,8 +420,10 @@ namespace AABattle {
       var target = c.Opponent;
       if (target == null || target.HP <= 0) return EffectOutcome.Failed;
       if (PotentialProtection.AnalysisBlocked(target, c.Owner, c.Rules)) { c.Say(target.Data.name + ": 데이터 해석을 무효화했다"); return EffectOutcome.Failed; }
-      RuntimeTriggers.Analyzed(c.Owner, new[] { c.Owner }, target, c.Say);
+      var state = BattleRecords.StateOf(c.Owner);
+      if (BattleRecords.IsAnalyzed(state, target)) { c.Say(target.Data.name + ": 이미 해석한 상대다"); return EffectOutcome.Failed; }
       c.Say("『" + c.Source.Name + "』 선택 발동 · " + target.Data.name + "의 데이터를 해석한다.");
+      if (state != null) BattleRecords.RecordAnalysis(state, c.Owner, new[] { c.Owner }, target, c.Say); else RuntimeTriggers.Analyzed(c.Owner, new[] { c.Owner }, target, c.Say);
       return EffectOutcome.Success;
      });
     // 교대·유턴 부여: 실제 교대는 엔진의 교대 단계(ResolveTriggeredSwitches)가 로그를 읽어 처리한다
