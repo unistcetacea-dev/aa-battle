@@ -377,7 +377,7 @@ Codex 공유 링크는 특정 시점의 읽기 전용 대화 스냅샷이다. �
 - `AABattle.Engine/StateEffects.cs`: 효과 문장 한 줄을 `StateEffectSentence`(대상·상태·NT간·T종료시까지·확률)로 읽고, `StateEffects.Table`의 상태 규칙으로 기존 엔진 함수(`ApplyStatus`·`ApplyActionState`·`SetTypeSwap`·`ApplyBomb` 등)를 호출한다. 표에는 주요 상태이상 7종, 혼란·도발·풀죽음·씨뿌리기, 행동 제한 8종, 타입 변경 3종, 가열·냉각·충전, 폭탄·요격·분노·마음의눈, 도우미·웅크리기·아쿠아링·뿌리박기·헤롱헤롱·동면·죽음의 카운트가 있다. 별칭: 앵콜→앙코르, 록온→마음의눈, 멸망의노래→죽음의 카운트, 오타 `자진`·`드믈게`.
 - 대상이 생략된 "「X」상태로 한다"는 상태별 기본 대상(가열·도우미 등 자기 강화는 자신, 나머지는 상대), "상태가 된다"는 자신이다. 면역·중복·파티 수면 제한은 기존 함수가 판정한다.
 - `EffectScope`: `Engine.Resolve`가 턴을 처리하는 동안 규칙·난수·전투 중 포켓몬 배열을 연다. 포켓몬 포텐셜(`TriggerStructures.Fire`)은 추가 조건이 없고 범위 안일 때만 상태 문장을 실행하고 "효과 적용"으로 기록한다. 범위 밖이거나 추가 조건이 있으면 기존처럼 "효과 판정 대기"만 남긴다. 필드효과(`FieldEffectRuntime`)는 랭크·HP 비율 다음으로 상태 문장을 장소의 각 포켓몬에게 적용한다.
-- 임시 제한: F1 효과 큐(사용 제한·포텐셜당 확률 1회·선택 확인)가 생기기 전까지 포켓몬 포텐셜은 사용 제한(`uses`)이 비어 있고 발동 방식이 자동(또는 빈 값)인 것만 실행한다. 나머지는 "효과 판정 대기". F1에서는 `StateEffects.TryApply`를 상태 실행기로 등록하고 이 임시 제한과 `TriggerStructures.RunEffect`를 큐 경로로 대체한다.
+- (F1에서 대체됨) 임시 제한과 `TriggerStructures.RunEffect`는 없어졌다. 포텐셜의 상태 부여는 공통 효과 큐의 「상태 부여」 실행기가 맡는다.
 - 수집 자료의 상태 부여 문장 약 120개 중 98개(31종)가 자동 연결된다. 미구현: 순풍(진영 상태)·미래예지·텔레키네시스·저주·길동무·악몽 등.
 - 검증: `StateEffectTests`(문장 해석, 표의 모든 상태 적용, 확률·면역, 포텐셜 턴 종료 발동, 추가 조건 대기, 범위 밖 로그, 필드효과) 포함 99개 테스트 통과.
 
@@ -390,3 +390,28 @@ Codex 공유 링크는 특정 시점의 읽기 전용 대화 스냅샷이다. �
 - 병합 규칙 갱신(`AGENTS.md`): 구현 측이 verify 통과 후 rebase·ff 병합·push, Claude는 병합 뒤 리뷰.
 - 범위 밖 발견: `verify -Visual`의 `flow.teams.png`·`states.png`·`implementations.png`는 편집기 메뉴 순서 변경 뒤 탭 번호(`SelectTabForTest(6~8)`)가 어긋나 다른 탭을 찍는다.
 - 검증: `ProjectStoreTests`(참조 저장, 원본 수정 반영, v1 이전·같은 이름 내용 매칭·원본 없는 사본, 중복 id, 배틀 id, 같은 종족 파티 구분) 포함 109개 통과.
+
+## 2026-10-12 포텐셜 공통 효과 큐 (지시서 F1, 확정 01~09 · T-05 · T-06)
+- 파일: `desktop/AABattle.Engine/PotentialEvents.cs`. 테스트: `desktop/AABattle.Tests/PotentialQueueTests.cs`.
+- 구조
+  - `PotentialEvent`: 사건 하나. `Label`(정규화 트리거 라벨) 또는 `Clause`(절 조건식), `Owner`(「자신」), `Trainer`(트레이너 포텐셜 사건), `Other`, `Message`, `Move`·`Damage`·`Hit`, 연쇄 ID·깊이(내부), `Log`(호출한 쪽 로그), `PendingText`(실행하지 않을 때 호출 경로별 예전 문구).
+  - `PotentialInstance`: 사건에 걸린 포텐셜. `Key` = 소유자 데이터 ID + 슬롯 + 같은 슬롯 순번(`PotentialKeys.For`), 트레이너는 `T:` + 트레이너 ID + 슬롯 + 순번.
+  - `PotentialUsage`(`TrainerBattleState.Usage`): 인스턴스 키 기준 사용 이력. `Battle`(1/시·n/시·최초), `Turn`(1/T, `Engine.Resolve` 끝에서 `EndTurn`), `Declared`(이번 T 선행입력 선언). 이름 기준 `UsedPotentials`는 없앴다. 선행입력 선언·교대 포텐셜·선행입력 목록 UI도 이 저장소를 쓴다. 저장 파일에는 사용 이력이 없다(배틀 중 상태).
+  - `PotentialQueue.Raise(params PotentialEvent[])`: 효과 실행 범위(`EffectScope`, `Engine.Resolve`가 연다) 안에서만 동작한다. 범위 밖(UI의 배틀 시작·죽어내밀기 직접 호출)에서는 각 Fire가 예전 로그 경로를 그대로 쓴다.
+- 발동 절차(`PotentialQueue.Process` → `Fire`): 사건 묶음을 소유 포켓몬의 현재 속도 내림차순(동속 rng)으로 처리 → 후보(기존 매칭: 절 하나라도 성립) → a. 같은 사건 1회·같은 연쇄 1회 → (실행기가 없거나 추가 조건이 있으면 예전 대기 로그로 끝) → 선행입력은 이번 T 선언한 것만 → b. 사용 제한 → c. 확률(같은 소유자·사건 묶음으로 `PotentialProbability.Resolve` 1회) → d. 「할 수 있다」면 `Rules.OptionalEffectPrompt`(없으면 판정 대기, 거절은 미소비) → e. 소비(선행입력은 선언 때 이미 소비) → f. 효과 실행.
+- 효과 분리와 종속(`PotentialQueue.Split`): 줄바꿈 → 문장 끝 → 대가 연결어. 확률 접두어는 떼고 실행기에 넘긴다. 종속은 두 경우만이다.
+  - 대가 연결어 `PotentialQueue.CostConnectors`: 소비해서·소비해·소비하여·소비하고·파괴해서·파괴해·파괴하여·파괴하고·버리고·버려서·잃고·지불하고·지불해. 앞(대가)이 실패하면 뒤도 실패, 앞이 판정 대기면 뒤도 판정 대기.
+  - 뒤 효과 시작어 `PotentialQueue.FollowUpStarts`: 이때·이 때·이 효과로·이효과로. 앞 효과가 실제로 성공했을 때만 판정한다. `RuleText`는 이 시작어를 조건절로 자르지 않는다.
+  - 나머지는 독립 실행한다.
+- 연쇄: 실행 중 생긴 사건(예: 능력 상승 → `AnsweredTriggers.StageChanged`)은 같은 연쇄 ID·깊이+1로 즉시 처리한다. 같은 포텐셜은 자기 연쇄에서 다시 발동하지 않는다. 깊이 8을 넘으면 중단 로그.
+- 연속 타격: `RuntimeTriggers.AttackSucceeded`와 트레이너 「공격 성공」 사건을 타격 루프 안으로 옮겨 타격마다 낸다(필드효과 「공격 성공」은 기술당 1회 유지).
+- 대상 해석: `PotentialQueue.Targets(call, "자신/상대/아군…")` — 장소의 살아 있는 포켓몬, 「대기」·「파티」·「빈사」가 있을 때만 확장, 「임의의」는 `PotentialQueue.ChooseTarget`(UI 연결 전 기본은 첫 후보, 테스트에서 교체), 「랜덤/무작위」는 rng, 「1체」는 1대1에서 장소의 자신.
+- 실행기 등록(F2 이후 작업자용)
+  - `PotentialExecutors.Register(이름, Func<EffectCall,bool> canRun, Func<EffectCall,EffectOutcome> run)`. 먼저 등록한 실행기가 우선한다. 기본 실행기는 `PotentialQueue.BuiltIn.Register`에 있다.
+  - `EffectCall`: `Source`(PotentialInstance), `Event`, `Line`(효과 한 줄, 확률 접두어·이때 제거됨), `Rules`, `Rng`, `Log`(줄 목록, `Say`), `Owner`, `Opponent`.
+  - `EffectOutcome`: `Success`(적용) / `Failed`(무효·실패, 소비는 유지) / `Pending`(엔진 미처리, 사람 판정) / `Deferred`(다른 단계가 처리·소비).
+  - 실행기 안에서 능력·HP·상태를 바꿀 때는 사건을 내는 기존 API(`Mechanics.ChangeStage`, `AnsweredTriggers.*`, `RuntimeTriggers.*`)를 써야 연쇄가 이어진다. 확률은 다시 굴리지 않는다.
+- 등록된 실행기: 우선도(`PriorityEffectRuntime.ApplyLine`, 기술 선택 라벨은 `PrimeTurn`이 따로 처리), 해석 허가(선택 발동), 교대·유턴 부여(`Deferred`, 실제 교대는 `ResolveTriggeredSwitches`가 로그를 읽어 처리·소비), 트레이너 아군 능력 상승(`TrainerTriggers.ApplyAllyRise`, 이제 능력 상승 사건을 낸다), 상태 부여(`StateEffects.Apply`). 역할 등장 랭크 상승(`RoleEntryRuntime`)은 포텐셜 문장이 아니라 역할로 동작하고 UI 직접 호출 경로가 있어 큐 밖에 그대로 두었다.
+- 바뀐 동작: 범위 안에서 우선도·해석 허가 포텐셜도 사용 제한·확률을 지킨다(이전에는 무시). `PriorityEffectRuntime.ActivateEvent`·`OptionalEffectRuntime.Activate`는 범위 안에서 아무것도 하지 않고 큐가 처리한다.
+- 검증: `verify.ps1 -Visual` 통과(127개). 실제 턴 로그 예시는 `outputs/candidate/queue-sample.txt`(속도순, 효과 적용/판정 대기 표시).
+

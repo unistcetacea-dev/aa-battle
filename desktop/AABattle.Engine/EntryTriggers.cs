@@ -9,7 +9,7 @@ namespace AABattle {
 
  public static class OptionalEffectRuntime {
   public static void Activate(Fighter owner,Fighter target,string label,Rules rules,Action<string> log){
-   if(owner==null||target==null||owner.HP<=0||target.HP<=0)return;
+   if(owner==null||target==null||owner.HP<=0||target.HP<=0||PotentialQueue.Active)return;
    foreach(var potential in (owner.Data.potentials??new Potential[0]).Where(x=>x!=null&&EffectStructures.IsAnalysisPermission(x.description)&&TriggerStructures.Clauses(x).Any(c=>TriggerStructures.Normalize(c)==label))){
     if(rules==null||rules.OptionalEffectPrompt==null)continue;
     if(rules.OptionalEffectPrompt(owner,target,potential)){if(log!=null){RuntimeTriggers.Analyzed(owner,new[]{owner},target,log);log("『"+potential.name+"』 선택 발동 · "+target.Data.name+"의 데이터를 해석한다.");}}
@@ -70,8 +70,14 @@ namespace AABattle {
  public static class TrainerTriggers {
   static IEnumerable<PotentialRecord> Unique(TrainerRecord trainer){return trainer==null?Enumerable.Empty<PotentialRecord>():(trainer.potentials??new List<PotentialRecord>()).Where(p=>p!=null&&p.enabled&&p.slot=="고유"&&p.name.Length>0);}
   public static IEnumerable<PotentialRecord> Matching(TrainerRecord trainer,string label){return Unique(trainer).Where(p=>TriggerStructures.NormalizeLines(p.trigger).Replace("\r","").Split(new[]{'\n'},StringSplitOptions.RemoveEmptyEntries).Contains(label));}
-  public static void Fire(TrainerRecord trainer,string label,string context,Action<string> log,Fighter ally=null){foreach(var p in Matching(trainer,label)){log("TRAINER 『"+p.name+"』 "+label+" 트리거 충족 · "+context+" · 효과 판정: "+p.effect);ApplySimpleAllyEffect(p.effect,ally,log);}}
-  static void ApplySimpleAllyEffect(string effect,Fighter ally,Action<string> log){if(ally==null||ally.HP<=0)return;foreach(string line in (effect??"").Replace("\r","").Split(new[]{'\n'},StringSplitOptions.RemoveEmptyEntries)){var match=Regex.Match(PotentialParts.Clean(line),@"^(?:자신|아군)의\s*「?(?<stat>공격|방어|특공|특방|속도)」?(?:이|가|을|를)\s*(?<degree>매우 크게|크게)?\s*오른다$");if(!match.Success)continue;int index=Array.IndexOf(Engine.Names,match.Groups["stat"].Value),amount=match.Groups["degree"].Value=="매우 크게"?3:match.Groups["degree"].Value=="크게"?2:1;if(index>0){ally.Stages[index]=Math.Min(6,ally.Stages[index]+amount);log(ally.Data.name+": "+Engine.Names[index]+" +"+amount+" (고유 포텐셜)");}}}
+  public static void Fire(TrainerRecord trainer,string label,string context,Action<string> log,Fighter ally=null){
+   if(trainer==null)return;
+   if(PotentialQueue.Active){PotentialQueue.Raise(new PotentialEvent{Trainer=trainer,Owner=ally,Label=label,Message=context??"",Log=log,PendingText=(source,extra)=>"TRAINER 『"+source.Name+"』 "+label+" 트리거 충족 · "+context+" · 효과 판정: "+source.Effect});return;}
+   foreach(var p in Matching(trainer,label)){log("TRAINER 『"+p.name+"』 "+label+" 트리거 충족 · "+context+" · 효과 판정: "+p.effect);foreach(string line in (p.effect??"").Replace("\r","").Split(new[]{'\n'},StringSplitOptions.RemoveEmptyEntries))ApplyAllyRise(line,ally,null,log);}
+  }
+  // 「자신/아군의 (능력)이 (크게) 오른다」. 맞지 않으면 null
+  public static Match AllyRise(string line){var match=Regex.Match(PotentialParts.Clean(line??"").Trim().TrimEnd('.','．','。'),@"^(?:자신|아군)의\s*「?(?<stat>공격|방어|특공|특방|속도)」?(?:이|가|을|를)\s*(?<degree>매우 크게|크게)?\s*오른다$");return match.Success?match:null;}
+  public static bool ApplyAllyRise(string line,Fighter ally,Fighter other,Action<string> log){var match=AllyRise(line);if(match==null||ally==null||ally.HP<=0)return false;int index=Array.IndexOf(Engine.Names,match.Groups["stat"].Value),amount=match.Groups["degree"].Value=="매우 크게"?3:match.Groups["degree"].Value=="크게"?2:1;if(index<=0)return false;int before=ally.Stages[index];ally.Stages[index]=Math.Min(6,ally.Stages[index]+amount);log(ally.Data.name+": "+Engine.Names[index]+" +"+amount+" (고유 포텐셜)");if(other!=null)AnsweredTriggers.StageChanged(ally,other,index,before,ally.Stages[index],log);return ally.Stages[index]!=before;}
   public static void BeforeMove(TrainerRecord trainer,Move move,Action<string> log){Fire(trainer,TriggerStructures.MoveUseLabel,move.name,log);Fire(trainer,move.category=="변화"?TriggerStructures.StatusMoveUseLabel:TriggerStructures.AttackMoveUseLabel,move.name,log);foreach(var p in Unique(trainer))if(TriggerStructures.NormalizeLines(p.trigger).Replace("\r","").Split(new[]{'\n'},StringSplitOptions.RemoveEmptyEntries).Any(c=>{string value;return TriggerStructures.TryMoveType(c,out value)&&(move.types??new string[0]).Contains(value)||TriggerStructures.TryMoveName(c,out value)&&move.name==value;}))log("TRAINER 『"+p.name+"』 기술 조건 트리거 충족 · "+move.name+" · 효과 판정 대기: "+p.effect);}
   public static IEnumerable<string> Active(TrainerRecord trainer,bool here){var labels=new List<string>{TriggerStructures.AlwaysLabel,TriggerStructures.FieldLabel};if(here)labels.Add(TriggerStructures.HereLabel);return Unique(trainer).Where(p=>labels.Any(label=>TriggerStructures.NormalizeLines(p.trigger).Contains(label))).Select(p=>"『"+p.name+"』");}
  }

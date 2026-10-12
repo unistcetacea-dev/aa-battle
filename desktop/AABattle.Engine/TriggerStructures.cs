@@ -93,29 +93,21 @@ namespace AABattle {
   }
   public static IEnumerable<Potential> Matching(Fighter fighter,string label){return (fighter.Data.potentials??new Potential[0]).Where(p=>p!=null&&Clauses(p).Any(x=>Normalize(x)==label));}
   public static bool Has(Fighter fighter,string label){return fighter!=null&&Matching(fighter,label).Any();}
-  // 효과 실행 범위(EffectScope) 안에서 효과의 상태 부여 문장을 실행하고 그 로그를 돌려준다. 처리한 문장이 없으면 빈 목록
-  static List<string> RunEffect(Fighter fighter,string name,string effect){
-   var lines=new List<string>();
-   var scope=EffectScope.Current;
-   if(scope==null)return lines;
-   bool handled=false;
-   foreach(string line in (effect??"").Split(new[]{'\n','\r'},StringSplitOptions.RemoveEmptyEntries))
-    handled|=StateEffects.TryApply(line,fighter,scope.Opponent(fighter),scope.Rules,scope.Rng,lines,"『"+name+"』");
-   if(!handled)lines.Clear();
-   return lines;
-  }
+  // 트리거 라벨 사건. 효과 실행 범위 안이면 공통 효과 큐(PotentialQueue)가 처리하고, 밖이면 예전처럼 로그만 남긴다
   public static void Fire(Fighter fighter,string label,string eventText,Action<string> log){
-   log(eventText);
-   foreach(var potential in Matching(fighter,label)){
-    var clauses=Clauses(potential).ToList();string condition,effect;PotentialLibrary.Split(potential.description??"",out condition,out effect);
-     if(!clauses.Any(x=>Normalize(x)==label))continue;
-     bool extra=clauses.Any(x=>Normalize(x)!=label);
-     // F1 효과 큐(사용 제한·확률 묶음·선택 확인) 전까지는 사용 제한이 없고 자동 발동인 포텐셜만 실행한다
-     bool queued=!string.IsNullOrWhiteSpace(potential.uses)||!string.IsNullOrWhiteSpace(potential.activation)&&potential.activation.Trim()!="자동";
-     var applied=extra||queued?new List<string>():RunEffect(fighter,potential.name,effect);
-     log("『"+potential.name+"』 "+label+" 트리거 충족"+(extra?" · 추가 조건 확인 필요":"")+(applied.Count>0?" · 효과 적용: ":" · 효과 판정 대기: ")+effect);
-     foreach(string line in applied)log(line);
+   if(PotentialQueue.Active&&fighter!=null){
+    PotentialQueue.Raise(LabelEvent(fighter,label,eventText,log));
+    return;
    }
+   log(eventText);
+   foreach(var potential in Matching(fighter,label))log(PendingText(potential,label,Clauses(potential).Any(x=>Normalize(x)!=label)));
+  }
+  public static PotentialEvent LabelEvent(Fighter fighter,string label,string eventText,Action<string> log){
+   return new PotentialEvent{Owner=fighter,Label=label,Message=eventText??"",Log=log,Announce=true,PendingText=(source,extra)=>PendingText(source.Pokemon,label,extra)};
+  }
+  static string PendingText(Potential potential,string label,bool extra){
+   string condition,effect;PotentialLibrary.Split(potential.description??"",out condition,out effect);
+   return "『"+potential.name+"』 "+label+" 트리거 충족"+(extra?" · 추가 조건 확인 필요":"")+" · 효과 판정 대기: "+effect;
   }
   public static void Test(){
    foreach(var text in new[]{"필드에 나왔을때","장소에 나와","필드에 나오면","자신이 장소에 나왔을 때"})if(Normalize(text)!=EntryLabel)throw new Exception("Entry alias: "+text);

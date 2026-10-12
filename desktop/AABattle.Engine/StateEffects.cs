@@ -40,9 +40,10 @@ namespace AABattle {
   public readonly Fighter[] Fighters;   // 교대하면 같은 배열의 칸이 바뀐다
   public readonly Rules Rules;
   public readonly Func<double> Rng;
+  public readonly TrainerBattleState[] States;   // 진영별 트레이너·포텐셜 사용 이력
   readonly EffectScope previous;
-  EffectScope(Fighter[] fighters, Rules rules, Func<double> rng) { Fighters = fighters; Rules = rules; Rng = rng; previous = current; }
-  public static EffectScope Begin(Fighter[] fighters, Rules rules, Func<double> rng) { current = new EffectScope(fighters, rules, rng); return current; }
+  EffectScope(Fighter[] fighters, Rules rules, Func<double> rng, TrainerBattleState[] states) { Fighters = fighters; Rules = rules; Rng = rng; States = states; previous = current; }
+  public static EffectScope Begin(Fighter[] fighters, Rules rules, Func<double> rng, TrainerBattleState[] states = null) { current = new EffectScope(fighters, rules, rng, states); return current; }
   public void Dispose() { if (current == this) current = previous; }
   public static void Restore(EffectScope saved) { current = saved; }
   public Fighter Opponent(Fighter fighter) {
@@ -115,6 +116,19 @@ namespace AABattle {
    };
    if (rule.Apply(context) && log != null) log.Add(source + " → " + target.Data.name + ": 「" + rule.Name + "」");
    return true;
+  }
+
+  // 큐 실행기용: 확률은 큐가 이미 판정했다. 상태 부여 결과를 돌려준다
+  public static EffectOutcome Apply(string line, Fighter self, Fighter opponent, Rules rules, Func<double> rng, List<string> log, string source) {
+   var sentence = Parse(line);
+   var rule = sentence == null ? null : Find(sentence.State);
+   if (rule == null) return EffectOutcome.Pending;
+   var target = sentence.Target == "자신" || sentence.Target.Length == 0 && rule.SelfByDefault ? self : opponent;
+   if (target == null || target.HP <= 0) { if (log != null) log.Add(source + ": 「" + rule.Name + "」 대상이 없다."); return EffectOutcome.Failed; }
+   var context = new StateEffectContext { Target = target, Source = self, Rules = rules ?? new Rules(), Rng = rng, Log = log, Turns = sentence.UntilTurnEnd ? 1 : sentence.Turns };
+   if (!rule.Apply(context)) return EffectOutcome.Failed;
+   if (log != null) log.Add(source + " → " + target.Data.name + ": 「" + rule.Name + "」");
+   return EffectOutcome.Success;
   }
 
   static StateEffectRule Rule(string name, Func<StateEffectContext, bool> apply, bool self = false, params string[] aliases) {

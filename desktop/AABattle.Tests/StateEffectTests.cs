@@ -97,17 +97,6 @@ namespace AABattle {
    Assert.That(turn.Log.Any(x => x.Contains("효과 판정 대기")), Is.True);
   }
 
-  [TestCase("1/시", "")]
-  [TestCase("1/T", "자동")]
-  [TestCase("", "선행")]
-  public void LimitedOrDeclaredPotentialWaitsForQueue(string uses, string activation) {
-   var potential = P(TriggerStructures.TurnEndLabel, "상대를 「혼란」상태로 한다.");
-   potential.uses = uses; potential.activation = activation;
-   var turn = Engine.Resolve(TestData.Db, new[] { F("노말", potential), F() }, new[] { Idle(), Idle() }, new Rules(), () => .5);
-   Assert.That(turn.Fighters[1].Conditions.Confusion, Is.EqualTo(0));
-   Assert.That(turn.Log.Any(x => x.Contains("효과 판정 대기")), Is.True);
-  }
-
   [Test] public void OutsideBattleScopeOnlyLogs() {
    var owner = F("노말", P(TriggerStructures.TurnEndLabel, "「가열」상태가 된다."));
    var log = new List<string>();

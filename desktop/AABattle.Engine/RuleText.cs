@@ -9,6 +9,8 @@ namespace AABattle {
  public static class RuleText {
   static bool SplitClause(string value,out string condition,out string remainder){
    condition=remainder="";value=(value??"").Trim();if(Regex.IsMatch(value,@"^[0-9０-９]+\s*T\s*동안")||Regex.IsMatch(value,@"^T\s*종료\s*시\s*까지"))return false;
+   // 「이때」·「이 효과로」는 조건이 아니라 앞 효과에 이어지는 효과다(T-05)
+   if(Regex.IsMatch(value,@"^(?:이|그)\s*때\b|^이\s*효과로"))return false;
    var enteredTurn=Regex.Match(value,@"^(.+?교대해\s*필드에\s*나온)\s*T\s*종료\s*시\s*까지\s+(.+)$");if(enteredTurn.Success){condition=enteredTurn.Groups[1].Value.Trim()+" 때";remainder="T 종료시까지 "+enteredTurn.Groups[2].Value.Trim();return true;}
    var enteredSecond=Regex.Match(value,@"^(.+?교대해\s*필드에\s*나와\s*[0-9０-９]+T째)\s*[,，、]\s*(.+)$");if(enteredSecond.Success){condition=enteredSecond.Groups[1].Value.Trim();remainder=enteredSecond.Groups[2].Value.Trim();return true;}
    var switchedTurn=Regex.Match(value,@"^(.+?교대로?\s*(?:필드에\s*)?나온\s*T)\s*[,，、]\s*(.+)$");if(switchedTurn.Success){condition=switchedTurn.Groups[1].Value.Trim();remainder=switchedTurn.Groups[2].Value.Trim();return true;}

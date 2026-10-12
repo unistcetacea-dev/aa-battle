@@ -12,6 +12,7 @@ namespace AABattle {
   public static IEnumerable<string> Observers(IEnumerable<Fighter> reserves){return (reserves??Enumerable.Empty<Fighter>()).Where(f=>f.HP>0).SelectMany(f=>TriggerStructures.Matching(f,TriggerStructures.ObserverLabel).Select(p=>f.Data.name+" 『"+p.name+"』"));}
   public static void TurnEnd(Fighter[] fighters,Rules rules,Func<double> rng,Action<string> log){
    var eligible=Enumerable.Range(0,2).Where(i=>fighters[i].HP>0&&TriggerStructures.Has(fighters[i],TriggerStructures.TurnEndLabel)).ToList();
+   if(PotentialQueue.Active){PotentialQueue.Raise(eligible.Select(side=>TriggerStructures.LabelEvent(fighters[side],TriggerStructures.TurnEndLabel,fighters[side].Data.name+" · "+TriggerStructures.TurnEndLabel,log)).ToArray());return;}
    eligible.Sort((left,right)=>{int speedLeft=Engine.Effective(fighters[left],fighters[1-left],5,rules),speedRight=Engine.Effective(fighters[right],fighters[1-right],5,rules);if(speedLeft!=speedRight)return speedRight.CompareTo(speedLeft);return (rng??(()=>.5))()<.5?-1:1;});
    foreach(int side in eligible)TriggerStructures.Fire(fighters[side],TriggerStructures.TurnEndLabel,fighters[side].Data.name+" · "+TriggerStructures.TurnEndLabel,log);
   }

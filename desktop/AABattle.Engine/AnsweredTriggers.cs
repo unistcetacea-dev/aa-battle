@@ -11,6 +11,7 @@ namespace AABattle {
   static bool Matches(Potential potential,Func<string,bool> condition){return TriggerStructures.Clauses(potential).Any(x=>condition(Key(x)));}
   static void Fire(Fighter owner,Func<string,bool> condition,string message,Action<string> log){
    if(owner==null||owner.HP<=0)return;
+   if(PotentialQueue.Active){PotentialQueue.Raise(new PotentialEvent{Owner=owner,Clause=condition,Message=message??"",Log=log,PendingText=(source,extra)=>"『"+source.Name+"』 트리거 충족 — "+message+" · 효과 판정 대기: "+source.Description});return;}
    foreach(var potential in Potentials(owner).Where(x=>Matches(x,condition)))log("『"+potential.name+"』 트리거 충족 — "+message+" · 효과 판정 대기: "+potential.description);
   }
   static bool FractionAtMost(string text,int hp,int max){
@@ -58,7 +59,8 @@ namespace AABattle {
    if(user==null||target==null||move==null)return;
    if(critical)Fire(user,IsCritical,user.Data.name+"의 "+move.name+"이 급소에 명중",log);
    Fire(user,x=>IsContact(x,false)&&Mechanics.Contact(move),user.Data.name+"의 접촉 기술 "+move.name+"이 명중",log);
-   foreach(var potential in Potentials(user).Where(p=>Matches(p,x=>IsMoveTag(x,move))))log("『"+potential.name+"』 기술 태그 트리거 충족 — "+move.name+" · 효과 판정 대기: "+potential.description);
+   if(PotentialQueue.Active)PotentialQueue.Raise(new PotentialEvent{Owner=user,Clause=x=>IsMoveTag(x,move),Move=move,Message=move.name,Log=log,PendingText=(source,extra)=>"『"+source.Name+"』 기술 태그 트리거 충족 — "+move.name+" · 효과 판정 대기: "+source.Description});
+   else foreach(var potential in Potentials(user).Where(p=>Matches(p,x=>IsMoveTag(x,move))))log("『"+potential.name+"』 기술 태그 트리거 충족 — "+move.name+" · 효과 판정 대기: "+potential.description);
    if(!substitute)Fire(target,x=>IsContact(x,true)&&Mechanics.Contact(move),target.Data.name+"이 대타 없이 접촉을 받음: "+move.name,log);
   }
   public static void DefensiveBlocked(Fighter defender,Fighter attacker,Move move,string reason,Action<string> log){if(reason.StartsWith("방어"))Fire(defender,IsDefendBlock,defender.Data.name+"의 방어가 "+move.name+"을 막음",log);}

@@ -23,9 +23,14 @@ namespace AABattle {
   }
   public static void PrimeTurn(Fighter[] fighters,BattleCommand[] commands,TrainerBattleState[] states,Action<string> log){
    if(fighters==null||commands==null)return;
-   for(int i=0;i<Math.Min(2,commands.Length);i++){var command=commands[i];var move=command==null?null:command.Move;if(command==null||command.IsSwitch||move==null||fighters[i]==null||fighters[i].HP<=0)continue;var other=fighters[1-i];string context=fighters[i].Data.name+"이 "+move.name+"을 선택";ActivateEvent(fighters[i],other,TriggerStructures.MoveUseLabel,context,log);ActivateEvent(fighters[i],other,move.category=="변화"?TriggerStructures.StatusMoveUseLabel:TriggerStructures.AttackMoveUseLabel,context,log);ActivateEvent(fighters[i],other,TriggerStructures.MoveName(move.name),context,log);foreach(string type in move.types??new string[0])ActivateEvent(fighters[i],other,TriggerStructures.MoveType(type),context,log);var trainer=states!=null&&i<states.Length&&states[i]!=null?states[i].Trainer:null;ActivateTrainerEvent(trainer,fighters[i],other,TriggerStructures.MoveUseLabel,context,log);ActivateTrainerEvent(trainer,fighters[i],other,move.category=="변화"?TriggerStructures.StatusMoveUseLabel:TriggerStructures.AttackMoveUseLabel,context,log);}
+   for(int i=0;i<Math.Min(2,commands.Length);i++){var command=commands[i];var move=command==null?null:command.Move;if(command==null||command.IsSwitch||move==null||fighters[i]==null||fighters[i].HP<=0)continue;var other=fighters[1-i];string context=fighters[i].Data.name+"이 "+move.name+"을 선택";ActivateDirect(fighters[i],other,TriggerStructures.MoveUseLabel,context,log);ActivateDirect(fighters[i],other,move.category=="변화"?TriggerStructures.StatusMoveUseLabel:TriggerStructures.AttackMoveUseLabel,context,log);ActivateDirect(fighters[i],other,TriggerStructures.MoveName(move.name),context,log);foreach(string type in move.types??new string[0])ActivateDirect(fighters[i],other,TriggerStructures.MoveType(type),context,log);var trainer=states!=null&&i<states.Length&&states[i]!=null?states[i].Trainer:null;ActivateTrainerEvent(trainer,fighters[i],other,TriggerStructures.MoveUseLabel,context,log);ActivateTrainerEvent(trainer,fighters[i],other,move.category=="변화"?TriggerStructures.StatusMoveUseLabel:TriggerStructures.AttackMoveUseLabel,context,log);}
   }
+  // 효과 실행 범위 안에서는 공통 효과 큐의 「우선도」 실행기가 처리한다. 기술 선택 단계(PrimeTurn)는 ActivateDirect를 쓴다
   public static void ActivateEvent(Fighter source,Fighter other,string label,string context,Action<string> log){
+   if(PotentialQueue.Active)return;
+   ActivateDirect(source,other,label,context,log);
+  }
+  static void ActivateDirect(Fighter source,Fighter other,string label,string context,Action<string> log){
    if(source==null||source.HP<=0)return;
    foreach(var p in (source.Data.potentials??new Potential[0]).Where(x=>x!=null&&MatchesEvent(x,label)))Apply(p.description,source,other,label,context,log);
   }
@@ -38,6 +43,12 @@ namespace AABattle {
    string condition,body;PotentialLibrary.Split(effect??"",out condition,out body);if(body.Length==0)body=effect??"";
    foreach(string line in body.Replace("\r","").Split(new[]{'\n'},StringSplitOptions.RemoveEmptyEntries)){string clean=PotentialParts.Clean(line);clean=System.Text.RegularExpressions.Regex.Replace(clean,@"^T\s*종료시까지\s*","");var match=Pattern.Match(clean);if(!match.Success)continue;string target=match.Groups["target"].Value;Fighter recipient=target=="상대"?other:source;if(recipient==null||recipient.HP<=0)continue;int amount=int.Parse(match.Groups["amount"].Value);if(match.Groups["direction"].Value=="내린다")amount=-amount;recipient.Conditions.PriorityModifier+=amount;recipient.Conditions.PriorityModifierTurns=1;if(log!=null)log("『우선도 효과』 "+label+" · "+context+" · "+recipient.Data.name+" 우선도 "+(amount>=0?"+":"")+amount+" (이번 T)");}
   }
+  // 큐 실행기용: 기술 선택 단계가 처리하는 라벨인가, 상시 포텐셜인가, 우선도 문장인가, 한 줄 적용
+  public static bool SelectionLabel(string label){string value;return label==TriggerStructures.MoveUseLabel||label==TriggerStructures.StatusMoveUseLabel||label==TriggerStructures.AttackMoveUseLabel||TriggerStructures.TryMoveName(label??"",out value)||TriggerStructures.TryMoveType(label??"",out value);}
+  public static bool Continuous(Potential p){return p!=null&&IsContinuous(p,null,null,null);}
+  static string Prepare(string line){return System.Text.RegularExpressions.Regex.Replace(PotentialParts.Clean(line??"").Trim(),@"^T\s*종료시까지\s*","");}
+  public static bool Matches(string line){return Pattern.IsMatch(Prepare(line));}
+  public static bool ApplyLine(string line,Fighter source,Fighter other,string label,string context,Action<string> log){var match=Pattern.Match(Prepare(line));if(!match.Success)return false;Fighter recipient=match.Groups["target"].Value=="상대"?other:source;if(recipient==null||recipient.HP<=0)return false;int amount=int.Parse(match.Groups["amount"].Value);if(match.Groups["direction"].Value=="내린다")amount=-amount;recipient.Conditions.PriorityModifier+=amount;recipient.Conditions.PriorityModifierTurns=1;if(log!=null)log("『우선도 효과』 "+label+" · "+context+" · "+recipient.Data.name+" 우선도 "+(amount>=0?"+":"")+amount+" (이번 T)");return true;}
   public static void EndTurn(Fighter fighter,Action<string> log){if(fighter==null)return;if(fighter.Conditions.PriorityModifierTurns>0&&--fighter.Conditions.PriorityModifierTurns==0){if(log!=null&&fighter.Conditions.PriorityModifier!=0)log(fighter.Data.name+": 이번 T 우선도 보정 종료");fighter.Conditions.PriorityModifier=0;}}
   static bool IsContinuous(Potential p,Fighter source,Fighter other,TrainerRecord trainer){
    var clauses=TriggerStructures.Clauses(p).Select(TriggerStructures.Normalize).ToArray();
