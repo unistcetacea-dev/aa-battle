@@ -65,6 +65,8 @@ namespace AABattle {
    m = Regex.Match(t, @"^(?:(?<s>자신|상대)의\s*)?특성이\s*「(?<v>[^」]+)」\s*일\s*때$");
    if (!m.Success) m = Regex.Match(t, @"^(?:(?<s>자신|상대)(?:이|가)\s*)?「(?<v>[^」]+)」\s*특성을\s*가지고\s*있을\s*때$");
    if (m.Success) { spec = new TriggerSpec { Module = "특성", Subject = m.Groups["s"].Success ? m.Groups["s"].Value : "자신", Names = new[] { m.Groups["v"].Value.Trim() } }; return true; }
+   // 빗나감(명중 판정으로 빗나갔을 때)
+   if (Regex.IsMatch(t, @"^(?:자신의\s*기술이|(?:명중률에\s*의해\s*)?기술이)\s*빗나갔을\s*때$")) { spec = new TriggerSpec { Module = "빗나감" }; return true; }
    // 특성 발동(확정 15: 실제로 발동한 순간)
    m = Regex.Match(t, @"^(?:자신의\s*)?(?:특성\s*「(?<v>[^」]+)」(?:이|가)|「(?<v>[^」]+)」\s*특성이|특성이)\s*발동했을\s*때$");
    if (m.Success) { spec = new TriggerSpec { Module = "특성 발동", Names = m.Groups["v"].Success ? new[] { m.Groups["v"].Value.Trim() } : new string[0] }; return true; }
@@ -104,6 +106,7 @@ namespace AABattle {
     case "포텐셜 보유": return "자신이 『" + s.Names[0] + "』" + Particle(s.Names[0], "을", "를") + " 보유하고 있을 때";
     case "소지품": return s.Names.Length == 0 ? "자신이 소지품을 가지고 있을 때" : Of(s.Subject) + " 소지품이 「" + s.Names[0] + "」일 때";
     case "특성": return Of(s.Subject) + " 특성이 「" + s.Names[0] + "」일 때";
+    case "빗나감": return "자신의 기술이 빗나갔을 때";
     case "특성 발동": return s.Names.Length == 0 ? "자신의 특성이 발동했을 때" : "자신의 「" + s.Names[0] + "」 특성이 발동했을 때";
     case "생존": return s.Op == "최후" ? "자신만 생존해 있을 때" : "아군에 「" + s.Names[0] + "」" + Particle(s.Names[0], "이", "가") + " 생존해 있을 때";
     case "빈사 수": return "아군의 빈사 수가 상대보다 " + s.Op + " 때";
@@ -190,6 +193,7 @@ namespace AABattle {
   static bool MatchesCondition(TriggerSpec s, TriggerFact f) {
    if (s.Module == "특성 발동") return f.Kind == "특성 발동" && f.Self && (s.Names.Length == 0 || s.Names.Contains(f.Method));
    if (s.Module == "해석당함") return f.Kind == "해석당함" && f.Self;
+   if (s.Module == "빗나감") return f.Kind == "빗나감" && f.Self;
    return false;
   }
  }

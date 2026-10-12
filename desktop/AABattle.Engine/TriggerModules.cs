@@ -27,6 +27,7 @@ namespace AABattle {
   public string Place = "";
   public bool Release, Rise, Big;
   public int[] Stats = new int[0];
+  public bool ByOpponent;                              // 상대에 의한 랭크 변화
   public bool IsEvent { get { return TriggerModules.EventModules.Contains(Module); } }
  }
 
@@ -43,12 +44,13 @@ namespace AABattle {
   public string[] OtherTypes = new string[0];   // 쓰러뜨린 상대의 타입
   public string[] PartnerTypes = new string[0]; // 교대한 상대 아군의 타입
   public bool OtherAin;                         // 상대(공격한 쪽·쓰러뜨린 쪽)가 아인종
-  public int Before, After2, Max, Stat, Delta;  // 체력 변화(전·후·최대) / 랭크 변화(능력 번호·변화량)
+  public int Before, After2, Max, Stat, Delta;
+  public bool ByOpponent;  // 체력 변화(전·후·최대) / 랭크 변화(능력 번호·변화량)
   public TriggerFact For(bool self, bool received) { var copy = (TriggerFact)MemberwiseClone(); copy.Self = self; copy.Received = received; return copy; }
  }
 
  public static partial class TriggerModules {
-  public static readonly string[] EventModules = { "등장", "교대", "퇴장", "타이밍", "피격", "명중", "급소", "쓰러뜨림", "기술 사용", "상태 됨", "상태 해제", "체력 변화", "회복", "날씨 변화", "장소 변화", "랭크", "특성 발동", "배틀 시작", "지령", "해석", "피격·무효화", "대미지", "행동 선택", "방어 성공", "간접 대미지", "드레인", "해석당함" };
+  public static readonly string[] EventModules = { "등장", "교대", "퇴장", "타이밍", "피격", "명중", "급소", "쓰러뜨림", "기술 사용", "상태 됨", "상태 해제", "체력 변화", "회복", "날씨 변화", "장소 변화", "랭크", "특성 발동", "빗나감", "배틀 시작", "지령", "해석", "피격·무효화", "대미지", "행동 선택", "방어 성공", "간접 대미지", "드레인", "해석당함" };
   public static readonly string[] StateModules = { "상태", "체력", "날씨", "장소", "상시", "PT 참가", "적진 타입", "트레이너 자질", "플레이버", "여기다", "해석 상태", "부여", "포텐셜 보유", "소지품", "특성", "생존", "빈사 수", "진영", "공격하지 않음", "능력 변화 합" };
   public static readonly string[] EntryMethods = { "선발", "죽어내밀기", "임의교대", "통상교대", "강제교대", "선발 또는 죽어내밀기" };
   static readonly ConcurrentDictionary<string, TriggerSpec> specs = new ConcurrentDictionary<string, TriggerSpec>();

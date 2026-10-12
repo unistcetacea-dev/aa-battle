@@ -24,6 +24,8 @@ namespace AABattle {
   public int FieldTurn;                                                // 장소에 나온 뒤 몇 T째인가(등장한 T = 1T째, 인터벌 등장은 다음 T가 1T째)
   public EntryReason PendingEntry=EntryReason.Lead;
   public List<string> ExtensionMoves=new List<string>();               // 사건으로 얻은 기능확장 기술(장소를 떠날 때까지)
+  public string AbilityBefore;public int AbilityTurns;                    // 특성 변경 전 특성 / 남은 T(0 = 장소를 떠날 때까지)
+  public bool StageByOpponent;                                           // 직전 랭크 변화가 상대에 의한 것(주눅구슬 등)
   public string ChoiceMove="";                                          // 구애: 장소에 나와 처음 내보낸 기술(떠나면 해제)
   public bool NotAttacking;                                            // 이번 T에 공격기술을 고르지 않았다(교대·변화기술 포함, 확정 12)
   public string WatchStates,WatchStages;public int WatchHP=-1;                 // StateWatch 비교 기준(등장할 때 맞춘다)                    // 효과 범위 밖에서 나온 포켓몬의 등장 방식(다음 T 처음에 처리)

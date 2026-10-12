@@ -40,7 +40,8 @@ namespace AABattle {
   // 트리거 절이 모두 지금 성립하는 포텐셜(상시·필드에 있는 한·상태 조건). 사용 제한·선행입력은 제외
   public static bool Continuous(Potential p, Fighter owner, Fighter opponent, Rules rules) {
    if (p == null || owner == null || owner.HP <= 0 || !owner.OnField) return false;
-   if (!string.IsNullOrWhiteSpace(p.uses) || (p.activation ?? "").Trim() == "선행") return false;
+   // 사용 제한이 있는 포텐셜은 사건으로만 발동한다. 소지품의 「1번만」 계속 배율은 소지품이 남아 있는 동안 성립(맞은 뒤 소비)
+   if (!string.IsNullOrWhiteSpace(p.uses) && p.id != ItemRuntime.Slot || (p.activation ?? "").Trim() == "선행") return false;
    var clauses = TriggerStructures.Clauses(p).ToList();
    if (clauses.Count == 0) return false;
    foreach (string clause in clauses) {
@@ -183,6 +184,7 @@ namespace AABattle {
   public static void Tick(Fighter f, List<string> log) {
    if (f == null || f.Conditions.Modifiers == null) return;
    ClearAction(f, log);
+   MiscModules.TickAbility(f, log);
    foreach (var m in f.Conditions.Modifiers.Where(x => x.Turns > 0).ToList()) {
     if (--m.Turns > 0) continue;
     f.Conditions.Modifiers.Remove(m);

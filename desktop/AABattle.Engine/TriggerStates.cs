@@ -121,12 +121,13 @@ namespace AABattle {
     return true;
    }
    // 랭크(실제 변화)
-   m = Regex.Match(t, @"^(?:(?<s>자신|상대)(?:의)?\s*)?(?<st>「[^」]+」|능력(?:\s*랭크)?|능력치|[가-힣]+)\s*(?:의\s*랭크)?(?:이|가)\s*(?<big>크게\s*)?(?<v>올랐을|올라갔을|상승했을|내려갔을|내렸을|떨어졌을|하락했을|감소했을|감소\(저하\)했을|저하했을)\s*때$");
+   m = Regex.Match(t, @"^(?<by>상대(?:에\s*의해|에게)\s*)?(?:(?<s>자신|상대)(?:의)?\s*)?(?<st>「[^」]+」|능력(?:\s*랭크)?|능력치|[가-힣]+)\s*(?:의\s*랭크)?(?:이|가)\s*(?<big>크게\s*)?(?<v>올랐을|올라갔을|상승했을|내려갔을|내렸을|떨어졌을|하락했을|감소했을|감소\(저하\)했을|저하했을)\s*때$");
    if (m.Success) {
     var stats = StatList(m.Groups["st"].Value);
     if (stats == null) return false;
     string v = m.Groups["v"].Value;
-    spec = new TriggerSpec { Module = "랭크", Subject = m.Groups["s"].Success ? m.Groups["s"].Value : "자신", Stats = stats, Rise = v.StartsWith("올") || v.StartsWith("상승"), Big = m.Groups["big"].Success };
+    spec = new TriggerSpec { Module = "랭크", Subject = m.Groups["s"].Success ? m.Groups["s"].Value : "자신", Stats = stats, Rise = v.StartsWith("올") || v.StartsWith("상승"), Big = m.Groups["big"].Success, ByOpponent = m.Groups["by"].Success };
+    if (spec.ByOpponent && (spec.Subject != "자신" || spec.Rise)) return false;
     return true;
    }
    return false;
@@ -161,7 +162,7 @@ namespace AABattle {
      return "「" + s.Place + "」" + Particle(s.Place, "이", "가") + " 되었을 때";
     case "랭크":
      string stat = s.Stats.Length == 0 ? "능력" : s.Stats.SequenceEqual(new[] { 1, 2, 3, 4, 5 }) ? "「전능력치」" : "「" + string.Join("/", s.Stats.Select(i => StatNames[i])) + "」";
-     return Of(s.Subject) + " " + stat + Particle(stat, "이", "가") + " " + (s.Rise ? (s.Big ? "크게 올랐을 때" : "올랐을 때") : "내려갔을 때");
+     return (s.ByOpponent ? "상대에 의해 " : "") + Of(s.Subject) + " " + stat + Particle(stat, "이", "가") + " " + (s.Rise ? (s.Big ? "크게 올랐을 때" : "올랐을 때") : "내려갔을 때");
    }
    return CanonicalCondition(s);
   }
@@ -235,6 +236,7 @@ namespace AABattle {
      if (f.Kind != "랭크" || f.Self != self || f.Delta == 0) return false;
      if (s.Rise != f.Delta > 0) return false;
      if (s.Big && Math.Abs(f.Delta) < 2) return false;
+     if (s.ByOpponent && !f.ByOpponent) return false;
      return s.Stats.Length == 0 || s.Stats.Contains(f.Stat);
    }
    return MatchesCondition(s, f);
@@ -281,7 +283,7 @@ namespace AABattle {
     foreach (string name in now.Where(x => !before.Contains(x))) TriggerModules.Raise(new TriggerFact { Kind = "상태 됨", Method = name }, f, other, f.Data.name + ": 「" + name + "」 상태가 되었다", log);
     if (f.HP > 0) foreach (string name in before.Where(x => !now.Contains(x) && x != "빈사")) TriggerModules.Raise(new TriggerFact { Kind = "상태 해제", Method = name }, f, other, f.Data.name + ": 「" + name + "」 상태가 해제되었다", log);
     for (int k = 1; k < stagesNow.Length && k < stagesBefore.Length; k++)
-     if (stagesNow[k] != stagesBefore[k]) TriggerModules.Raise(new TriggerFact { Kind = "랭크", Stat = k, Delta = stagesNow[k] - stagesBefore[k] }, f, other, f.Data.name + "의 랭크 변화 (" + k + ": " + stagesBefore[k] + "→" + stagesNow[k] + ")", log);
+     if (stagesNow[k] != stagesBefore[k]) TriggerModules.Raise(new TriggerFact { Kind = "랭크", Stat = k, Delta = stagesNow[k] - stagesBefore[k], ByOpponent = c.StageByOpponent }, f, other, f.Data.name + "의 랭크 변화 (" + k + ": " + stagesBefore[k] + "→" + stagesNow[k] + ")", log);
    }
    if (rules == null) return;
    string place = Place(rules);

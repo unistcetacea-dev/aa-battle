@@ -55,7 +55,7 @@ namespace AABattle {
    Assert.That(Max(attacker, F("오카열매"), M("화염방사")), Is.EqualTo(Max(attacker, F(), M("화염방사"))), "not super effective");
    var turn = Turn(attacker, berry, M("화염방사"), Idle());
    Assert.That(turn.Fighters[1].Data.item, Is.Empty);
-   Assert.That(turn.Log.Any(x => x.Contains("대미지 반감")), Is.True);
+   Assert.That(turn.Fighters[1].LostItem, Is.EqualTo("오카열매"));
   }
 
   [Test] public void LifeOrbBoostsAndRecoils() {
@@ -92,7 +92,10 @@ namespace AABattle {
   }
 
   [Test] public void SpongeNullifiesWaterAndBreaksOnOtherAttack() {
-   Assert.That(Mechanics.Block(TestData.Db, F(), F("스펀지"), M("물대포"), new Rules()), Does.Contain("스펀지"));
+   var holder = F("스펀지"); int max = Mechanics.MaxHP(holder, F(), new Rules());
+   var water = Turn(F(), holder, M("물대포"), Idle());
+   Assert.That(water.Fighters[1].HP, Is.EqualTo(max), string.Join("\n", water.Log));
+   Assert.That(water.Fighters[1].Data.item, Is.EqualTo("스펀지"), "nullified water is not 「받았다」");
    var turn = Turn(F(), F("스펀지"), M("몸통박치기"), Idle());
    Assert.That(turn.Fighters[1].Data.item, Is.Empty);
   }
@@ -101,6 +104,64 @@ namespace AABattle {
    var rules = new Rules();
    Mechanics.SetWeather(F("뜨거운바위"), F(), "쾌청", 5, rules, new List<string>(), "검사");
    Assert.That(rules.WeatherTurns, Is.EqualTo(8));
+  }
+
+  // 느림보꼬리 = 우선도 -0.5(사용자 결정): 같은 우선도에서만 나중
+  [Test] public void LaggingTailIsHalfPriorityLower() {
+   var slow = F(); slow.Data.@base[5] = 10; var tail = F("느림보꼬리");
+   var same = Turn(tail, slow, M("몸통박치기"), M("몸통박치기"));
+   Assert.That(same.Log.FindIndex(x => x.StartsWith(slow.Data.name + "의 몸통박치기")), Is.LessThan(same.Log.FindIndex(x => x.StartsWith(tail.Data.name + "의 몸통박치기"))), "same priority: tail goes last");
+   var quick = Turn(F("느림보꼬리"), slow, M("전광석화"), M("몸통박치기"));
+   Assert.That(quick.Log.FindIndex(x => x.Contains("의 전광석화")), Is.LessThan(quick.Log.FindIndex(x => x.Contains("의 몸통박치기"))), "higher priority still first");
+  }
+
+  [Test] public void UtilityUmbrellaIgnoresSunAndRainPower() {
+   var sun = new Rules { Weather = "쾌청" };
+   int plain = Engine.Calculate(TestData.Db, F(), F(), M("화염방사"), new Rules()).Max;
+   Assert.That(Engine.Calculate(TestData.Db, F("만능우산"), F(), M("화염방사"), sun).Max, Is.EqualTo(plain));
+   Assert.That(Engine.Calculate(TestData.Db, F(), F("만능우산"), M("화염방사"), sun).Max, Is.EqualTo(plain), "defending holder too");
+  }
+
+  // 주눅구슬: 상대에 의해 능력이 내려갔을 때만
+  [Test] public void AdrenalineOrbNeedsOpponentCause() {
+   var holder = F("주눅구슬"); var foe = F(); var rules = new Rules(); var log = new List<string>();
+   using (EffectScope.Begin(new[] { holder, foe }, rules, () => .5, new[] { new TrainerBattleState(), new TrainerBattleState() })) {
+    Mechanics.ChangeStage(holder, holder, 1, -1, rules, "자신", log);
+    Assert.That(holder.Stages[5], Is.EqualTo(0), "self-inflicted");
+    Mechanics.ChangeStage(holder, foe, 1, -1, rules, "상대", log);
+   }
+   Assert.That(holder.Stages[5], Is.EqualTo(1), string.Join("\n", log));
+   Assert.That(holder.Data.item, Is.Empty);
+  }
+
+  // 특성 변경 모듈(미라인형): 교대하면 원래대로
+  [Test] public void MummyDollChangesAttackerAbility() {
+   var attacker = F(); attacker.Data.ability = "위협";
+   var turn = Turn(attacker, F("미라인형"), M("몸통박치기"), Idle());
+   Assert.That(AbilityRuntime.Name(turn.Fighters[0]), Is.EqualTo("미라"), string.Join("\n", turn.Log));
+   Mechanics.LeaveField(turn.Fighters[0]);
+   Assert.That(AbilityRuntime.Name(turn.Fighters[0]), Is.EqualTo("위협"));
+  }
+
+  [Test] public void RingTargetRemovesHolderImmunity() {
+   Assert.That(Mechanics.TypeEffect(TestData.Db, F(), F("겨냥표적", "고스트"), M("몸통박치기"), new Rules()), Is.EqualTo(1));
+   Assert.That(Mechanics.TypeEffect(TestData.Db, F(), F("", "고스트"), M("몸통박치기"), new Rules()), Is.EqualTo(0));
+  }
+
+  // 단타도 C 랭크 확률로 급소(1/16, C+1이면 1/8)
+  [TestCase("", .1, false)]
+  [TestCase("초점렌즈", .1, true)]
+  [TestCase("", .05, true)]
+  public void SingleHitRollsCriticalByStage(string item, double roll, bool critical) {
+   var turn = Engine.Resolve(TestData.Db, new[] { F(item), F() }, new[] { M("몸통박치기"), Idle() }, new Rules(), () => roll);
+   Assert.That(turn.Log.Any(x => x.Contains("급소!")), Is.EqualTo(critical), string.Join("\n", turn.Log));
+  }
+
+  [TestCase("「독」 상태를 치유한다", "자신의 「독」 상태를 치유한다.")]
+  [TestCase("「혼란」상태를 치유한다", "자신의 「혼란」 상태를 치유한다.")]
+  [TestCase("자신의 「도발」 상태를 치유한다", "자신의 「도발」 상태를 해제한다.")]
+  public void CureIsStatusAndConfusionOnly(string raw, string expected) {
+   Assert.That(EffectNormalizer.Normalize(raw), Is.EqualTo(expected));
   }
 
   // 기술머신(X): 배틀 중 한 번 X를 기능확장으로 내보낸다

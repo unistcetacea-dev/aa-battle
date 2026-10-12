@@ -20,6 +20,7 @@ namespace AABattle {
   static readonly Regex Resist = new Regex(@"^자신의 (?<c>(?:「[^」]+」)*)\s*기술이 (?:상대의|「(?<vs>[^」]+)」 타입의) 타입 내성을 관통한다$");
   static readonly Regex IgnoreAll = new Regex(@"^자신의 (?<c>(?:「[^」]+」)*)\s*기술이 상대의 타입 상성을 무시한다$");
   static readonly Regex Immune = new Regex(@"^자신의 (?<c>(?:「[^」]+」)*)\s*기술이 타입 상성에 의한 무효를 관통한다$");
+  static readonly Regex ImmuneTaken = new Regex(@"^상대의 (?<c>(?:「[^」]+」)*)\s*기술이 타입 상성에 의한 무효를 관통한다$");
   static readonly Regex Stab = new Regex(@"^자신의 (?<c>(?:「[^」]+」)*)\s*기술의 타입 일치 배율을 「(?<v>[0-9.]+)배」로 한다$");
   static readonly Regex AddType = new Regex(@"^자신의 (?<c>(?:「[^」]+」)*)\s*기술에 「(?<t>[^」]+)」 타입을 추가해 유리한 상성으로 판정(?:한다|할 수 있다)$");
   static readonly Regex Rating = new Regex(@"^(?:「(?<vs>[^」]+)」 타입에게 )?(?<s>자신|상대)의 (?<c>(?:「[^」]+」)*)\s*기술의 상성을 「(?<r>효과가 굉장|효과가 별로|효과 보통)」(?:으로|로) 한다$");
@@ -48,6 +49,8 @@ namespace AABattle {
     return Subject(c) + "기술이 " + (m.Groups["vs"].Success ? "「" + m.Groups["vs"].Value + "」 타입의" : "상대의") + " 타입 내성을 관통한다.";
    m = Regex.Match(t, Owner + @"(?:상대의\s*)?「?타입\s*상성」?(?:을|를)\s*무시한다$");
    if (m.Success && Condition(m.Groups["c"].Value, out c)) return Subject(c) + "기술이 상대의 타입 상성을 무시한다.";
+   m = Regex.Match(t, @"^상대의\s*(?<c>.*?)\s*(?:기술)?(?:이|가)\s*타입\s*상성(?:으로|에\s*의해)\s*무효화되지\s*않(?:게\s*된다|는다)$");
+   if (m.Success && Condition(m.Groups["c"].Value, out c)) return "상대의 " + (c.Empty ? "" : c.Text + " ") + "기술이 타입 상성에 의한 무효를 관통한다.";
    m = Regex.Match(t, Owner + @"타입\s*상성에\s*의해\s*무시되지\s*않는다$");
    if (m.Success && Condition(m.Groups["c"].Value, out c)) return Subject(c) + "기술이 타입 상성에 의한 무효를 관통한다.";
    m = Regex.Match(t, Owner + @"「?타입\s*일치\s*배율」?(?:을|를|이|가)\s*(?:강화한다\.?\s*\(\s*1\.5\s*배\s*=+>\s*(?<v>[0-9.]+)\s*배\s*\)|강화\s*\(\s*(?<v>[0-9.]+)\s*배\s*\)\s*한다|「?(?<v>[0-9.]+)\s*배」?\s*(?:로|가)\s*(?:변경한다|한다|된다))$");
@@ -94,7 +97,7 @@ namespace AABattle {
    if (!s.Contains("타입") && !s.Contains("상성")) return "";
    if (Resist.IsMatch(s)) return "타입 내성 관통";
    if (IgnoreAll.IsMatch(s)) return "타입 상성 무시";
-   if (Immune.IsMatch(s)) return "상성 무효 관통";
+   if (Immune.IsMatch(s) || ImmuneTaken.IsMatch(s)) return "상성 무효 관통";
    if (Stab.IsMatch(s)) return "자속 배율";
    if (AddType.IsMatch(s) && Types(AddType.Match(s).Groups["t"].Value)) return "타입 추가";
    if (s == Favorable) return "유리한 상성";
@@ -139,6 +142,8 @@ namespace AABattle {
     else if ((x = Immune.Match(line)).Success && Applies(x, m, a)) p.PierceImmune = true;
     else if ((x = Resist.Match(line)).Success && Applies(x, m, a)) { if (x.Groups["vs"].Success) p.PierceTypes.AddRange(x.Groups["vs"].Value.Split('/')); else p.PierceAll = true; }
    }
+   // 받는 쪽의 「상대의 기술이 타입 상성에 의한 무효를 관통한다」(겨냥표적)
+   foreach (string line in Lines(b, a, r)) { var x = ImmuneTaken.Match(line); if (Applies(x, m, a)) p.PierceImmune = true; }
    return p;
   }
 

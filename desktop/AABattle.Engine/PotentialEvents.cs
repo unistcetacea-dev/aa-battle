@@ -550,9 +550,23 @@ namespace AABattle {
       return EffectOutcome.Success;
      });
     // F3 상태이상 치유
-    PotentialExecutors.Register("상태 치유",
-     c => { string t; string[] n; return StateCure.TryParse(c.Line, out t, out n); },
-     c => { string t; string[] n; StateCure.TryParse(c.Line, out t, out n); var lines = new List<string>(); bool done = StateCure.Cure(t == "상대" ? c.Opponent : c.Owner, n, lines); foreach (var x in lines) c.Say(x); return done ? EffectOutcome.Success : EffectOutcome.Failed; });
+    PotentialExecutors.Register("상태 치유·해제",
+     c => { string t; string[] n; bool r; return StateCure.TryParse(c.Line, out t, out n, out r); },
+     c => { string t; string[] n; bool r; StateCure.TryParse(c.Line, out t, out n, out r); var lines = new List<string>(); bool done = StateCure.Cure(t == "상대" ? c.Opponent : c.Owner, n, lines); foreach (var x in lines) c.Say(x); return done ? EffectOutcome.Success : EffectOutcome.Failed; });
+    // 특성 변경(기간이 있으면 끝날 때, 없으면 장소를 떠날 때 원래대로)
+    PotentialExecutors.Register("특성 변경",
+     c => { int turns; string sj, ab; return MiscModules.TryAbility(Duration(c.Line, out turns), out sj, out ab); },
+     c => {
+      int turns; string sj, ab; MiscModules.TryAbility(Duration(c.Line, out turns), out sj, out ab);
+      var target = sj == "상대" ? c.Opponent : c.Owner;
+      if (target == null || target.HP <= 0) return EffectOutcome.Failed;
+      if (AbilityRuntime.Name(target) == ab) { c.Say(target.Data.name + ": 이미 「" + ab + "」 특성이다"); return EffectOutcome.Failed; }
+      var lines = new List<string>(); MiscModules.ChangeAbility(target, ab, turns, lines, c.Source.Label); foreach (var x in lines) c.Say(x);
+      return EffectOutcome.Success;
+     });
+    PotentialExecutors.Register("소지품 소실",
+     c => MiscModules.IsBreak(c.Line),
+     c => { if (c.Owner == null || string.IsNullOrEmpty(c.Owner.Data.item)) return EffectOutcome.Failed; ItemRuntime.Lose(c.Owner, "부서졌다", c.Say); return EffectOutcome.Success; });
     PotentialExecutors.Register("기능확장 부여",
      c => { string subject; string[] moves; return FunctionExtensions.TryGrant(c.Line, out subject, out moves); },
      c => {

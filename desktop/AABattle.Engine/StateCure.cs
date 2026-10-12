@@ -6,7 +6,9 @@ using System.Text.RegularExpressions;
 namespace AABattle {
  // 이름으로 상태(상태이상·상태변화)를 푼다. 효과 모듈 「상태 치유」: 「자신의 「X」「Y」 상태를 치유한다」(「상태이상」은 상태이상 전체)
  public static class StateCure {
-  static readonly Regex Pattern = new Regex(@"^(?<t>자신|상대)의 (?<n>(?:「[^」]+」)+) 상태를 치유한다$");
+  // 사용자 결정: 「치유」는 상태이상(혼란은 예외로 포함), 그 밖의 상태변화를 푸는 것은 「해제」
+  static readonly Regex Pattern = new Regex(@"^(?<t>자신|상대)의 (?<n>(?:「[^」]+」)+) 상태를 (?<v>치유|해제)한다$");
+  static bool Curable(string name) { return name == "상태이상" || name == "혼란" || Mechanics.Statuses.Contains(name) && name != "정상"; }
 
   public static string Normalize(string text) {
    string t = Regex.Replace(PotentialParts.Clean(text ?? ""), @"\s+", " ").Trim().TrimEnd('.', '。').Trim();
@@ -14,14 +16,19 @@ namespace AABattle {
    if (!m.Success) return null;
    var names = Regex.Matches(m.Groups["n"].Value, "「([^」]+)」").Cast<Match>().SelectMany(x => Regex.Split(x.Groups[1].Value, @"[/()（）]")).Select(x => x.Trim()).Where(x => x.Length > 0).Distinct().ToArray();
    if (names.Length == 0 || !names.All(Known)) return null;
-   return (m.Groups["t"].Success ? m.Groups["t"].Value : "자신") + "의 " + string.Concat(names.Select(x => "「" + x + "」")) + " 상태를 치유한다.";
+   string target = m.Groups["t"].Success ? m.Groups["t"].Value : "자신";
+   var cure = names.Where(Curable).ToArray(); var release = names.Where(x => !Curable(x)).ToArray();
+   string result = cure.Length > 0 ? target + "의 " + string.Concat(cure.Select(x => "「" + x + "」")) + " 상태를 치유한다." : "";
+   if (release.Length > 0) result += (result.Length > 0 ? " " : "") + target + "의 " + string.Concat(release.Select(x => "「" + x + "」")) + " 상태를 해제한다.";
+   return result;
   }
   static bool Known(string name) { return name == "상태이상" || Mechanics.Statuses.Contains(name) && name != "정상" || StateEffects.Table.Any(x => x.Name == name); }
-  public static bool TryParse(string text, out string target, out string[] names) {
+  public static bool TryParse(string text, out string target, out string[] names, out bool release) {
    var m = Pattern.Match(Regex.Replace(PotentialParts.Clean(text ?? ""), @"\s+", " ").Trim().TrimEnd('.', '。').Trim());
    target = m.Success ? m.Groups["t"].Value : "";
    names = m.Success ? Regex.Matches(m.Groups["n"].Value, "「([^」]+)」").Cast<Match>().Select(x => x.Groups[1].Value).ToArray() : new string[0];
-   return m.Success && names.Length > 0;
+   release = m.Success && m.Groups["v"].Value == "해제";
+   return m.Success && names.Length > 0 && (release ? names.All(x => !Curable(x)) : names.All(Curable));
   }
 
   // 지정한 상태를 푼다. 실제로 풀린 것이 있으면 true
