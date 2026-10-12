@@ -10,25 +10,25 @@ namespace AABattle {
   protected override void OnPaint(PaintEventArgs e){base.OnPaint(e);Theme.Frame(e.Graphics,ClientRectangle,false);}
  }
  partial class DataEditorForm {
-  TextBox inlineTrigger,inlineEffect;
-  Label inlineTitle;ComboBox inlineTemplateType;
+  PixelTextBox inlineTrigger,inlineEffect;
+  Label inlineTitle;PixelComboBox inlineTemplateType;
   bool inlineLoading;Panel pokemonWorkspace;
   SplitContainer inlineSplit;bool responsiveLayoutPending;
   Panel pokemonInfo,trainerInfo;TableLayoutPanel workspaceStack,inlineCatalog;
-  TextBox triggerArguments;string argumentKind="";bool argumentLoading;
+  PixelTextBox triggerArguments;string argumentKind="";bool argumentLoading;
   ListBox editorMenu;
   int[] editorPages={7,0,1,4,6,3,8,9};
   void BuildRetroEditor(){
    Size=new Size(1480,960);MinimumSize=new Size(1200,820);Font=Theme.UI(9);ImeMode=ImeMode.NoControl;
-   tabs.Appearance=TabAppearance.Normal;tabs.SizeMode=TabSizeMode.Normal;
-   var menuFrame=new RetroFrame{Dock=DockStyle.Left,Width=174,Padding=new Padding(12,20,12,12)};
-   editorMenu=new ListBox{Dock=DockStyle.Fill,BorderStyle=BorderStyle.None,DrawMode=DrawMode.OwnerDrawFixed,ItemHeight=48,Font=Theme.UI(11),IntegralHeight=false};
+   tabs.Appearance=TabAppearance.FlatButtons;tabs.SizeMode=TabSizeMode.Fixed;tabs.ItemSize=new Size(0,1);
+   var menuFrame=new RetroFrame{Dock=DockStyle.Left,Width=212,Padding=new Padding(12,20,12,12)};
+   editorMenu=new ListBox{Dock=DockStyle.Fill,BorderStyle=BorderStyle.None,DrawMode=DrawMode.OwnerDrawFixed,ItemHeight=52,Font=Theme.UI(16),IntegralHeight=false};
    editorMenu.Items.AddRange(new object[]{"팀 보관함","트레이너","포켓몬","기술 도감","특성 도감","시트 출력","상태·날씨","효과 안내"});
-   editorMenu.DrawItem+=(s,e)=>{if(e.Index<0)return;e.Graphics.FillRectangle(Brushes.White,e.Bounds);bool selected=(e.State&DrawItemState.Selected)!=0;Theme.Text(e.Graphics,(selected?"▶ ":"   ")+editorMenu.Items[e.Index],editorMenu.Font,e.Bounds,Color.Black,ContentAlignment.MiddleLeft);};
+   editorMenu.DrawItem+=(s,e)=>{if(e.Index<0)return;e.Graphics.FillRectangle(Brushes.White,e.Bounds);bool selected=(e.State&DrawItemState.Selected)!=0;if(selected)Theme.Cursor(e.Graphics,e.Bounds.X+2,e.Bounds.Y+e.Bounds.Height/2,Color.Black,2);Theme.Text(e.Graphics,Convert.ToString(editorMenu.Items[e.Index]),editorMenu.Font,new Rectangle(e.Bounds.X+24,e.Bounds.Y,Math.Max(1,e.Bounds.Width-24),e.Bounds.Height),Color.Black,ContentAlignment.MiddleLeft);};
    editorMenu.SelectedIndexChanged+=(s,e)=>{if(editorMenu.SelectedIndex>=0)ShowEditorPage(editorPages[editorMenu.SelectedIndex]);};
    editorMenu.KeyDown+=(s,e)=>{if(e.KeyCode==Keys.Space||e.KeyCode==Keys.Enter){ShowEditorPage(editorPages[Math.Max(0,editorMenu.SelectedIndex)]);if(pokemonWorkspace!=null&&pokemonWorkspace.Visible)pokemonWorkspace.SelectNextControl(null,true,true,true,false);else tabs.SelectedTab.SelectNextControl(null,true,true,true,false);e.Handled=e.SuppressKeyPress=true;}};
    menuFrame.Controls.Add(editorMenu);Controls.Add(menuFrame);menuFrame.SendToBack();
-   var hint=Theme.Label("방향키: 이동   SPACE: 선택   TAB: 다음 입력   F6: 메뉴   /   한글·마우스 입력",32);hint.Dock=DockStyle.Bottom;Controls.Add(hint);hint.SendToBack();
+   var hint=Theme.Label("  ↑↓ 메뉴 이동     SPACE 선택     TAB 다음 입력     F6 메뉴로     마우스·한글 입력 가능",30);hint.Dock=DockStyle.Bottom;Controls.Add(hint);hint.SendToBack();
    tabs.SelectedIndexChanged+=(s,e)=>{if(tabs.SelectedIndex==5||tabs.SelectedIndex==2){ShowEditorPage(1);return;}if(tabs.SelectedIndex==1&&pokemonWorkspace!=null){ShowEditorPage(1);return;}int index=Array.IndexOf(editorPages,tabs.SelectedIndex);if(index>=0&&editorMenu.SelectedIndex!=index)editorMenu.SelectedIndex=index;};
    BuildInlinePotentials();EmbedPotentialsInPokemon();foreach(string item in ConfirmedTriggerCatalog.Items)if(!triggerKind.Items.Contains(item))triggerKind.Items.Add(item);
    triggerArguments=Box(false);Theme.Row(triggerTable,"조건 값 (| 구분)",triggerArguments);
@@ -39,27 +39,28 @@ namespace AABattle {
    InstallPixelChoice(triggerKind);InstallPixelChoice(triggerMoveKind);InstallPixelChoice(triggerActivation);InstallPixelChoice(triggerSubject);InstallPixelChoice(effectProbability);InstallPixelChoice(effectSubject);
    potentials.CellPainting+=(s,e)=>{if(e.RowIndex!=-1||e.ColumnIndex<0)return;e.PaintBackground(e.ClipBounds,false);Theme.Text(e.Graphics,Convert.ToString(e.FormattedValue),Theme.UI(8),e.CellBounds,Color.White,ContentAlignment.MiddleLeft);e.Handled=true;};
    tree.ItemHeight=32;tree.ShowLines=false;tree.ShowPlusMinus=false;tree.ShowRootLines=false;tree.FullRowSelect=true;
-   potentials.RowTemplate.Height=42;
+   potentials.RowTemplate.Height=34;
    potentials.RowsAdded+=(s,e)=>RequestResponsiveLayout();potentials.RowsRemoved+=(s,e)=>RequestResponsiveLayout();
    foreach(TabPage page in tabs.TabPages)page.Paint+=(s,e)=>Theme.Frame(e.Graphics,((Control)s).ClientRectangle,false);
    foreach(Control bar in tabs.TabPages[1].Controls.Cast<Control>().Where(x=>x.Dock==DockStyle.Bottom).ToArray())bar.SendToBack();
    var moveTable=pMoves.Parent as TableLayoutPanel;if(moveTable!=null)moveTable.RowStyles[moveTable.GetRow(pMoves)].Height=80;
    pMoves.TextChanged+=(s,e)=>RequestResponsiveLayout();
    Resize+=(s,e)=>RequestResponsiveLayout();
-   Shown+=(s,e)=>{var host=tree.Parent.Parent as SplitContainer;if(host!=null)host.SplitterDistance=170;var pokemonSplit=tabs.TabPages[1].Controls.OfType<SplitContainer>().FirstOrDefault();if(pokemonSplit!=null)pokemonSplit.SplitterDistance=(int)(pokemonSplit.Width*.60);RequestResponsiveLayout();};
+   Theme.Enlarge(this);
+   Shown+=(s,e)=>{var host=tree.Parent.Parent as SplitContainer;if(host!=null)host.SplitterDistance=200;var pokemonSplit=tabs.TabPages[1].Controls.OfType<SplitContainer>().FirstOrDefault();if(pokemonSplit!=null)pokemonSplit.SplitterDistance=(int)(pokemonSplit.Width*.60);RequestResponsiveLayout();};
   }
-  void InstallSelector(TextBox box,string title,Action action){var table=box.Parent as TableLayoutPanel;if(table==null)return;int column=table.GetColumn(box),row=table.GetRow(box);var panel=new Panel{Dock=DockStyle.Fill};table.Controls.Remove(box);var button=Button(title,105,action);button.Dock=DockStyle.Right;panel.Controls.Add(box);panel.Controls.Add(button);table.Controls.Add(panel,column,row);}
-  void InstallPixelChoice(ComboBox combo){if(combo==null)return;var table=combo.Parent as TableLayoutPanel;if(table==null)return;int row=table.GetRow(combo),column=table.GetColumn(combo);var choice=new FlatButton{Dock=DockStyle.Fill,Font=Theme.UI(8),Text=combo.Text+" ▼"};table.Controls.Remove(combo);choice.Controls.Add(combo);combo.Visible=false;table.Controls.Add(choice,column,row);combo.SelectedIndexChanged+=(s,e)=>choice.Text=combo.Text+" ▼";choice.Click+=(s,e)=>{using(var dialog=new SearchToggleForm("선택 · 검색 / SPACE",combo.Items.Cast<object>().Select(x=>x.ToString()),new[]{combo.Text},1))if(dialog.ShowDialog(this)==DialogResult.OK&&dialog.Selected.Length>0)combo.SelectedItem=dialog.Selected[0];};}
+  void InstallSelector(PixelTextBox box,string title,Action action){var table=box.Parent as TableLayoutPanel;if(table==null)return;int column=table.GetColumn(box),row=table.GetRow(box);var panel=new Panel{Dock=DockStyle.Fill};table.Controls.Remove(box);var button=Button(title,105,action);button.Dock=DockStyle.Right;panel.Controls.Add(box);panel.Controls.Add(button);table.Controls.Add(panel,column,row);}
+  void InstallPixelChoice(PixelComboBox combo){if(combo==null)return;var table=combo.Parent as TableLayoutPanel;if(table==null)return;int row=table.GetRow(combo),column=table.GetColumn(combo);var choice=new FlatButton{Dock=DockStyle.Fill,Font=Theme.UI(8),Text=combo.Text+" ▼"};table.Controls.Remove(combo);choice.Controls.Add(combo);combo.Visible=false;table.Controls.Add(choice,column,row);combo.SelectedIndexChanged+=(s,e)=>choice.Text=combo.Text+" ▼";choice.Click+=(s,e)=>{using(var dialog=new SearchToggleForm("선택 · 검색 / SPACE",combo.Items.Cast<object>().Select(x=>x.ToString()),new[]{combo.Text},1))if(dialog.ShowDialog(this)==DialogResult.OK&&dialog.Selected.Length>0)combo.SelectedItem=dialog.Selected[0];};}
   static MatchCollection ArgumentMatches(string text){return Regex.Matches(text??"",@"(?<=「)[^」]+(?=」)|(?<=『)[^』]+(?=』)|[+-]?\d+(?:/\d+)?|(?<=조건 )[AB]");}
   void RefreshTriggerArguments(){if(triggerArguments==null)return;argumentLoading=true;argumentKind=triggerKind.Text;triggerArguments.Text=string.Join(" | ",ArgumentMatches(argumentKind).Cast<Match>().Select(x=>x.Value));ShowTriggerRow(triggerArguments,ConfirmedTriggerCatalog.Items.Contains(argumentKind)&&ArgumentMatches(argumentKind).Count>0,"조건 값 (| 구분)");argumentLoading=false;UpdateTriggerArguments();}
   void UpdateTriggerArguments(){if(argumentLoading||triggerArguments==null||!ConfirmedTriggerCatalog.Items.Contains(argumentKind))return;var values=triggerArguments.Text.Split('|').Select(x=>x.Trim()).ToArray();var matches=ArgumentMatches(argumentKind);if(matches.Count==0){triggerPreview.Text=argumentKind;return;}if(values.Length!=matches.Count||values.Any(x=>x.Length==0)){triggerPreview.Text="";return;}string result=argumentKind;for(int i=matches.Count-1;i>=0;i--)result=result.Remove(matches[i].Index,matches[i].Length).Insert(matches[i].Index,values[i]);triggerPreview.Text=result;}
   void StyleEditor(Control root){
    foreach(Control c in root.Controls){
-    if(c is TextBox){c.Font=new Font("맑은 고딕",11);c.ImeMode=ImeMode.NoControl;}
-    else if(c is TreeView||c is ComboBox||c is NumericUpDown)c.Font=new Font("맑은 고딕",10);
-    var combo=c as ComboBox;if(combo!=null){combo.DrawMode=DrawMode.OwnerDrawFixed;combo.KeyDown+=(s,e)=>{if(e.KeyCode==Keys.Space){combo.DroppedDown=!combo.DroppedDown;e.Handled=e.SuppressKeyPress=true;}};}
-    var grid=c as DataGridView;if(grid!=null){grid.DefaultCellStyle.Font=new Font("맑은 고딕",10);grid.DefaultCellStyle.SelectionBackColor=Color.Black;grid.DefaultCellStyle.SelectionForeColor=Color.White;grid.GridColor=Color.Black;grid.RowTemplate.Height=32;grid.EditingControlShowing+=(s,e)=>{e.Control.Font=new Font("맑은 고딕",10);e.Control.ImeMode=ImeMode.NoControl;};}
-    var button=c as FlatButton;if(button!=null){button.GotFocus+=(s,e)=>{button.Selected=true;button.Invalidate();};button.LostFocus+=(s,e)=>{button.Selected=false;button.Invalidate();};}
+    if(c is PixelTextBox){c.Font=Theme.Input();c.ImeMode=ImeMode.NoControl;}
+    else if(c is TreeView||c is PixelComboBox||c is PixelNumber)c.Font=Theme.Input();
+    var combo=c as PixelComboBox;if(combo!=null){combo.DrawMode=DrawMode.OwnerDrawFixed;combo.KeyDown+=(s,e)=>{if(e.KeyCode==Keys.Space){combo.DroppedDown=!combo.DroppedDown;e.Handled=e.SuppressKeyPress=true;}};}
+    var grid=c as DataGridView;if(grid!=null){grid.DefaultCellStyle.Font=Theme.Input();grid.DefaultCellStyle.SelectionBackColor=Color.Black;grid.DefaultCellStyle.SelectionForeColor=Color.White;grid.GridColor=Color.Black;grid.RowTemplate.Height=32;grid.EditingControlShowing+=(s,e)=>{e.Control.Font=Theme.Input();e.Control.ImeMode=ImeMode.NoControl;};}
+    
     StyleEditor(c);
    }
   }
@@ -124,17 +125,17 @@ namespace AABattle {
    int moveLines=pMoves==null?1:Math.Max(1,pMoves.Lines.Length);
    if(moveTable!=null){
     int row=moveTable.GetRow(moveHost);
-    moveTable.RowStyles[row].Height=Math.Min(280,Math.Max(80,36+moveLines*28));
+    moveTable.RowStyles[row].Height=Math.Min(320,Math.Max(110,40+moveLines*30));
     moveTable.PerformLayout();
    }
    foreach(var stat in stats){
     var statTable=stat==null?null:stat.Parent as TableLayoutPanel;
-    if(statTable!=null)statTable.RowStyles[statTable.GetRow(stat)].Height=52;
+    if(statTable!=null)statTable.RowStyles[statTable.GetRow(stat)].Height=46;
    }
    int potentialRows=potentials==null?0:potentials.Rows.Cast<DataGridViewRow>().Count(x=>!x.IsNewRow);
    if(workspaceStack!=null){
-    int infoHeight=Math.Min(900,Math.Max(760,560+moveLines*32));
-    int potentialHeight=Math.Min(1500,Math.Max(820,560+potentialRows*42));
+    int infoHeight=Math.Min(1200,Math.Max(900,800+moveLines*30));
+    int potentialHeight=Math.Min(1700,Math.Max(900,620+potentialRows*38));
     workspaceStack.RowStyles[0].Height=infoHeight;
     workspaceStack.RowStyles[1].Height=potentialHeight;
     workspaceStack.Height=workspaceStack.Padding.Vertical+infoHeight+potentialHeight;
@@ -148,17 +149,17 @@ namespace AABattle {
    GrowEditorWindow();
   }
 
+  const int PartHeight=800;
   void ArrangeInlineCatalog(){
    if(inlineCatalog==null||inlineSplit==null||inlineSplit.Panel2.ClientSize.Width<=0)return;
    var panels=inlineCatalog.Controls.Cast<Control>().ToArray();
    inlineCatalog.SuspendLayout();
    inlineCatalog.ColumnStyles.Clear();inlineCatalog.RowStyles.Clear();
-   inlineCatalog.ColumnCount=2;inlineCatalog.RowCount=1;
-   inlineCatalog.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));inlineCatalog.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));
-   inlineCatalog.RowStyles.Add(new RowStyle(SizeType.Percent,100));
-   for(int i=0;i<panels.Length;i++)inlineCatalog.SetCellPosition(panels[i],new TableLayoutPanelCellPosition(i,0));
-   inlineCatalog.Height=690;
+   inlineCatalog.ColumnCount=1;inlineCatalog.RowCount=Math.Max(1,panels.Length);
+   inlineCatalog.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
+   for(int i=0;i<panels.Length;i++){inlineCatalog.RowStyles.Add(new RowStyle(SizeType.Absolute,PartHeight));inlineCatalog.SetCellPosition(panels[i],new TableLayoutPanelCellPosition(0,i));}
    inlineCatalog.ResumeLayout(true);
+   inlineCatalog.Height=panels.Length*PartHeight+8;
   }
 
   void GrowEditorWindow(){
@@ -204,7 +205,7 @@ namespace AABattle {
   protected override bool ProcessCmdKey(ref Message msg,Keys keyData){
    if(keyData==Keys.F6){editorMenu.Focus();return true;}
    Control focused=ActiveControl;while(focused is ContainerControl&&((ContainerControl)focused).ActiveControl!=null)focused=((ContainerControl)focused).ActiveControl;
-   if(focused is TextBoxBase||focused is NumericUpDown||focused is ComboBox||focused is DataGridView||focused is TreeView||focused is ListBox)return base.ProcessCmdKey(ref msg,keyData);
+   if(focused is TextBoxBase||focused is PixelNumber||focused is PixelComboBox||focused is DataGridView||focused is TreeView||focused is ListBox)return base.ProcessCmdKey(ref msg,keyData);
    if(keyData==Keys.Down||keyData==Keys.Right)return SelectNextControl(focused,true,true,true,true);
    if(keyData==Keys.Up||keyData==Keys.Left)return SelectNextControl(focused,false,true,true,true);
    return base.ProcessCmdKey(ref msg,keyData);

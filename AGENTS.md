@@ -4,7 +4,7 @@ Windows C# WinForms 프로그램이다. 현재 상태는 `PROJECT_HANDOFF.md`, �
 
 - UI: `BattleApp.cs`, `DataEditor.cs`, `CatalogUI.cs`. 계산: `BattleEngine.cs`, `Mechanics.cs`.
 - 계산 규칙은 기존 시트 기준을 유지한다. 포켓몬 입력 스탯은 종족값이며 실능력치와 구분한다.
-- 시스템과 도감은 내장 Pokemon BW 폰트, AA는 HeadKasen을 사용한다. 흑백 도트 UI를 유지한다.
+- 시스템과 도감은 내장 Pokemon BW 폰트, AA는 HeadKasen을 사용한다. 흑백 도트 UI를 유지한다. 도트 폰트는 16·24·32·48px로만 쓰고(`Theme.UI`, 편집기는 `Theme.Enlarge`), 입력·선택·표·대화창은 `PixelControls.cs`의 픽셀 컨트롤을 쓴다. Windows 기본 컨트롤과 `MessageBox`는 글자를 깨뜨리므로 쓰지 않는다.
 - 포텐셜 도감은 독립된 트리거 조건 / 효과 목록이다. 중복은 정규화하여 합치되 확률·횟수·배율·대상·지속시간의 차이는 보존한다. 출처와 원문은 내부 자료에 남긴다.
 - 수집 JSON 전체를 컨텍스트로 읽지 말고 이름 검색이나 집계로 필요한 항목만 찾는다. 자연어 자동 분리를 검증된 엔진 규칙으로 취급하지 않는다.
 - C# 변경 후 `./desktop/verify.ps1`로 빌드와 회귀 검사를 실행한다. UI 변경은 `./desktop/verify.ps1 -Visual`로 생성한 도감 이미지를 확인한다.

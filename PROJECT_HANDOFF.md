@@ -244,3 +244,12 @@ Codex 공유 링크는 특정 시점의 읽기 전용 대화 스냅샷이다. �
 - `통솔` 또는 `육성` A 이상은 `PT ①`, `통솔` AA 이상은 `PT ②` 포텐셜을 사용할 수 있다. 팀 시작·편집기 배틀 슬롯 변환·지령 선택·전투 실행에서 같은 접근 판정을 사용한다.
 - `PotentialRecord.unlocks`/`Potential.unlocks`와 `TrainerBattleState.UnlockedCapabilities`를 해제 권한 확장 지점으로 둔다. 기본 등급 조건은 유지하면서 포텐셜 효과 실행기가 권한 ID(`order.aim`, `order.sure-hit`, `potential.pt1`, `potential.pt2`)를 추가할 수 있다. 데이터 편집기의 `해제 권한 (쉼표)` 열은 이 권한을 저장·복원한다.
 - 검증: `TrainerAccessRules` 등급·중복 없는 상시 효과·포텐셜 해제 회귀와 기존 전투/편집기 회귀를 `verify.ps1`로 통과했다.
+
+## 2026-10-12 게임풍 UI와 픽셀 컨트롤
+- Pokemon BW 폰트는 16px 격자(125 단위 = 1px)로 그려진 도트 폰트다. `Theme.UI`는 크기를 16·32·48px로만 맞춘다(`Theme.Snap`). 이전의 18·20·22px 렌더링이 글자를 뭉개던 원인이다.
+- Windows 기본 컨트롤(TextBox·NumericUpDown·ComboBox 편집부·CheckBox·DataGridView 셀·TreeView)은 GDI로 이 OTF를 그리면서 글자를 깨뜨린다. `desktop/PixelControls.cs`의 `PixelTextBox`(한글 IME 조합 직접 처리), `PixelNumber`, `PixelComboBox`, `PixelCheckBox`, `PixelCheckedListBox`, `GameDialog`(MessageBox 대체), `PixelTree`, 표 셀 편집기 `PixelGridEditor`로 교체했다. 새 UI에서 기본 컨트롤이나 `MessageBox`를 직접 쓰지 않는다.
+- 공통 테마: 둥근 2px 게임 창 테두리와 디더 그림자(`Theme.Frame`), ▶ 픽셀 커서(`Theme.Cursor`), HP 태그·디더 단계 HP바(`Theme.HpBar`), 픽셀 탭(`Theme.Tabs`). 흑백만 사용한다.
+- 시작 화면은 타이틀·1P/2P 팀 창·키보드 메뉴(`GameMenu`, ↑↓/Enter)로 바꿨다. 배틀 메시지 창은 글자가 한 자씩 나오고 ▼가 깜빡이며, HP는 서서히 줄어든다. 캡처·자체검사 모드에서는 `Theme.Instant`로 애니메이션을 끈다.
+- 편집기와 편집용 대화창은 `Theme.Enlarge`로 라벨·버튼 32px, 입력칸·표·트리·상세 설명 24px로 키운다(24px은 GDI+ 격자 맞춤에서 깨지지 않음을 확인). 배틀·시작 화면은 16/32px 그대로다. 포텐셜 효과 구조 패널은 트리거/효과 구조를 위아래로 쌓아 각자 전체 폭을 쓴다.
+- 편집기는 왼쪽 메뉴를 유일한 탐색으로 쓰고 탭 머리글과 중복 툴바 버튼(상태·날씨, 효과 구현 방식)을 숨겼다.
+- 검증: `verify.ps1 -Visual -OutputPath outputs/ui-work` 통과.
