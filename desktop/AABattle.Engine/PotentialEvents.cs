@@ -190,7 +190,7 @@ namespace AABattle {
    var result = new List<PotentialInstance>(); extra = new List<bool>();
    if (e.Trainer != null) {
     foreach (var record in (e.Trainer.potentials ?? new List<PotentialRecord>()).Where(p => p != null && p.enabled && p.slot == "고유" && p.name.Length > 0)) {
-     var clauses = TriggerStructures.NormalizeLines(record.trigger).Replace("\r", "").Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+     var clauses = TrainerTriggers.ClausesOf(record).ToArray();
      if (!clauses.Any(e.Matches)) continue;
      result.Add(new PotentialInstance { Owner = e.Owner, Trainer = e.Trainer, Record = record, Key = PotentialKeys.For(e.Trainer, record), Name = record.name, Slot = record.slot, Uses = record.uses, Activation = record.activation, Effect = record.effect ?? "", Description = record.effect ?? "", Clauses = clauses });
      extra.Add(false);
@@ -548,6 +548,15 @@ namespace AABattle {
       return EffectOutcome.Success;
      });
     // F3 상태이상 치유
+    PotentialExecutors.Register("기능확장 부여",
+     c => { string subject; string[] moves; return FunctionExtensions.TryGrant(c.Line, out subject, out moves); },
+     c => {
+      string subject; string[] moves; FunctionExtensions.TryGrant(c.Line, out subject, out moves);
+      var owner = c.Owner; if (owner == null || owner.HP <= 0) return EffectOutcome.Failed;
+      foreach (string move in moves) if (!owner.Conditions.ExtensionMoves.Contains(move)) owner.Conditions.ExtensionMoves.Add(move);
+      c.Say(owner.Data.name + ": 기능확장 " + string.Join("·", moves) + "을 내보낼 수 있다 (장소를 떠날 때까지)");
+      return EffectOutcome.Success;
+     });
     PotentialExecutors.Register("상태이상 치유",
      c => { string t; return EffectModules.TryCure(c.Line, out t); },
      c => {

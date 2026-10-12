@@ -114,7 +114,7 @@ namespace AABattle {
    if (PowerMin >= 0 && move.power < PowerMin) return false;
    if (PriorityPositive && move.priority <= 0) return false;
    // 「물기」「엄니」처럼 계통·이름 괄호가 여럿이면 하나라도 맞으면 된다. 「접촉」은 최종 접촉 판정
-   if (Tags.Count > 0 && !Tags.Any(tag => tag == "접촉" ? Mechanics.Contact(move) : (move.tags ?? new string[0]).Contains(tag) || (move.effect ?? "").Contains(tag) || move.name == tag)) return false;
+   if (Tags.Count > 0 && !Tags.Any(tag => tag == "접촉" ? Mechanics.Contact(move) : tag == "기능확장" ? move.extension : (move.tags ?? new string[0]).Contains(tag) || (move.effect ?? "").Contains(tag) || move.name == tag)) return false;
    if (Names.Count > 0 && !Names.Contains(move.name)) return false;
    return true;
   }
@@ -310,6 +310,8 @@ namespace AABattle {
     return Scalar(Subj(m.Groups["s"].Value) + "의 " + st, action, rate);
    }
    // F4b 타입·상성
+   string extension = FunctionExtensions.Normalize(text);
+   if (extension != null) return extension;
    string typed = TypeRules.Normalize(text);
    if (typed != null) return typed;
    // G 방호·회피·관통
@@ -593,6 +595,8 @@ namespace AABattle {
   }
   static string ClassifySentence(string s) {
    ScalarEffect scalar; SpeciesEffect species; FractionEffect fraction; RankEffect rank; string target;
+   string grantSubject; string[] grantMoves;
+   if (FunctionExtensions.TryGrant(s, out grantSubject, out grantMoves)) return "기능확장 부여";
    string typed = TypeRules.Classify(s);
    if (typed.Length > 0) return typed;
    if (TryScalar(s, out scalar)) return "수치 배율";

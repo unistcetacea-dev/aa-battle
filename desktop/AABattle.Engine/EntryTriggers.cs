@@ -81,7 +81,12 @@ namespace AABattle {
  public enum SwitchReason {Normal,Return,Pivot,Potential,Fainted,Forced}
  public static class TrainerTriggers {
   static IEnumerable<PotentialRecord> Unique(TrainerRecord trainer){return trainer==null?Enumerable.Empty<PotentialRecord>():(trainer.potentials??new List<PotentialRecord>()).Where(p=>p!=null&&p.enabled&&p.slot=="고유"&&p.name.Length>0);}
-  public static IEnumerable<PotentialRecord> Matching(TrainerRecord trainer,string label){return Unique(trainer).Where(p=>TriggerStructures.NormalizeLines(p.trigger).Replace("\r","").Split(new[]{'\n'},StringSplitOptions.RemoveEmptyEntries).Contains(label));}
+  // 트레이너 포텐셜의 「아군」은 장소에 있는 자기 포켓몬 = 포켓몬 포텐셜의 「자신」 관점(사용자 결정)
+  public static string TrainerClause(string text){string t=PotentialParts.Clean(text??"").Trim();
+   if(Regex.IsMatch(t,@"^(?:아군을\s*(?:필드|장소)에\s*내보냈을|아군이\s*(?:필드|장소)에\s*나(?:왔을|올))\s*때$"))return TriggerStructures.EntryLabel;
+   var m=Regex.Match(t,@"^(?:자진의\s*포켓몬|아군)(?<p>의|이|가|을|를)\s*");if(!m.Success)return t;string p=m.Groups["p"].Value;return "자신"+(p=="의"?"의":p=="을"||p=="를"?"을":"이")+" "+t.Substring(m.Length);}
+  public static IEnumerable<string> ClausesOf(PotentialRecord record){return (record==null?"":record.trigger??"").Replace("\r","").Split(new[]{'\n'},StringSplitOptions.RemoveEmptyEntries).SelectMany(x=>TriggerStructures.NormalizeLines(TrainerClause(x)).Replace("\r","").Split(new[]{'\n'},StringSplitOptions.RemoveEmptyEntries)).Where(x=>x.Length>0).Distinct();}
+  public static IEnumerable<PotentialRecord> Matching(TrainerRecord trainer,string label){return Unique(trainer).Where(p=>ClausesOf(p).Contains(label));}
   public static void Fire(TrainerRecord trainer,string label,string context,Action<string> log,Fighter ally=null){
    if(trainer==null)return;
    if(PotentialQueue.Active){PotentialQueue.Raise(new PotentialEvent{Trainer=trainer,Owner=ally,Label=label,Message=context??"",Log=log,PendingText=(source,extra)=>"TRAINER 『"+source.Name+"』 "+label+" 트리거 충족 · "+context+" · 효과 판정: "+source.Effect});return;}
@@ -94,12 +99,16 @@ namespace AABattle {
   // 트레이너 포텐셜의 모듈 트리거: 장소의 자기 포켓몬 관점의 사건(자기 포켓몬이 주체면 Self)
   public static void Raise(TrainerRecord trainer,TriggerFact fact,Fighter ally,string context,Action<string> log){
    if(trainer==null||fact==null)return;
-   Func<string,bool> spec=clause=>TriggerModules.Matches(TriggerModules.Parse(TriggerStructures.Normalize(clause)),fact,ally);
-   var matching=Unique(trainer).Where(p=>TriggerStructures.NormalizeLines(p.trigger).Replace("\r","").Split(new[]{'\n'},StringSplitOptions.RemoveEmptyEntries).Any(spec)).ToList();
-   if(matching.Count==0)return;
-   if(PotentialQueue.Active){PotentialQueue.Raise(new PotentialEvent{Trainer=trainer,Owner=ally,Spec=spec,Label=context??"",Move=fact.Move,Message=context??"",Log=log,PendingText=(source,extra)=>"TRAINER 『"+source.Name+"』 트리거 충족 · "+context+" · 효과 판정: "+source.Effect});return;}
-   foreach(var p in matching)log("TRAINER 『"+p.name+"』 트리거 충족 · "+context+" · 효과 판정 대기: "+p.effect);
+   var e=EventFor(trainer,fact,ally,context,log);if(e==null)return;
+   if(PotentialQueue.Active){PotentialQueue.Raise(e);return;}
+   foreach(var p in Unique(trainer).Where(p=>ClausesOf(p).Any(e.Matches)))log("TRAINER 『"+p.name+"』 트리거 충족 · "+context+" · 효과 판정 대기: "+p.effect);
   }
-  public static IEnumerable<string> Active(TrainerRecord trainer,bool here){var labels=new List<string>{TriggerStructures.AlwaysLabel,TriggerStructures.FieldLabel};if(here)labels.Add(TriggerStructures.HereLabel);return Unique(trainer).Where(p=>labels.Any(label=>TriggerStructures.NormalizeLines(p.trigger).Contains(label))).Select(p=>"『"+p.name+"』");}
+  public static PotentialEvent EventFor(TrainerRecord trainer,TriggerFact fact,Fighter ally,string context,Action<string> log){
+   if(trainer==null||fact==null||log==null)return null;
+   Func<string,bool> spec=clause=>TriggerModules.Matches(TriggerModules.Parse(TriggerStructures.Normalize(clause)),fact,ally);
+   if(!Unique(trainer).Any(p=>ClausesOf(p).Any(spec)))return null;
+   return new PotentialEvent{Trainer=trainer,Owner=ally,Spec=spec,Label=context??"",Move=fact.Move,Message=context??"",Log=log,PendingText=(source,extra)=>"TRAINER 『"+source.Name+"』 트리거 충족 · "+context+" · 효과 판정: "+source.Effect};
+  }
+  public static IEnumerable<string> Active(TrainerRecord trainer,bool here){var labels=new List<string>{TriggerStructures.AlwaysLabel,TriggerStructures.FieldLabel};if(here)labels.Add(TriggerStructures.HereLabel);return Unique(trainer).Where(p=>labels.Any(label=>ClausesOf(p).Contains(label))).Select(p=>"『"+p.name+"』");}
  }
 }

@@ -20,12 +20,12 @@ namespace AABattle {
   public static void Timing(Fighter[] fighters,TrainerBattleState[] states,string label,Action<string> log){
    if(fighters==null)return;
    TimingEvents(fighters.Where(x=>x!=null&&x.OnField),label,log);
-   for(int i=0;i<2&&states!=null&&i<states.Length;i++)if(states[i]!=null)TrainerTriggers.Fire(states[i].Trainer,label,label,log,fighters[i]);
   }
   static void TimingEvents(IEnumerable<Fighter> owners,string label,Action<string> log){
    var fact=new TriggerFact{Kind="타이밍",Method=label};
-   var events=owners.Where(x=>x!=null&&x.HP>0).Select(x=>TriggerModules.EventFor(x,fact.For(true,false),x.Data.name+" · "+label,log)).Where(x=>x!=null).ToArray();
-   if(PotentialQueue.Active){if(events.Length>0)PotentialQueue.Raise(events);}else foreach(var e in events)TriggerModules.LogPending(e);
+   var list=owners.Where(x=>x!=null&&x.HP>0).ToList();
+   var events=list.Select(x=>TriggerModules.EventFor(x,fact.For(true,false),x.Data.name+" · "+label,log)).Concat(list.Select(x=>{var state=BattleRecords.StateOf(x);return state==null?null:TrainerTriggers.EventFor(state.Trainer,fact.For(true,false),x,label,log);})).Where(x=>x!=null).ToArray();
+   if(PotentialQueue.Active){if(events.Length>0)PotentialQueue.Raise(events);}else foreach(var e in events.Where(x=>x.Trainer==null))TriggerModules.LogPending(e);
   }
   public static bool Voluntary(SwitchReason reason){return reason!=SwitchReason.Forced;}
   public static bool Normal(SwitchReason reason){return reason==SwitchReason.Normal||reason==SwitchReason.Return;}
@@ -52,7 +52,7 @@ namespace AABattle {
   // 상대 등장 트리거는 EntryTriggers.Enter가 양쪽 관점으로 처리한다. 여기서는 우선도·선택 발동만
   public static void OpponentEntered(Fighter observer,Fighter entering,Rules rules,Action<string> log){if(observer!=null&&observer.HP>0&&entering!=null){PriorityEffectRuntime.ActivateEvent(observer,entering,TriggerStructures.OpponentEntryLabel,entering.Data.name+"이 장소에 나왔다.",log);OptionalEffectRuntime.Activate(observer,entering,TriggerStructures.OpponentEntryLabel,rules,log);}}
   // 「기술을 내보낼 때」(기술 직전)
-  public static void BeforeMove(Fighter user,Move move,Action<string> log){if(user==null||user.HP<=0||move==null)return;TriggerModules.Raise(new TriggerFact{Kind="기술 사용",Move=move,User=user},user,OpponentOf(user),user.Data.name+"이 "+move.name+"을 내보낸다.",log);}
+  public static void BeforeMove(Fighter user,Move move,Action<string> log){if(user==null||user.HP<=0||move==null)return;TriggerModules.Raise(new TriggerFact{Kind="기술 사용",Move=move,User=user},user,OpponentOf(user),user.Data.name+"이 "+move.name+(move.extension?"(기능확장)":"")+"을 내보낸다.",log);}
   // 공격 성공의 우선도 효과(트리거는 Hit이 맡는다)
   public static void AttackSucceeded(Fighter user,Fighter target,Move move,Action<string> log){if(user!=null&&user.HP>0&&move!=null&&move.category!="변화")PriorityEffectRuntime.ActivateEvent(user,target,TriggerStructures.AttackSuccessLabel,user.Data.name+"의 "+move.name+" 공격이 "+target.Data.name+"에게 명중했다.",log);}
   public static void Damaged(Fighter target,int amount,string reason,Action<string> log){if(target!=null&&amount>0&&TriggerStructures.Has(target,TriggerStructures.DamagedLabel))TriggerStructures.Fire(target,TriggerStructures.DamagedLabel,target.Data.name+"이 "+reason+"로 "+amount+" 대미지를 받았다.",log);if(target!=null&&amount>0)PriorityEffectRuntime.ActivateEvent(target,null,TriggerStructures.DamagedLabel,target.Data.name+"이 "+reason+"로 "+amount+" 대미지를 받았다.",log);}

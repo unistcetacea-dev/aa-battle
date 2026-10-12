@@ -25,5 +25,5 @@ namespace AABattle {
   public PotentialRecord record; public string source,review; public string[] urls;
   public string Search { get { return record.name+" "+record.slot+" "+record.trigger+" "+record.effect+" "+record.raw+" "+source; } }
  }
- public class TurnSelection {public string Form="",Order="";public int SwitchIndex=-1;public List<string> PreInputs=new List<string>();public TurnSelection Copy(){return new TurnSelection{Form=Form,Order=Order,SwitchIndex=SwitchIndex,PreInputs=new List<string>(PreInputs??new List<string>())};}}
+ public class TurnSelection {public string Form="",Order="",ExtensionMove="";public int SwitchIndex=-1;public List<string> PreInputs=new List<string>();public TurnSelection Copy(){return new TurnSelection{Form=Form,Order=Order,ExtensionMove=ExtensionMove,SwitchIndex=SwitchIndex,PreInputs=new List<string>(PreInputs??new List<string>())};}}
 }

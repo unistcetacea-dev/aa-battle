@@ -17,6 +17,7 @@ namespace AABattle {
  public class Move {
   public string name, category, effect, attack, defense, target; public string[] types, tags;
   public double power, accuracy; public int priority;
+  public bool extension;   // 기능확장으로 낸 기술(배틀 중 사본에만 켠다)
   public Move Copy(){var copy=(Move)MemberwiseClone();copy.types=types==null?null:(string[])types.Clone();copy.tags=tags==null?null:(string[])tags.Clone();return copy;}
  }
  public class Database {

@@ -309,8 +309,10 @@ namespace AABattle {
     if (owner.Conditions.TurnFacts.Count < 64) owner.Conditions.TurnFacts.Add(fact);
    }
    var e = EventFor(owner, fact, message, log);
-   if (e == null) return;
-   if (PotentialQueue.Active) PotentialQueue.Raise(e); else LogPending(e);
+   if (e != null) { if (PotentialQueue.Active) PotentialQueue.Raise(e); else LogPending(e); }
+   // 트레이너 고유는 장소에 있는 자기 포켓몬의 관점으로 같은 사건을 받는다
+   var state = BattleRecords.StateOf(owner);
+   if (state != null && state.Trainer != null && owner.OnField) TrainerTriggers.Raise(state.Trainer, fact, owner, message, log);
   }
   // 이 사건에 맞는 포텐셜이 있으면 큐 사건을 만든다(없으면 null — 로그를 남기지 않는다)
   public static PotentialEvent EventFor(Fighter owner, TriggerFact fact, string message, Action<string> log) {
