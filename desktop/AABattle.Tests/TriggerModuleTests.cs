@@ -26,6 +26,7 @@ namespace AABattle {
   [TestCase("「불꽃」타입과 교대할 때", "「불꽃」 타입 아군과 교대할 때")]
   [TestCase("임의교대시", "아군과 임의교대할 때")]
   [TestCase("상대가 필드를 떠날 때", "상대가 장소를 떠날 때")]
+  [TestCase("강제교대를 포함해 필드를 떠날 때", "강제교대를 포함해 장소를 떠날 때")]
   [TestCase("「3」의 배수의 턴 종료시", "「3」배수 T 종료 시")]
   [TestCase("필드에 나와 2T째 종료시", "장소에 나와 「2」T째 종료 시")]
   [TestCase("필드에 나온 T 종료시에", "장소에 나와 「1」T째 종료 시")]
@@ -56,6 +57,16 @@ namespace AABattle {
   }
 
   // 2단계: 상태 · 체력 · 날씨 · 장소 · 랭크
+  [Test] public void ForcedDepartureIsOptIn() {
+   var owner = F();
+   var forced = new TriggerFact { Kind = "퇴장", Self = true, Method = "강제" };
+   Assert.That(TriggerModules.Matches(TriggerModules.Parse("장소를 떠날 때"), forced, owner), Is.False);
+   Assert.That(TriggerModules.Matches(TriggerModules.Parse("강제교대를 포함해 장소를 떠날 때"), forced, owner), Is.True);
+   forced.Method = "임의";
+   Assert.That(TriggerModules.Matches(TriggerModules.Parse("장소를 떠날 때"), forced, owner), Is.True);
+   Assert.That(TriggerModules.Matches(TriggerModules.Parse("강제교대를 포함해 장소를 떠날 때"), forced, owner), Is.True);
+  }
+
   [TestCase("「빈사」상태가 됐을 때", "자신이 「빈사」 상태가 되었을 때")]
   [TestCase("쓰러졌을 때", "자신이 「빈사」 상태가 되었을 때")]
   [TestCase("상대가 쓰러졌을 때", "상대가 「빈사」 상태가 되었을 때")]

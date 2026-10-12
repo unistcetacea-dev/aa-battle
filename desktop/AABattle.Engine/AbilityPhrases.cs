@@ -22,6 +22,16 @@ namespace AABattle {
   static readonly Regex DropImmune = new Regex(@"^자신은 상대에 의해 (?:(?<s>「[^」]+」)이|능력이) 내려가지 않는다$");
   static readonly Regex AddType = new Regex(@"^자신의 타입에 「(?<t>[^」]+)」를 추가한다$");
   static readonly Regex Priority = new Regex(@"^자신의 (?<c>(?:「[^」]+」)+) 기술의 우선도를 \+(?<n>\d)한다$");
+  static readonly Regex WeatherDamage = new Regex(@"^자신은 (?<w>(?:「[^」]+」)+)의 대미지를 받지 않는다$");
+  static readonly Regex StatusPower = new Regex(@"^(?<s>(?:「[^」]+」)+)의 기술 위력 저하 효과를 무효화한다$");
+  static readonly string[] WeatherNames = { "쾌청", "큰가뭄", "비", "강한 비", "모래바람", "싸라기눈", "눈", "난기류" };
+  static string[] QuotedNames(string text) {
+   return Regex.Matches(text, "「([^」]+)」").Cast<Match>().SelectMany(x => x.Groups[1].Value.Split('/')).Select(x => x.Trim()).ToArray();
+  }
+  static bool WeatherDamageRule(string text) {
+   var m = WeatherDamage.Match(text);
+   return m.Success && QuotedNames(m.Groups["w"].Value).All(WeatherNames.Contains);
+  }
 
   static string Clean(string text) { return Regex.Replace(PotentialParts.Clean(text ?? ""), @"\s+", " ").Trim().TrimEnd('.', '。', '．').Trim(); }
   static string Stat(string s) { return s == "공" ? "공격" : s == "방" ? "방어" : s == "속" ? "속도" : s; }
@@ -33,6 +43,7 @@ namespace AABattle {
    t = Regex.Replace(t, @"「(쾌청|비)\([^)]*\)」", "「$1」");
    t = Regex.Replace(t, @"날씨가 (맑음|싸라기눈|모래바람)일 때", m => "날씨가 「" + (m.Groups[1].Value == "맑음" ? "쾌청" : m.Groups[1].Value) + "」일 때");
    t = Regex.Replace(t, @"필드가 「([^」]+)」 상태일 때", "「$1」일 때");
+   t = Regex.Replace(t, @"(?:자신은\s*)?(?<s>「[^」]+」)\s*상태가\s*되지\s*않고,\s*", "자신은 ${s}상태가 되지 않는다. ");
    // 급소 보정: 「…급소에 맞기 쉬워진다. (C+N)」
    t = Regex.Replace(t, @"급소에 맞기 쉬워진다\.?\s*\(\s*[CＣ]\s*\+\s*(\d)\s*\)\.?", "급소에 맞기 쉬워진다(C+$1).");
    var result = new List<string>();
@@ -97,6 +108,8 @@ namespace AABattle {
   static string Effect(string r) {
    string s = r.Trim().TrimEnd('.', '。').Trim();
    Match m;
+   m = Regex.Match(s, @"^(?:자신은\s*)?(?<w>(?:「[^」]+」\s*)+)의\s*대미지를\s*받지\s*않는다$");
+   if (m.Success && QuotedNames(m.Groups["w"].Value).All(WeatherNames.Contains)) return "자신은 " + string.Concat(QuotedNames(m.Groups["w"].Value).Select(x => "「" + x + "」")) + "의 대미지를 받지 않는다";
    if (Regex.IsMatch(s, @"^(?:상대의 기술이 급소에 맞지 않게 된다|상대의 공격이 급소에 맞지 않는다|급소 ?무효)$")) return NoCritical;
    if (Regex.IsMatch(s, @"^(?:반드시 버틴다|「빈사」 상태가 되지 않는다)$")) return Sturdy;
    if (Regex.IsMatch(s, @"^(?:상대의 공격 이외의 대미지를 (?:무효화한다|무시한다)|상대의 공격 이외로 대미지를 받지 않는다)$")) return MagicGuard;
@@ -121,7 +134,7 @@ namespace AABattle {
   // ===== 새 계속 효과 모듈 =====
   public static string Normalize(string text) {
    string t = Clean(text);
-   if (t == NoCritical || t == Sturdy || t == MagicGuard || t == HazardProof || t == Pierce || DropImmune.IsMatch(t) || AddType.IsMatch(t) || Priority.IsMatch(t)) return t + ".";
+   if (t == NoCritical || t == Sturdy || t == MagicGuard || t == HazardProof || t == Pierce || DropImmune.IsMatch(t) || AddType.IsMatch(t) || Priority.IsMatch(t) || WeatherDamageRule(t) || StatusPower.IsMatch(t)) return t + ".";
    return null;
   }
   public static string Classify(string sentence) {
@@ -131,6 +144,8 @@ namespace AABattle {
    if (s == MagicGuard) return "간접 대미지 무효";
    if (s == HazardProof) return "설치물 무시";
    if (s == Pierce) return "특성 관통";
+   if (WeatherDamageRule(s)) return "날씨 대미지 무효";
+   if (StatusPower.IsMatch(s)) return "상태이상 위력 저하 무효";
    if (DropImmune.IsMatch(s)) return "능력 하락 무효";
    if (AddType.IsMatch(s)) return "타입 추가";
    if (Priority.IsMatch(s)) return "조건 우선도";
@@ -145,6 +160,18 @@ namespace AABattle {
   public static bool Endures(Fighter target, Fighter attacker) { return Lines(target, attacker, "버틴다").Any(x => x == Sturdy); }
   public static bool IgnoresIndirect(Fighter f) { return Lines(f, null, "이외").Any(x => x == MagicGuard); }
   public static bool IgnoresHazards(Fighter f) { return Lines(f, null, "설치물").Any(x => x == HazardProof); }
+  public static bool IgnoresWeatherDamage(Fighter f, string weather) {
+   return Lines(f, null, "대미지").Any(x => WeatherDamageRule(x) && QuotedNames(WeatherDamage.Match(x).Groups["w"].Value).Contains(weather));
+  }
+  public static bool IgnoresStatusPowerPenalty(Fighter f, string status) {
+   return Lines(f, null, "위력 저하").Any(x => StatusPower.IsMatch(x) && QuotedNames(StatusPower.Match(x).Groups["s"].Value).Contains(status));
+  }
+  public static bool BlocksOhko(Fighter target, Fighter attacker) {
+   return Lines(target, attacker, "무효").Any(x => x == "상대의 「일격필살」 기술을 무효화한다");
+  }
+  public static bool FloatsFromAbility(Fighter f) {
+   return f != null && f.OnField && (f.Data.potentials ?? new Potential[0]).Any(p => p != null && p.id == AbilityModules.Slot && (p.description ?? "").Contains("자신은 공중에 떠오른다"));
+  }
   [ThreadStatic] static bool piercing;
   public static bool PiercesAbility(Fighter f) {
    if (f == null || piercing) return false;

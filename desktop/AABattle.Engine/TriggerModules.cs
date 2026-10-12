@@ -11,6 +11,7 @@ namespace AABattle {
  public sealed class TriggerSpec {
   public string Module = "";
   public bool Opponent;                                // 주체가 상대(상대가 나왔을 때·상대가 기술을 내보낼 때)
+  public bool IncludeForced;                           // 강제교대도 퇴장에 포함
   public string Method = "";                           // 등장·교대 방식 / 타이밍 라벨
   public MoveCondition Condition = new MoveCondition();
   public bool Attack;                                  // 「공격」(공격기술 한정)과 「기술」(변화기술 포함)
@@ -93,7 +94,7 @@ namespace AABattle {
     case "교대":
      if (s.Opponent) return "상대가 " + (s.Method == "임의" ? "임의교대할 때" : "교대할 때");
      return s.Types.Length > 0 ? "「" + string.Join("/", s.Types) + "」 타입 아군과 교대할 때" : TriggerStructures.SwitchLabel;
-    case "퇴장": return (s.Opponent ? "상대가 " : "") + "장소를 떠날 때";
+    case "퇴장": return (s.Opponent ? "상대가 " : "") + (s.IncludeForced ? "강제교대를 포함해 " : "") + "장소를 떠날 때";
     case "타이밍":
      if (s.Inner.Length > 0) return "「" + s.Inner + "」가 성립한 T 종료 시";
      if (s.FieldTurn > 0) return "장소에 나와 「" + s.FieldTurn + "」T째 종료 시";
@@ -157,8 +158,8 @@ namespace AABattle {
    m = Regex.Match(t, @"^(?:(?<t1>(?:「[^」]+」\s*)+)\s*(?:타입\s*아군|타입|인\s*아군|타입인\s*아군)|아군\s*(?<t2>(?:「[^」]+」\s*)+))과\s*교대할\s*때$");
    if (m.Success) { var types = TypeList(m.Groups["t1"].Success ? m.Groups["t1"].Value : m.Groups["t2"].Value); if (types == null) return false; spec = new TriggerSpec { Module = "교대", Method = "임의", Types = types }; return true; }
    // 퇴장
-   m = Regex.Match(t, @"^(?:(?<s>상대가)\s*)?(?:필드|장소|장)(?:를|을)\s*떠날\s*때$");
-   if (m.Success) { spec = new TriggerSpec { Module = "퇴장", Opponent = m.Groups["s"].Success }; return true; }
+   m = Regex.Match(t, @"^(?:(?<s>상대가)\s*)?(?<forced>강제\s*교대를\s*포함해\s*)?(?:필드|장소|장)(?:를|을)\s*떠날\s*때$");
+   if (m.Success) { spec = new TriggerSpec { Module = "퇴장", Opponent = m.Groups["s"].Success, IncludeForced = m.Groups["forced"].Success }; return true; }
    // 쓰러뜨림
    m = Regex.Match(t, @"^(?:자신(?:이|의)\s*)?(?:(?<c>.*?)\s*(?:기술)?\s*(?:으로|로)\s*)?(?:상대|(?<ain>「아인」|아인(?:종)?(?:\s*포켓몬)?)|(?<t>(?:「[^」]+」\s*,?\s*)+)\s*(?:타입의?\s*포켓몬|타입|포켓몬)?)\s*(?:을|를)\s*쓰러(?:뜨|트)렸을\s*때$");
    if (m.Success) {
@@ -266,7 +267,7 @@ namespace AABattle {
      if (f.Kind != "교대" || s.Opponent == f.Self) return false;
      if (s.Method == "임의" && f.Method != "임의") return false;
      return s.Types.Length == 0 || f.PartnerTypes.Any(s.Types.Contains);
-    case "퇴장": return f.Kind == "퇴장" && s.Opponent != f.Self && f.Method != "강제";
+    case "퇴장": return f.Kind == "퇴장" && s.Opponent != f.Self && (s.IncludeForced || f.Method != "강제");
     case "타이밍":
      if (f.Kind != "타이밍" || f.Method != s.Method) return false;
      var rules = EffectScope.Current == null ? null : EffectScope.Current.Rules;

@@ -123,6 +123,88 @@ namespace AABattle {
    Assert.That(PotentialModifiers.Power(F("이판사판"), defender, move, new Rules(), 1), Is.EqualTo(1.2));
   }
 
+  [TestCase(false)]
+  [TestCase(true)]
+  public void RegeneratorHealsOnForcedSwitchUnlessHealBlocked(bool blocked) {
+   var source = F();
+   source.Data.potentials = new[] { new Potential { id = "종족 ①", name = "강제교대 검사", triggers = new[] { TriggerStructures.AttackSuccessLabel }, description = "상대를 강제교대시킨다." } };
+   var target = F("재생력"); target.HP = 100; target.Conditions.HealBlock = blocked ? 3 : 0;
+   var plain = target.Copy(); plain.Data.ability = ""; AbilityRuntime.Reset(plain);
+   var reserve = F(); reserve.OnField = false;
+   var hit = M("몸통박치기").Copy(); hit.power = 10; hit.priority = 1;
+   Func<Fighter, TurnResult> run = t => Engine.Resolve(TestData.Db, new[] { source, t }, new[] { new BattleCommand { Move = hit }, new BattleCommand { Move = Idle(), Party = new[] { t, reserve } } }, new Rules(), new[] { new TrainerBattleState(), new TrainerBattleState() }, () => .5);
+   var baseline = run(plain); var actual = run(target);
+   Assert.That(actual.Switches.Single().Reason, Is.EqualTo(SwitchReason.Forced), Log(actual));
+   Assert.That(actual.Switches.Single().Outgoing.HP, Is.EqualTo(baseline.Switches.Single().Outgoing.HP + (blocked ? 0 : Max(target) / 3)), Log(actual));
+  }
+
+  [Test] public void RegeneratorDoesNotHealFaintedDeparture() {
+   var owner = F("재생력"); owner.HP = 0;
+   var log = new List<string>();
+   using (EffectScope.Begin(new[] { owner, F() }, new Rules(), () => .5, new[] { new TrainerBattleState(), new TrainerBattleState() })) RuntimeTriggers.Leave(owner, SwitchReason.Fainted, log.Add);
+   Assert.That(owner.HP, Is.Zero, string.Join("\n", log));
+  }
+
+  [TestCase("방진", "모래바람")]
+  [TestCase("방진", "싸라기눈")]
+  [TestCase("모래헤치기", "모래바람")]
+  [TestCase("두꺼운모피", "싸라기눈")]
+  [TestCase("방진코트", "모래바람")]
+  public void WeatherDamageImmunityComesFromModules(string ability, string weather) {
+   var owner = F(ability); int hp = owner.HP; var log = new List<string>();
+   Mechanics.EndTurn(new[] { owner, F() }, new Rules { Weather = weather }, log);
+   Assert.That(owner.HP, Is.EqualTo(hp), string.Join("\n", log));
+   owner.AbilitySuppressed = true; AbilityModules.Sync(owner);
+   Mechanics.EndTurn(new[] { owner, F() }, new Rules { Weather = weather }, log);
+   Assert.That(owner.HP, Is.EqualTo(hp - Max(owner) / 16), "억제되면 날씨 피해를 받는다");
+  }
+
+  [TestCase("가위자르기", false)]
+  [TestCase("뿔드릴", false)]
+  [TestCase("땅가르기", false)]
+  [TestCase("절대영도", false)]
+  [TestCase("태그 일격필살", true)]
+  public void SturdyModuleBlocksOhkoNamesAndTags(string name, bool tagged) {
+   var owner = F("옹골참"); owner.HP = 70;
+   var move = new Move { name = name, types = new[] { "노말" }, category = "물리", power = 1, accuracy = 100, tags = tagged ? new[] { "일격필살" } : new string[0] };
+   Assert.That(Engine.Calculate(TestData.Db, F(), owner, move, new Rules()).Max, Is.Zero);
+   Assert.That(Engine.Calculate(TestData.Db, F("틀깨기"), owner, move, new Rules()).Max, Is.GreaterThan(0));
+  }
+
+  [TestCase("화상", "물리")]
+  [TestCase("동상", "특수")]
+  public void GutsModuleIgnoresStatusPowerPenalty(string status, string category) {
+   var owner = F("근성"); owner.Status = status;
+   var move = M("몸통박치기").Copy(); move.category = category;
+   Assert.That(Mechanics.PowerFactor(owner, F(), move, new Rules()), Is.EqualTo(1));
+   owner.AbilitySuppressed = true; AbilityModules.Sync(owner);
+   Assert.That(Mechanics.PowerFactor(owner, F(), move, new Rules()), Is.EqualTo(.5));
+  }
+
+  [Test] public void GenericWeatherImmunityOnlyBlocksListedWeather() {
+   var owner = F();
+   owner.Data.potentials = new[] { new Potential { id = "종족 ①", name = "날씨 방호 검사", triggers = new[] { TriggerStructures.AlwaysLabel }, description = "자신은 「모래바람」의 대미지를 받지 않는다." } };
+   int hp = owner.HP; var log = new List<string>();
+   Mechanics.EndTurn(new[] { owner, F() }, new Rules { Weather = "모래바람" }, log);
+   Assert.That(owner.HP, Is.EqualTo(hp));
+   Mechanics.EndTurn(new[] { owner, F() }, new Rules { Weather = "싸라기눈" }, log);
+   Assert.That(owner.HP, Is.EqualTo(hp - Max(owner) / 16));
+  }
+
+  [Test] public void GenericIndirectImmunityStopsSeedDrain() {
+   var owner = F(); owner.Conditions.Seed = true;
+   owner.Data.potentials = new[] { new Potential { id = "종족 ①", name = "간접 방호 검사", triggers = new[] { TriggerStructures.AlwaysLabel }, description = "자신은 공격 이외의 대미지를 받지 않는다." } };
+   var other = F(); other.HP = 100; int hp = owner.HP;
+   Mechanics.EndTurn(new[] { owner, other }, new Rules(), new List<string>());
+   Assert.That(owner.HP, Is.EqualTo(hp));
+   Assert.That(other.HP, Is.EqualTo(100), "피해가 없으면 드레인 회복도 없다");
+  }
+
+  [Test] public void PranksterStatusMoveAffectsDarkTypes() {
+   var turn = Turn(F("짓궂은마음"), F("", "악"), M("꼬리흔들기"), Idle());
+   Assert.That(turn.Fighters[1].Stages[2], Is.EqualTo(-1), Log(turn));
+  }
+
   [Test] public void BulletproofOnlyHalvesCatalogListedExplosions() {
    var attacker = F();
    var explosion = new Move { name = "자폭", category = "물리", types = new[] { "노말" }, tags = new string[0], power = 100, accuracy = 100, attack = "공격", defense = "방어" };
