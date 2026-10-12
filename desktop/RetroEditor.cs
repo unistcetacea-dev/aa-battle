@@ -12,7 +12,7 @@ namespace AABattle {
  partial class DataEditorForm {
   PixelTextBox inlineTrigger,inlineEffect;
   Label inlineTitle;PixelComboBox inlineTemplateType;
-  bool inlineLoading;Panel pokemonWorkspace;
+  bool inlineLoading;PixelScrollPanel pokemonWorkspace;
   SplitContainer inlineSplit;bool responsiveLayoutPending;
   Panel pokemonInfo,trainerInfo;TableLayoutPanel workspaceStack,inlineCatalog;
   PixelTextBox triggerArguments;string argumentKind="";bool argumentLoading;
@@ -75,8 +75,8 @@ namespace AABattle {
    var inputs=new TableLayoutPanel{Dock=DockStyle.Top,Height=118,ColumnCount=2,RowCount=2};inputs.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));inputs.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));inputs.RowStyles.Add(new RowStyle(SizeType.Absolute,28));inputs.RowStyles.Add(new RowStyle(SizeType.Percent,100));
    inlineTrigger=Box(true);inlineEffect=Box(true);inputs.Controls.Add(Theme.Label("트리거 조건",26),0,0);inputs.Controls.Add(Theme.Label("효과",26),1,0);inputs.Controls.Add(inlineTrigger,0,1);inputs.Controls.Add(inlineEffect,1,1);
    lower.Controls.Add(inputs);inputs.BringToFront();
-   var scroll=new Panel{Dock=DockStyle.Fill,AutoScroll=true};lower.Controls.Add(scroll);scroll.BringToFront();
-    var catalog=tabs.TabPages[5];foreach(var c in catalog.Controls.Cast<Control>().ToArray()){if(c is TableLayoutPanel){inlineCatalog=c as TableLayoutPanel;c.Dock=DockStyle.Top;c.Height=690;scroll.Controls.Add(c);foreach(Control panel in c.Controls)foreach(Control table in panel.Controls){var layout=table as TableLayoutPanel;if(layout!=null&&layout.ColumnStyles.Count>0){layout.Padding=new Padding(4);layout.ColumnStyles[0].Width=105;}}}else{c.Visible=false;}}
+   var scroll=new PixelScrollPanel{Dock=DockStyle.Fill};lower.Controls.Add(scroll);scroll.BringToFront();
+    var catalog=tabs.TabPages[5];foreach(var c in catalog.Controls.Cast<Control>().ToArray()){if(c is TableLayoutPanel){inlineCatalog=c as TableLayoutPanel;c.Height=690;scroll.Content=c;foreach(Control panel in c.Controls)foreach(Control table in panel.Controls){var layout=table as TableLayoutPanel;if(layout!=null&&layout.ColumnStyles.Count>0){layout.Padding=new Padding(4);layout.ColumnStyles[0].Width=105;}}}else{c.Visible=false;}}
    inlineTrigger.TextChanged+=(s,e)=>WriteInline("trigger",inlineTrigger.Text);inlineEffect.TextChanged+=(s,e)=>WriteInline("effect",inlineEffect.Text);
    potentials.SelectionChanged+=(s,e)=>RefreshInline();potentials.CellValueChanged+=(s,e)=>RefreshInline();
    inlineTemplateType.SelectedIndexChanged+=(s,e)=>ApplyInlineTemplateType();
@@ -85,7 +85,7 @@ namespace AABattle {
   void EmbedPotentialsInPokemon(){
    var pokemon=tabs.TabPages[1];var potential=tabs.TabPages[2];
    foreach(Control bar in pokemon.Controls.Cast<Control>().Where(x=>x is FlowLayoutPanel&&x.Controls.Cast<Control>().Any(y=>y.Text.Contains("배틀 슬롯"))).ToArray()){pokemon.Controls.Remove(bar);bar.Dispose();}
-   pokemonWorkspace=new Panel{Dock=DockStyle.Fill,BackColor=Color.White,AutoScroll=true};
+   pokemonWorkspace=new PixelScrollPanel{Dock=DockStyle.Fill};
    var stack=new TableLayoutPanel{Dock=DockStyle.Top,Height=1200,ColumnCount=1,RowCount=2,Padding=new Padding(8)};workspaceStack=stack;
    stack.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
    stack.RowStyles.Add(new RowStyle(SizeType.Absolute,360));stack.RowStyles.Add(new RowStyle(SizeType.Absolute,820));
@@ -94,7 +94,7 @@ namespace AABattle {
    var host=new Panel{Dock=DockStyle.Fill,Tag="potential-host"};
    foreach(Control c in pokemon.Controls.Cast<Control>().ToArray()){info.Controls.Add(c);c.Visible=true;}
    foreach(Control c in potential.Controls.Cast<Control>().ToArray()){host.Controls.Add(c);c.Visible=true;}
-   stack.Controls.Add(info,0,0);stack.Controls.Add(host,0,1);pokemonWorkspace.Controls.Add(stack);
+   stack.Controls.Add(info,0,0);stack.Controls.Add(host,0,1);pokemonWorkspace.Content=stack;
    tabs.Parent.Controls.Add(pokemonWorkspace);pokemonWorkspace.Visible=false;
   }
   void ShowEditorPage(int page){
