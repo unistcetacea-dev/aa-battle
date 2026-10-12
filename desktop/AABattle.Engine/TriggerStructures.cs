@@ -93,11 +93,26 @@ namespace AABattle {
   }
   public static IEnumerable<Potential> Matching(Fighter fighter,string label){return (fighter.Data.potentials??new Potential[0]).Where(p=>p!=null&&Clauses(p).Any(x=>Normalize(x)==label));}
   public static bool Has(Fighter fighter,string label){return fighter!=null&&Matching(fighter,label).Any();}
+  // 효과 실행 범위(EffectScope) 안에서 효과의 상태 부여 문장을 실행하고 그 로그를 돌려준다. 처리한 문장이 없으면 빈 목록
+  static List<string> RunEffect(Fighter fighter,string name,string effect){
+   var lines=new List<string>();
+   var scope=EffectScope.Current;
+   if(scope==null)return lines;
+   bool handled=false;
+   foreach(string line in (effect??"").Split(new[]{'\n','\r'},StringSplitOptions.RemoveEmptyEntries))
+    handled|=StateEffects.TryApply(line,fighter,scope.Opponent(fighter),scope.Rules,scope.Rng,lines,"『"+name+"』");
+   if(!handled)lines.Clear();
+   return lines;
+  }
   public static void Fire(Fighter fighter,string label,string eventText,Action<string> log){
    log(eventText);
    foreach(var potential in Matching(fighter,label)){
     var clauses=Clauses(potential).ToList();string condition,effect;PotentialLibrary.Split(potential.description??"",out condition,out effect);
-    if(clauses.Any(x=>Normalize(x)==label))log("『"+potential.name+"』 "+label+" 트리거 충족"+(clauses.Any(x=>Normalize(x)!=label)?" · 추가 조건 확인 필요":"")+" · 효과 판정 대기: "+effect);
+     if(!clauses.Any(x=>Normalize(x)==label))continue;
+     bool extra=clauses.Any(x=>Normalize(x)!=label);
+     var applied=extra?new List<string>():RunEffect(fighter,potential.name,effect);
+     log("『"+potential.name+"』 "+label+" 트리거 충족"+(extra?" · 추가 조건 확인 필요":"")+(applied.Count>0?" · 효과 적용: ":" · 효과 판정 대기: ")+effect);
+     foreach(string line in applied)log(line);
    }
   }
   public static void Test(){

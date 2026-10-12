@@ -45,18 +45,25 @@ namespace AABattle {
    foreach(var field in Active(rules.FieldEffects).Where(x=>Matches(x,label))){
     double? rate=PotentialProbability.Rate(field.effect);if(rate.HasValue&&(rng??(()=>.5))()>=rate.Value){if(log!=null)log("《"+field.name+"》 "+label+" · 확률 판정 실패");continue;}
     if(log!=null)log("《"+field.name+"》 "+label+" 트리거 충족 · "+context+" · 장소의 모든 포켓몬에게 발동");
-    bool handled=false;foreach(string line in (field.effect??"").Replace("\r","").Split(new[]{'\n'},StringSplitOptions.RemoveEmptyEntries))handled|=ApplyLine(field,line,fighters,rules,log);
+    bool handled=false;foreach(string line in (field.effect??"").Replace("\r","").Split(new[]{'\n'},StringSplitOptions.RemoveEmptyEntries))handled|=ApplyLine(field,line,fighters,rules,rng,log);
     if(!handled&&log!=null)log("《"+field.name+"》 효과 판정 대기: "+(field.effect.Length>0?field.effect:field.raw));
    }
   }
   public static void BeforeMove(Rules rules,Fighter[] fighters,Move move,string context,Func<double> rng,Action<string> log){
    if(move==null)return;Fire(rules,TriggerStructures.MoveUseLabel,fighters,context,rng,log);Fire(rules,move.category=="변화"?TriggerStructures.StatusMoveUseLabel:TriggerStructures.AttackMoveUseLabel,fighters,context,rng,log);Fire(rules,TriggerStructures.MoveName(move.name),fighters,context,rng,log);foreach(string type in move.types??new string[0])Fire(rules,TriggerStructures.MoveType(type),fighters,context,rng,log);
   }
-  static bool ApplyLine(FieldEffectRecord field,string source,Fighter[] fighters,Rules rules,Action<string> log){
+  static bool ApplyLine(FieldEffectRecord field,string source,Fighter[] fighters,Rules rules,Func<double> rng,Action<string> log){
    string probability,body;if(EffectNormalizer.TryProbabilityPrefix(source,out probability,out body))source=body;string clean=PotentialParts.Clean(source);var rank=Rank.Match(clean);
    if(rank.Success){int amount=rank.Groups["degree"].Value=="매우 크게"?3:rank.Groups["degree"].Value=="크게"?2:1;if(rank.Groups["direction"].Value=="내린다")amount=-amount;string stat=rank.Groups["stat"].Value;foreach(var fighter in OnField(fighters)){if(stat=="전능력치"){for(int i=1;i<=5;i++)fighter.Stages[i]=Clamp(fighter.Stages[i]+amount);}else if(stat=="명중")fighter.AccuracyStage=Clamp(fighter.AccuracyStage+amount);else if(stat=="회피")fighter.EvasionStage=Clamp(fighter.EvasionStage+amount);else if(stat=="C")fighter.CriticalStage=Clamp(fighter.CriticalStage+amount);else{int index=Array.IndexOf(Engine.Names,stat);if(index>0)fighter.Stages[index]=Clamp(fighter.Stages[index]+amount);}if(log!=null)log("《"+field.name+"》 "+fighter.Data.name+" · "+stat+" "+(amount>0?"+":"")+amount);}return true;}
    string target,action;int denominator;if(EffectNormalizer.TryFraction(clean,out target,out action,out denominator)){foreach(var fighter in OnField(fighters)){var opponent=OnField(fighters).FirstOrDefault(x=>x!=fighter)??fighter;int maximum=Engine.Stats(fighter,opponent.Data.level,rules)[0],amount=Math.Max(1,maximum/denominator);if(action=="회복"){var healLog=new List<string>();amount=Mechanics.Heal(fighter,opponent,rules,amount,"《"+field.name+"》",healLog);if(log!=null)foreach(string line in healLog)log(line);}else{bool canFaint=!clean.Contains("빈사로 할 수 없다");int cap=canFaint?fighter.HP:Math.Max(0,fighter.HP-1);amount=Math.Min(cap,amount);fighter.HP-=amount;}if(log!=null)log("《"+field.name+"》 "+fighter.Data.name+" · HP "+(action=="회복"?"+":"-")+amount);}return true;}
-   return false;
+    bool stated=false;
+    foreach(var fighter in OnField(fighters).ToList()){
+     var opponent=OnField(fighters).FirstOrDefault(x=>x!=fighter);
+     var lines=new List<string>();
+     stated|=StateEffects.TryApply(source,fighter,opponent,rules,rng,lines,"《"+field.name+"》",false);
+     if(log!=null)foreach(string line in lines)log(line);
+    }
+    return stated;
   }
   static IEnumerable<Fighter> OnField(IEnumerable<Fighter> fighters){return (fighters??Enumerable.Empty<Fighter>()).Where(x=>x!=null&&x.OnField&&x.HP>0);}
   static int Clamp(int value){return Math.Max(-6,Math.Min(6,value));}

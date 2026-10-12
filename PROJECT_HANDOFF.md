@@ -372,3 +372,10 @@ Codex 공유 링크는 특정 시점의 읽기 전용 대화 스냅샷이다. �
 - `AABattle.Core`를 `AABattle.Engine`(계산·규칙·데이터 모델·내장 리소스, UI 참조 없음)과 `AABattle.UI`(WinForms 화면)로 나눴다. UI 파일 안에 있던 순수 로직(`EffectNormalizer`·`EffectStructures`·`EditorTemplate`·`EditorBridge`·`PotentialLibrary`·`BattleStateReport`·`RuleBook`·`TurnSelection`)과 저장 데이터 모델(`EditorProject`·`TrainerRecord`·`PokemonRecord`·`TeamRecord` 등)은 엔진으로 옮겼다. 내용은 바꾸지 않았다.
 - 큰 파일을 클래스 단위로 나눴다. 엔진: `BattleData`·`TrainerAccessRules`·`TriggerStructures`·`RuntimeTriggers`·`PriorityEffectRuntime`·`ConditionState`·`MechanicsStates`(`Mechanics`는 `partial`). UI: `Theme`·`BattleWidgets`·`BattleDialogs`. `CatalogTests`는 `AABattle.Tests`로 옮겼다.
 - 검증: `verify.ps1 -Visual` 통과(테스트 45개), 배틀·편집기 캡처 동일.
+
+## 2026-10-12 효과 문장 → 상태변화 자동 연결
+- `AABattle.Engine/StateEffects.cs`: 효과 문장 한 줄을 `StateEffectSentence`(대상·상태·NT간·T종료시까지·확률)로 읽고, `StateEffects.Table`의 상태 규칙으로 기존 엔진 함수(`ApplyStatus`·`ApplyActionState`·`SetTypeSwap`·`ApplyBomb` 등)를 호출한다. 표에는 주요 상태이상 7종, 혼란·도발·풀죽음·씨뿌리기, 행동 제한 8종, 타입 변경 3종, 가열·냉각·충전, 폭탄·요격·분노·마음의눈, 도우미·웅크리기·아쿠아링·뿌리박기·헤롱헤롱·동면·죽음의 카운트가 있다. 별칭: 앵콜→앙코르, 록온→마음의눈, 멸망의노래→죽음의 카운트, 오타 `자진`·`드믈게`.
+- 대상이 생략된 "「X」상태로 한다"는 상태별 기본 대상(가열·도우미 등 자기 강화는 자신, 나머지는 상대), "상태가 된다"는 자신이다. 면역·중복·파티 수면 제한은 기존 함수가 판정한다.
+- `EffectScope`: `Engine.Resolve`가 턴을 처리하는 동안 규칙·난수·전투 중 포켓몬 배열을 연다. 포켓몬 포텐셜(`TriggerStructures.Fire`)은 추가 조건이 없고 범위 안일 때만 상태 문장을 실행하고 "효과 적용"으로 기록한다. 범위 밖이거나 추가 조건이 있으면 기존처럼 "효과 판정 대기"만 남긴다. 필드효과(`FieldEffectRuntime`)는 랭크·HP 비율 다음으로 상태 문장을 장소의 각 포켓몬에게 적용한다.
+- 수집 자료의 상태 부여 문장 약 120개 중 98개(31종)가 자동 연결된다. 미구현: 순풍(진영 상태)·미래예지·텔레키네시스·저주·길동무·악몽 등.
+- 검증: `StateEffectTests`(문장 해석, 표의 모든 상태 적용, 확률·면역, 포텐셜 턴 종료 발동, 추가 조건 대기, 범위 밖 로그, 필드효과) 포함 99개 테스트 통과.
