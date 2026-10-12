@@ -436,3 +436,4 @@ Codex 공유 링크는 특정 시점의 읽기 전용 대화 스냅샷이다. �
 - 효과 안내(`EffectImplementationDex`): 모듈 판정으로 구현 상태를 정한다(자동 구현 / 일부 자동 구현(임의 선택) / 타입 지정 필요 / 그 밖의 기존 상태). 분류 선택 칸을 추가했다. `EffectStructures.CollapseByModule`은 모듈 변형을 템플릿 하나로 묶는다.
 - 버그 수정: `ProjectStore`의 내용 비교가 리플렉션 필드 순서(첫 호출과 이후가 다름)에 영향을 받아, 같은 이름 사본을 원본에 잘못 연결할 수 있었다. 키를 정렬해 비교한다.
 - 검증: `verify.ps1 -Visual` 통과(207개). 편집기 효과 입력기 캡처 `outputs/candidate/effect-builder*.png`.
+- (추가) 사용자 결정 반영: 기술·피격 사건으로 걸린 배율은 그 행동(기술 한 번)만 유지한다(`ActiveModifier.Action`, `Mechanics.AfterMove`에서 공격·방어 측 모두 해제). 「임의의 능력」과 등급 범위 종족치 값은 `Rules.ChooseStat`·`Rules.ChooseSpeciesValue`로 사용자가 고른다(배틀 화면 `ChoiceDialog`, 자동 검사·캡처에서는 판정 대기·최솟값). 종족치 등급 지정은 현재 값의 표시를 이어받는다(`SpeciesStatRanks.GradeRange`: B-→A-, B+→A+, 무표기 B→A 범위에서 선택). 편집기의 설정 종족치 범위도 같은 규칙을 따른다.

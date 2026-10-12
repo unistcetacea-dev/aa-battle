@@ -50,4 +50,14 @@ namespace AABattle {
   void Fill(){name.Text=Value.Data.name;level.Value=Value.Data.level;hp.Value=Value.HP;status.SelectedItem=Value.Status;ability.Text=Value.Data.ability;item.Text=Value.Data.item;aa.Text=Value.AA;for(int i=0;i<3;i++)type[i].SelectedItem=i<Value.Data.types.Length?Value.Data.types[i]:"없음";for(int i=0;i<6;i++){bases[i].Value=Value.Data.@base[i];ivs[i].Value=Value.Data.iv[i];stages[i].Value=Value.Stages[i];mult[i].Value=(decimal)Value.Multipliers[i];}for(int i=0;i<4;i++)moves[i].Text=i<Value.Moves.Length?Value.Moves[i]:"";}
   void ReadFields(bool validate){if(string.IsNullOrWhiteSpace(name.Text))throw new Exception("이름을 입력하세요.");var ts=type.Select(c=>(string)c.SelectedItem).Where(t=>t!="없음").Distinct().ToArray();if(ts.Length==0)throw new Exception("타입을 하나 이상 선택하세요.");string[] ms=moves.Select(c=>c.Text.Trim()).Where(t=>t.Length>0).ToArray();if(validate&&(ms.Length==0||ms.Any(n=>!db.moves.Any(m=>m.name==n))))throw new Exception("목록에 있는 기술을 하나 이상 선택하세요.");Value.Data.ability=ability.Text.Trim();AbilityRuntime.Reset(Value);Value.Data.item=item.Text.Trim();Value.Data.name=name.Text.Trim();Value.Data.level=(int)level.Value;Value.Data.types=ts;Value.HP=(int)hp.Value;Value.Status=(string)status.SelectedItem;Value.AA=aa.Text;Value.Data.@base=bases.Select(n=>(int)n.Value).ToArray();Value.Data.iv=ivs.Select(n=>(int)n.Value).ToArray();Value.Stages=stages.Select(n=>(int)n.Value).ToArray();Value.Multipliers=mult.Select(n=>(double)n.Value).ToArray();if(validate){Value.Moves=ms;Value.Selected=0;}}
  }
+ // 목록에서 하나를 고르는 도트 창(임의의 능력·종족치 값 등)
+ class ChoiceDialog:Form {
+  public int Selected;
+  public ChoiceDialog(string title,string message,string[] options){
+   Load+=(s,e)=>Theme.Enlarge(this);Text=title;Size=new Size(560,520);StartPosition=FormStartPosition.CenterParent;Font=Theme.UI();BackColor=Color.White;
+   var list=new PixelChoiceList{Dock=DockStyle.Fill};foreach(string option in options??new string[0])list.Items.Add(option);if(list.Items.Count>0)list.SelectedIndex=0;list.SelectedIndexChanged+=(s,e)=>Selected=Math.Max(0,list.SelectedIndex);
+   var ok=new FlatButton{Text="결정",Dock=DockStyle.Bottom,Height=55,Primary=true,DialogResult=DialogResult.OK};
+   Controls.Add(list);Controls.Add(new PixelLabel{Text=message,Dock=DockStyle.Top,Height=60});Controls.Add(ok);list.BringToFront();AcceptButton=ok;
+  }
+ }
 }

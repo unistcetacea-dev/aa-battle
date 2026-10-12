@@ -10,6 +10,8 @@ namespace AABattle {
   public class Rules {
   public string Weather="없음", Terrain="없음"; public bool Critical, HPCorrection;
   public Func<Fighter,Fighter,Potential,bool> OptionalEffectPrompt;
+  public Func<PotentialInstance,Fighter,string[],string> ChooseStat;        // 「임의의 능력」 선택(없거나 null을 돌려주면 판정 대기)
+  public Func<PotentialInstance,Fighter,int,int,int,int> ChooseSpeciesValue; // 등급 범위 안 종족치 선택(능력 색인, 최소, 최대 → 값, 음수면 최솟값)
   public double PowerBonus, PowerMultiplier=1, DamageMultiplier=1, Stab, LevelCorrection=1;public int SlightSpeciesBonus=10;
   public Fighter[][] Parties={new Fighter[0],new Fighter[0]};public int Turn=1;public int WeatherTurns=5,TerrainTurns=5,TrickRoom,Gravity;public bool SheetTerrain;public SideFieldState[] Sides={new SideFieldState(),new SideFieldState()};public FieldEffectRecord[] FieldEffects=new FieldEffectRecord[0];public Rules Copy(){var copy=(Rules)MemberwiseClone();copy.Parties=(Parties??new[]{new Fighter[0],new Fighter[0]}).Select(x=>(x??new Fighter[0]).Where(y=>y!=null).Select(y=>y.Copy()).ToArray()).ToArray();copy.Sides=(Sides??new[]{new SideFieldState(),new SideFieldState()}).Select(x=>(x??new SideFieldState()).Copy()).ToArray();copy.FieldEffects=(FieldEffects??new FieldEffectRecord[0]).Where(x=>x!=null).Select(x=>x.Copy()).ToArray();return copy;}
  }

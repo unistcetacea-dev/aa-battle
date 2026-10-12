@@ -157,8 +157,6 @@ namespace AABattle {
   public static readonly string[] FollowUpStarts = { "이때", "이 때", "이 효과로", "이효과로" };
   // 「임의의」 대상 선택(사용자 선택). 테스트에서 바꿔 끼울 수 있다. 기본은 첫 후보
   public static Func<PotentialInstance, List<Fighter>, Fighter> ChooseTarget = (source, candidates) => candidates.FirstOrDefault();
-  // 「임의의 능력」 선택(사용자 선택). null이면 판정 대기로 남긴다
-  public static Func<PotentialInstance, Fighter, string[], string> ChooseStat;
 
   [ThreadStatic] static int nextEvent;
   [ThreadStatic] static Frame current;
@@ -479,8 +477,9 @@ namespace AABattle {
     if (r.Mode == "랜덤") stats = new List<int> { EffectModules.StatIndex(PotentialStatRules.ChooseRandom(c.Rng ?? (() => .5))) };
     else if (r.Mode == "최고" || r.Mode == "최저") stats = new List<int> { EffectModules.StatIndex(PotentialStatRules.ChooseExtreme(target, other ?? target, c.Rules, r.Mode == "최고", c.Rng ?? (() => .5))) };
     else if (r.Mode == "임의") {
-     if (ChooseStat == null) { c.Say(c.Source.Label + ": 임의의 능력은 사용자가 고른다 — 판정 대기"); return EffectOutcome.Pending; }
-     string chosen = ChooseStat(c.Source, target, PotentialStatRules.Arbitrary);
+     var choose = c.Rules == null ? null : c.Rules.ChooseStat;
+     if (choose == null) { c.Say(c.Source.Label + ": 임의의 능력은 사용자가 고른다 — 판정 대기"); return EffectOutcome.Pending; }
+     string chosen = choose(c.Source, target, PotentialStatRules.Arbitrary);
      if (string.IsNullOrEmpty(chosen)) return EffectOutcome.Pending;
      stats = new List<int> { EffectModules.StatIndex(chosen) };
     }
@@ -505,11 +504,11 @@ namespace AABattle {
     int turns; string body = Duration(c.Line, out turns);
     ScalarEffect s; EffectModules.TryScalar(body, out s);
     if (s.Condition.Placeholder) { c.Say(c.Source.Label + ": 기술 조건의 타입이 비어 있다 — 판정 대기"); return EffectOutcome.Pending; }
-    if (turns == 0 && ActionEvent(c.Event)) turns = 1;
+    bool action = turns == 0 && ActionEvent(c.Event);
     var owner = c.Owner;
     if (owner == null || owner.HP <= 0) return EffectOutcome.Failed;
-    PotentialModifiers.Add(owner, new ActiveModifier { Key = c.Source.Key, Text = body, Source = c.Source.Label, Turns = turns == 0 ? -1 : turns });
-    c.Say(owner.Data.name + ": " + body + (turns > 0 ? " (" + turns + "T)" : " (필드를 떠날 때까지)"));
+    PotentialModifiers.Add(owner, new ActiveModifier { Key = c.Source.Key, Text = body, Source = c.Source.Label, Turns = turns == 0 ? -1 : turns, Action = action });
+    c.Say(owner.Data.name + ": " + body + (action ? " (이번 행동)" : turns > 0 ? " (" + turns + "T)" : " (필드를 떠날 때까지)"));
     return EffectOutcome.Success;
    }
 
@@ -519,29 +518,29 @@ namespace AABattle {
     if (target == null || target.HP <= 0) return EffectOutcome.Failed;
     var b = target.Data.@base;
     if (target.Conditions.OriginalBase == null) target.Conditions.OriginalBase = (int[])b.Clone();
-    int trainerFloor = -1;
+    int trainerFloor = -1; string trainerGrade = "";
     if (s.Operation == "트레이너") {
      var scope = EffectScope.Current;
      int side = target.FieldSide;
      var trainer = scope != null && scope.States != null && side >= 0 && side < scope.States.Length && scope.States[side] != null ? scope.States[side].Trainer : null;
      var aptitude = trainer == null ? null : s.Aptitude == "지시" ? trainer.command : s.Aptitude == "육성" ? trainer.training : s.Aptitude == "통솔" ? trainer.leadership : trainer.ability;
-     try { trainerFloor = aptitude == null || string.IsNullOrEmpty(aptitude.rank) ? -1 : SpeciesStatRanks.LabelRange(aptitude.rank.Trim())[0]; } catch { trainerFloor = -1; }
+     try { trainerGrade = aptitude == null ? "" : (aptitude.rank ?? "").Trim(); trainerFloor = trainerGrade.Length == 0 ? -1 : SpeciesStatRanks.LabelRange(trainerGrade)[0]; } catch { trainerFloor = -1; }
      if (trainerFloor < 0) { c.Say(c.Source.Label + ": 트레이너 「" + s.Aptitude + "」 등급을 알 수 없다 — 판정 대기"); return EffectOutcome.Pending; }
     }
     bool changed = false;
     foreach (int i in s.Stats) {
      int current = b[i], next = current;
-     int floor = s.Grade.Length > 0 ? (s.Value >= 0 ? s.Value : SpeciesStatRanks.LabelRange(s.Grade)[0]) : s.Value;
+     int floor = s.Grade.Length > 0 ? GradeValue(c, target, i, current, s.Grade, s.Value) : s.Value;
      switch (s.Operation) {
       case "변경": next = floor; break;
       case "상승": next = Math.Max(current, floor); break;
-      case "하락": next = Math.Min(current, s.Value >= 0 ? s.Value : SpeciesStatRanks.LabelRange(s.Grade)[1]); break;
+      case "하락": next = Math.Min(current, floor); break;
       case "랭크": next = SpeciesStatRanks.RaisedRange(current, s.Ranks)[0]; break;
       case "수치": next = s.Value; break;
       case "최고 복사": next = PotentialStatRules.CopyBase(target.Data, EffectModules.StatIndex(PotentialStatRules.ChooseExtremeBase(target.Data, true, c.Rng ?? (() => .5)))); break;
       case "최저 복사": next = PotentialStatRules.CopyBase(target.Data, EffectModules.StatIndex(PotentialStatRules.ChooseExtremeBase(target.Data, false, c.Rng ?? (() => .5)))); break;
       case "복사": next = b[s.Source]; break;
-      case "트레이너": next = Math.Max(current, trainerFloor); break;
+      case "트레이너": next = Math.Max(current, trainerFloor < 0 ? current : GradeValue(c, target, i, current, trainerGrade, -1)); break;
      }
      if (next == current) continue;
      b[i] = next; changed = true;
@@ -550,6 +549,18 @@ namespace AABattle {
     if (!changed && target.Conditions.OriginalBase != null && target.Conditions.OriginalBase.SequenceEqual(b)) target.Conditions.OriginalBase = null;
     if (changed && s.Stats.Contains(0)) target.HP = Math.Min(target.HP, Engine.Stats(target, (c.Opponent ?? target).Data.level, c.Rules ?? new Rules())[0]);
     return changed ? EffectOutcome.Success : EffectOutcome.Failed;
+   }
+
+   // 등급 문장의 값: 현재 값의 -·+를 유지한 범위(B-→A-, B+→A+, 무표기→A 범위). 지정 값이 범위 안이면 그 값, 아니면 선택 또는 최솟값
+   static int GradeValue(EffectCall c, Fighter target, int stat, int current, string grade, int value) {
+    var range = SpeciesStatRanks.GradeRange(current, grade);
+    if (value >= range[0] && value <= range[1]) return value;
+    if (range[0] == range[1]) return range[0];
+    var choose = c.Rules == null ? null : c.Rules.ChooseSpeciesValue;
+    int chosen = choose == null ? -1 : choose(c.Source, target, stat, range[0], range[1]);
+    if (chosen >= range[0] && chosen <= range[1]) return chosen;
+    c.Say(c.Source.Label + ": 「" + grade + "」 범위 " + range[0] + "~" + range[1] + " 중 최솟값 " + range[0] + "을 썼다(편집기에서 값을 지정할 수 있다)");
+    return range[0];
    }
 
    static EffectOutcome RunFraction(EffectCall c) {

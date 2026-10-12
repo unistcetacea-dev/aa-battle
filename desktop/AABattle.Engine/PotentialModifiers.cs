@@ -8,6 +8,7 @@ namespace AABattle {
  public sealed class ActiveModifier {
   public string Key = "", Text = "", Source = "";
   public int Turns = -1;
+  public bool Action;   // 기술·피격 사건으로 걸린 배율: 그 행동(기술 한 번)이 끝나면 해제
   public ActiveModifier Copy() { return (ActiveModifier)MemberwiseClone(); }
  }
 
@@ -141,10 +142,20 @@ namespace AABattle {
   // 사건으로 걸린 배율의 기간 감소(턴 종료)
   public static void Tick(Fighter f, List<string> log) {
    if (f == null || f.Conditions.Modifiers == null) return;
+   ClearAction(f, log);
    foreach (var m in f.Conditions.Modifiers.Where(x => x.Turns > 0).ToList()) {
     if (--m.Turns > 0) continue;
     f.Conditions.Modifiers.Remove(m);
     if (log != null) log.Add(f.Data.name + ": " + m.Source + "의 배율 효과가 끝났다");
+   }
+  }
+
+  // 행동 하나가 끝나면 그 행동 동안만 걸린 배율을 해제한다(공격 측·방어 측 모두)
+  public static void ClearAction(Fighter f, List<string> log) {
+   if (f == null || f.Conditions.Modifiers == null) return;
+   foreach (var m in f.Conditions.Modifiers.Where(x => x.Action).ToList()) {
+    f.Conditions.Modifiers.Remove(m);
+    if (log != null) log.Add(f.Data.name + ": " + m.Source + "의 배율 효과가 끝났다(행동 종료)");
    }
   }
 

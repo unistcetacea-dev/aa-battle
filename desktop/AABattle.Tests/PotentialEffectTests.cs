@@ -18,9 +18,9 @@ namespace AABattle {
   static Move Mv(string type, string category = "물리", int power = 80) { return new Move { name = type + "검사", category = category, types = new[] { type }, tags = new string[0], power = power, accuracy = 100, attack = category == "물리" ? "공격" : "특공", defense = category == "물리" ? "방어" : "특방" }; }
   static int Max(Fighter a, Fighter b, Move m, Rules r = null) { return Engine.Calculate(TestData.Db, a, b, m, r ?? new Rules()).Max; }
   static string Field { get { return TriggerStructures.FieldLabel; } }
-  static List<string> Fire(Fighter owner, Fighter other, string label, TrainerBattleState[] states = null) {
+  static List<string> Fire(Fighter owner, Fighter other, string label, TrainerBattleState[] states = null, Rules rules = null) {
    var log = new List<string>();
-   var rules = new Rules();
+   rules = rules ?? new Rules();
    Mechanics.SetParties(rules, new[] { owner, other });
    using (EffectScope.Begin(new[] { owner, other }, rules, () => .5, states ?? new[] { new TrainerBattleState(), new TrainerBattleState() }))
     PotentialQueue.Raise(TriggerStructures.LabelEvent(owner, label, owner.Data.name + " · " + label, log.Add));
@@ -93,11 +93,8 @@ namespace AABattle {
    var log = Fire(owner, other, TriggerStructures.TurnEndLabel);
    Assert.That(owner.Stages.Sum(), Is.EqualTo(0));
    Assert.That(log.Any(x => x.Contains("판정 대기")), Is.True);
-   try {
-    PotentialQueue.ChooseStat = (s, f, list) => "속도";
-    Fire(owner, other, TriggerStructures.TurnEndLabel);
-    Assert.That(owner.Stages[5], Is.EqualTo(1));
-   } finally { PotentialQueue.ChooseStat = null; }
+   Fire(owner, other, TriggerStructures.TurnEndLabel, null, new Rules { ChooseStat = (s, f, list) => "속도" });
+   Assert.That(owner.Stages[5], Is.EqualTo(1));
   }
 
   // ===== F2 종족치 =====
@@ -107,6 +104,36 @@ namespace AABattle {
    Assert.That(owner.Data.@base[1], Is.EqualTo(SpeciesStatRanks.LabelRange("AA")[0]));
    Mechanics.LeaveField(owner, new List<string>());
    Assert.That(owner.Data.@base[1], Is.EqualTo(100));
+  }
+
+  // 사용자 결정: 등급 지정은 현재 값의 -·+를 이어받는다(B-→A-, B+→A+), 무표기는 등급 범위 안에서 고른다
+  [TestCase(90, "A", 110, 110)]
+  [TestCase(107, "A", 135, 139)]
+  [TestCase(100, "A", 111, 134)]
+  [TestCase(100, "A+", 135, 139)]
+  public void GradeRangeKeepsCurrentModifier(int current, string grade, int min, int max) {
+   Assert.That(SpeciesStatRanks.GradeRange(current, grade), Is.EqualTo(new[] { min, max }));
+  }
+
+  [Test] public void SpeciesGradeValueIsChosenWithinRange() {
+   var owner = F("노말", P(TriggerStructures.TurnEndLabel, "자신의 「공격」의 종족치를 「A」로 한다")); var other = F();
+   Fire(owner, other, TriggerStructures.TurnEndLabel, null, new Rules { ChooseSpeciesValue = (s, f, stat, min, max) => 120 });
+   Assert.That(owner.Data.@base[1], Is.EqualTo(120));
+   var minus = F("노말", P(TriggerStructures.TurnEndLabel, "자신의 「공격」의 종족치를 「A」로 한다")); minus.Data.@base[1] = 90;
+   Fire(minus, other, TriggerStructures.TurnEndLabel, null, new Rules { ChooseSpeciesValue = (s, f, stat, min, max) => 120 });
+   Assert.That(minus.Data.@base[1], Is.EqualTo(110), "B- becomes A- only");
+  }
+
+  // 기술 사건으로 걸린 배율은 그 기술 한 번에만
+  [Test] public void MoveEventMultiplierLastsOnlyForThatAction() {
+   var idle = new Move { name = "미등록", category = "변화", types = new[] { "노말" }, tags = new string[0], accuracy = 100, target = "자신" };
+   var hit = Mv("노말"); hit.priority = 1;
+   var boosted = F("노말", P(TriggerStructures.AttackMoveUseLabel, "자신이 주는 대미지를 강화(2배)한다."));
+   var plainTurn = Engine.Resolve(TestData.Db, new[] { F(), F() }, new[] { hit, idle }, new Rules(), () => .5);
+   var turn = Engine.Resolve(TestData.Db, new[] { boosted, F() }, new[] { hit, idle }, new Rules(), () => .5);
+   int plainLoss = plainTurn.Fighters[1].HP, loss = turn.Fighters[1].HP;
+   Assert.That(341 - loss, Is.InRange(2 * (341 - plainLoss) - 2, 2 * (341 - plainLoss) + 2), string.Join("\n", turn.Log));
+   Assert.That(turn.Fighters[0].Conditions.Modifiers, Is.Empty, "cleared after the action");
   }
 
   [Test] public void SpeciesRaiseToTrainerAptitude() {
