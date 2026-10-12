@@ -59,7 +59,7 @@ namespace AABattle {
   }
  }
 
- public static class StateEffects {
+ public static partial class StateEffects {
   static readonly Regex Sentence = new Regex(
    @"^(?:(?<ignore>[^「]*무시하고)\s*,?\s*)?" +
    @"(?<until>T\s*종료\s*시\s*까지\s*,?\s*)?" +
@@ -162,6 +162,7 @@ namespace AABattle {
    rules.Add(Rule("혼란", c => {
     var t = c.Target;
     if (c.Source != null && !Mechanics.BypassAbility(c.Source) && Mechanics.Ability(t, "마이페이스") || c.Rules.Terrain == "미스트필드" && Mechanics.Grounded(t, c.Rules)) { c.Say("혼란 무효: 마이페이스 / 미스트필드"); return false; }
+    if (StateTicks.Guarded(t, c.Source, c.Rules)) { c.Say("신비의부적: 혼란 무효"); return false; }
     t.Conditions.Confusion = c.Turns > 0 ? c.Turns : 1 + (int)(c.Roll() * 4);
     return true;
    }));
@@ -218,6 +219,7 @@ namespace AABattle {
     c.Target.Conditions.DeathCount = c.Turns > 0 ? c.Turns : 4;
     return true;
    }, false, "멸망의노래", "멸망의 노래"));
+   AddMore(rules);
    return rules.ToArray();
   }
  }

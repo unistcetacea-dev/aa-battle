@@ -59,6 +59,8 @@ namespace AABattle {
    if (a == null || m == null) return "";
    string t = Plain(m);
    var c = a.Conditions;
+   // 길동무(오레마스 문서): 방어처럼 2번째부터 성공률이 떨어진다(그 기술만)
+   if (m.name == "길동무") t = "연속해서 내보내면 실패하기 쉽다. (별도 판정)";
    if (t.Contains("연속해서 내보내면 실패한다")) return c.LastMove == m.name ? "연속해서 내보내 실패했다." : "";
    if (!t.Contains("연속해서 내보내면 실패하기 쉽다")) return "";
    bool shared = !t.Contains("별도 판정");

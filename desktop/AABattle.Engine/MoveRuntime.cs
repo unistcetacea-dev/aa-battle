@@ -23,6 +23,8 @@ namespace AABattle {
    "대타출동", "잠자기", "멸망의노래", "리플렉터", "빛의장막", "순풍", "날개쉬기", "태만함", "도우미", "고속스핀", "객기", "발버둥"
   };
   static readonly Dictionary<string, MovePlan> cache = new Dictionary<string, MovePlan>();
+  [ThreadStatic] static Move current;
+  public static Move CurrentMove { get { return current; } }   // 실행 중인 기술(꿰뚫어보기 등 기술마다 다른 상태)
 
   static string Plain(string text) {
    string t = (text ?? "").Replace('（', '(').Replace('）', ')').Replace('，', ',').Replace('．', '.').Replace('＋', '+').Replace('－', '-').Replace('：', ':').Replace('～', '~');
@@ -51,6 +53,12 @@ namespace AABattle {
    // 「…상태로 하고, …」
    var split = Regex.Match(s, @"^(?<a>.+?상태로) 하고\s*,\s*(?<b>.+)$");
    if (split.Success) { Read(m, split.Groups["a"].Value + " 한다", into, plan); Read(m, split.Groups["b"].Value, into, plan); return; }
+   if (s.StartsWith("상대의 데이터를 해석하고")) { into.Add(MoveModules.Analyze + "."); Read(m, Regex.Replace(s, @"^상대의 데이터를 해석하고\s*,?\s*", ""), into, plan); return; }
+   split = Regex.Match(s, @"^HP를 1/(?<n>\d+)만큼 지불하고\s*,\s*(?<b>.+)$");
+   if (split.Success) { into.Add("자신의 체력을 1/" + split.Groups["n"].Value + "만큼 소비한다."); Read(m, split.Groups["b"].Value, into, plan); return; }
+   if (s.StartsWith("전체 필드의 「대타출동」「설치물」 상태를 해제하고")) { into.Add(MoveModules.ClearSubsAndHazards + "."); Read(m, Regex.Replace(s, @"^전체 필드의 「대타출동」「설치물」 상태를 해제하고\s*,?\s*", ""), into, plan); return; }
+   if (s.StartsWith("자신의 「비축하기」 상태를 해제해")) { into.Add(MoveModules.Swallow + "."); return; }
+   if (Regex.IsMatch(s, @"^최대 3회까지 비축할 수 있다$")) { into.Insert(0, "자신을 「비축하기」 상태로 한다."); return; }
    if (Ignored(m, s)) return;
    if (s == "「빈사」가 되는 공격을 남은 HP 「1」로 버틴다") { into.Add("자신을 「버티기」 상태로 한다."); return; }
    // 반동: 준 대미지 비율은 MoveModules.Recoil, 최대 HP 비율은 기술을 낸 뒤 언제나, 「빗나가거나 무효화됐을 때」는 그때만
@@ -94,7 +102,7 @@ namespace AABattle {
    x = Regex.Match(s, @"^(?<n>\d+)T 동안 전체 필드(?:를|에) 「(?<v>[^」]+)」(?: 상태로 한다|을 전개한다|를 전개한다)$");
    if (x.Success) {
     string v = x.Groups["v"].Value, n = x.Groups["n"].Value;
-    Add(into, plan, s, v == "중력" || v == "트릭룸" ? n + "T동안 「" + v + "」을 전개한다." : n + "T동안 지형을 「" + v + "」" + EffectModules.Ro(v) + " 한다.");
+    Add(into, plan, s, v == "중력" || v == "트릭룸" || v == "물놀이" || v == "흙놀이" ? n + "T동안 「" + v + "」을 전개한다." : n + "T동안 지형을 「" + v + "」" + EffectModules.Ro(v) + " 한다.");
     return;
    }
    x = Regex.Match(s, @"^적진에 「(?<h>[^」]+)」(?:을|를) 설치한다$");
@@ -125,6 +133,8 @@ namespace AABattle {
    if (Regex.IsMatch(s, @"^「[^」]+」 기술$|^\d+(?:~\d+)?회 「[^」]+」 기술$|^(?:특수|추가)효과 없음$")) return true;
    if (Regex.IsMatch(s, @"급소에 맞기 쉽다|반드시 급소에 맞는다|유리한 타입 상성|능력치로 대미지를 계산한다|「방어」 기술을 관통한다")) return true;
    if (FailModules.IsModule(s)) return true;
+   if (Mechanics.IsDelayedMove(m) && Regex.IsMatch(s, @"^상대를 「[^」]+」 상태로 한다$|^「미래예지」 기술$")) return true;
+   if (Regex.IsMatch(s, @"^상대가 「[^」]+」 상태일 때\s*,\s*위력이 강화\([^)]*\)되고 「필중」 효과가 부여된다$")) return true;
    if (m.category != "변화" && s.EndsWith("고정 대미지를 준다")) return true;
    if (Regex.IsMatch(s, @"〔방호 특성〕을 관통한다$|^적진의 「벽」을 해제한 후 기술을 내보낸다$|상대에게도 명중한다$")) return true;
    if (Regex.IsMatch(s, @"^(?:상대보다 먼저 내보낼 때|기술을 내보내기 전에 상대의 공격을 받으면|자신의 HP가 「가득」일 때|상대가 「방어」 기술을 내보내고 있으면|(?:자신이 )?「[^」]+」 상태일 때)\s*,\s*위력이 강화\(\d+(?:\.\d+)?배\)된다$")) return true;
@@ -148,7 +158,9 @@ namespace AABattle {
    var call = new EffectCall { Source = source, Event = e, Line = text, Rules = rules, Rng = rng, Log = lines };
    var executor = PotentialExecutors.Find(call);
    if (executor == null) { log.Add(source.Name + ": 효과 판정 대기 — " + line); return EffectOutcome.Pending; }
-   var outcome = executor.Run(call);
+   var saved = current; current = move;
+   EffectOutcome outcome;
+   try { outcome = executor.Run(call); } finally { current = saved; }
    log.AddRange(lines);
    return outcome;
   }
@@ -169,7 +181,12 @@ namespace AABattle {
    var plan = Plan(m);
    bool done = false;
    if (ProtectModules.IsGuard(m)) a.Conditions.ProtectMove = m.name;
-   foreach (string line in plan.Use) done |= Run(a, b, m, line, r, rng, log) == EffectOutcome.Success;
+   foreach (string line in plan.Use) {
+    var outcome = Run(a, b, m, line, r, rng, log);
+    done |= outcome == EffectOutcome.Success;
+    bool gate = line.Contains("소비한다") || line.Contains("「비축하기」 상태로 한다");
+    if (gate && outcome != EffectOutcome.Success) return false;
+   }
    foreach (string token in plan.Secondary) done |= SecondaryEffects.Roll(a, b, token, m.name, r, rng, log, null);
    foreach (string s in plan.Unknown) log.Add(m.name + ": 효과 판정 대기 — " + s);
    return done;

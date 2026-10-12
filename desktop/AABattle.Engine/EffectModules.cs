@@ -426,7 +426,7 @@ namespace AABattle {
    kind = value = "";
    var m = Regex.Match(Clean(text), @"^(?<k>날씨|지형)을?를?\s*「(?<v>[^」]+)」(?:으로|로)\s*(?:한다|할 수 있다)$");
    if (m.Success) { kind = m.Groups["k"].Value; value = m.Groups["v"].Value; return kind == "날씨" ? Mechanics.Weathers.Contains(value) : TerrainNames.Contains(value); }
-   m = Regex.Match(Clean(text), @"^「(?<v>중력|트릭룸)」을\s*전개(?:한다|할 수 있다)$");
+   m = Regex.Match(Clean(text), @"^「(?<v>중력|트릭룸|물놀이|흙놀이)」을\s*전개(?:한다|할 수 있다)$");
    if (m.Success) { kind = value = m.Groups["v"].Value; return true; }
    return false;
   }

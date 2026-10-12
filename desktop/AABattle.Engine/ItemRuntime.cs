@@ -113,7 +113,7 @@ namespace AABattle {
    if (f == null || f.Data == null) return;
    var list = (f.Data.potentials ?? new Potential[0]).Where(p => p == null || p.id != Slot).ToList();
    var d = ItemCatalog.Find(f.Data.item);
-   if (Runnable(d)) list.AddRange(ToPotentials(d));
+   if (Runnable(d) && f.Conditions.Embargo <= 0) list.AddRange(ToPotentials(d));
    f.Data.potentials = list.ToArray();
   }
 
@@ -125,7 +125,7 @@ namespace AABattle {
    if (Coded.Contains(d.Name) || d.Name.StartsWith("기술머신")) return "자동 구현";
    return d.Name == "플레이트" || d.Name == "○주얼" ? "자동 구현" : Runnable(d) ? "자동 구현" : "미구현";
   }
-  public static string Name(Fighter f) { var d = f == null || f.Data == null ? null : ItemCatalog.Find(f.Data.item); return d != null ? d.Name : f == null || f.Data == null ? "" : f.Data.item ?? ""; }
+  public static string Name(Fighter f) { if (f != null && f.Conditions.Embargo > 0) return ""; var d = f == null || f.Data == null ? null : ItemCatalog.Find(f.Data.item); return d != null ? d.Name : f == null || f.Data == null ? "" : f.Data.item ?? ""; }
   public static bool Holds(Fighter f, params string[] names) { string n = Name(f); return n.Length > 0 && names.Contains(n); }
   public static bool Choice(Fighter f) { return Holds(f, "구애머리띠", "구애안경", "구애스카프"); }
 

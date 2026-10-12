@@ -46,7 +46,9 @@ namespace AABattle {
    Assert.That(StateEffects.Parse(text), Is.Null);
   }
 
-  static IEnumerable<string> TableStates() { return StateEffects.Table.Select(x => x.Name); }
+  // 날따름·순서미루기는 싱글 배틀에서 효과가 없고, 악몽은 잠듦일 때만 걸린다
+  static IEnumerable<string> TableStates() { return StateEffects.Table.Select(x => x.Name).Where(x => x != "날따름" && x != "순서미루기" && x != "악몽"); }
+  static string Sides(Rules r) { return string.Join(",", r.Sides.Select(x => x.Safeguard + "/" + x.Mist + "/" + x.LuckyChant + "/" + x.WishTurns + "/" + x.QuickGuard)); }
 
   // 표의 모든 상태가 실제로 걸리는지 확인한다. 표에 상태를 추가하면 이 검사도 자동으로 늘어난다
   [TestCaseSource(nameof(TableStates))]
@@ -57,15 +59,17 @@ namespace AABattle {
    var rule = StateEffects.Find(state);
    string sentence = rule.SelfByDefault ? "자신을 「" + state + "」상태로 한다" : "상대를 「" + state + "」상태로 한다";
    var target = rule.SelfByDefault ? self : opponent;
-   var before = string.Join("|", target.Conditions.Labels(target)) + target.Status + target.Conditions.Hibernate + target.HP;
+   var before = string.Join("|", target.Conditions.Labels(target)) + target.Status + target.Conditions.Hibernate + target.HP + Sides(rules);
    Assert.That(StateEffects.TryApply(sentence, self, opponent, rules, () => .5, log, "검사"), Is.True, state);
-   var after = string.Join("|", target.Conditions.Labels(target)) + target.Status + target.Conditions.Hibernate + target.HP;
+   var after = string.Join("|", target.Conditions.Labels(target)) + target.Status + target.Conditions.Hibernate + target.HP + Sides(rules);
    Assert.That(after, Is.Not.EqualTo(before), state + " / " + string.Join(" / ", log));
   }
 
   static readonly string[] MajorStatuses = { "독", "맹독", "마비", "화상", "얼음", "잠듦", "동상" };
   // 빈사는 다시 걸 대상이 없으므로 재적용 검사에서 뺀다
-  static IEnumerable<string> VolatileStates() { return StateEffects.Table.Where(x => x.Category == "상태변화" && x.Name != "빈사").Select(x => x.Name); }
+  static IEnumerable<string> VolatileStates() { return StateEffects.Table.Where(x => x.Category == "상태변화" && !NotReapplied.Contains(x.Name)).Select(x => x.Name); }
+  // 다시 걸 대상이 없거나(빈사), 진영·싱글 무효·쌓이는 상태는 재적용 검사에서 뺀다
+  static readonly string[] NotReapplied = { "빈사", "날따름", "순서미루기", "희망사항", "신비의부적", "흰안개", "주술", "패스트가드", "비축하기", "길동무", "원념", "봉인", "하품", "악몽" };
 
   [Test] public void TableSeparatesMajorStatusFromConditions() {
    Assert.That(StateEffects.Table.Where(x => x.Category == "상태이상").Select(x => x.Name), Is.EquivalentTo(MajorStatuses));
@@ -135,7 +139,7 @@ namespace AABattle {
 
   [Test] public void UnknownStateIsReportedNotApplied() {
    var log = new List<string>();
-   Assert.That(StateEffects.TryApply("상대를 「텔레키네시스」상태로 한다", F(), F(), new Rules(), () => .5, log, "검사"), Is.False);
+   Assert.That(StateEffects.TryApply("상대를 「미러다이브」상태로 한다", F(), F(), new Rules(), () => .5, log, "검사"), Is.False);
    Assert.That(log.Last(), Does.Contain("아직 자동 적용되지 않는다"));
   }
 

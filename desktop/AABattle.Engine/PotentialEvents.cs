@@ -466,6 +466,8 @@ namespace AABattle {
       if (kind == "날씨") return Mechanics.SetWeather(c.Owner, c.Opponent, value, turns, rules, log, c.Source.Label) ? EffectOutcome.Success : EffectOutcome.Failed;
       if (kind == "지형") return Mechanics.SetTerrain(c.Owner, c.Opponent, value, turns, rules, log, c.Source.Label) ? EffectOutcome.Success : EffectOutcome.Failed;
       if (kind == "트릭룸") { rules.TrickRoom = rules.TrickRoom > 0 ? 0 : turns; c.Say("트릭룸 " + (rules.TrickRoom > 0 ? turns + "턴" : "해제") + " (" + c.Source.Label + ")"); return EffectOutcome.Success; }
+      if (kind == "물놀이") { rules.WaterSport = turns; c.Say("물놀이 " + turns + "턴"); return EffectOutcome.Success; }
+      if (kind == "흙놀이") { rules.MudSport = turns; c.Say("흙놀이 " + turns + "턴"); return EffectOutcome.Success; }
       rules.Gravity = turns; c.Say("중력 " + turns + "턴 (" + c.Source.Label + ")");
       return EffectOutcome.Success;
      });
