@@ -9,7 +9,7 @@ namespace AABattle {
   public static int HpBonus(Fighter fighter,Rules rules){return Has(fighter,"주인의 특권")||Has(fighter,"왕자의 특권")?Math.Max(0,rules==null?10:rules.SlightSpeciesBonus):0;}
  }
  public class ConditionState {
-  public int SleepTurns=2,ToxicStage=1,Confusion,Taunt,Substitute,ProtectChain,PriorityModifier,PriorityModifierTurns;
+  public int SleepTurns=2,SleepStart=2,ToxicStage=1,Confusion,Taunt,Substitute,ProtectChain,PriorityModifier,PriorityModifierTurns;
   public bool Protect,Flinch,Recharge,Seed,Curse,AquaRing,Ingrain,FlashFire,BalloonPopped,AbilityEntryApplied,RoleEntryApplied;
   public bool Heated,Chilled,Charged,Dark,Soaked,Electrified;
   public bool HelpingHand,Curled,SleepFromRest;public int AttractSide=-1,DeathCount,Hibernate,RampageTurns;public string RampageMove="";
@@ -33,7 +33,7 @@ namespace AABattle {
   public static void RecordMove(Fighter a,Move m){if(m.name!="발버둥")a.Conditions.LastMove=m.name;}
   public static bool ApplyActionState(Fighter target,string name,int turns,List<string> log){var c=target.Conditions;if(name=="사슬묶기"&&string.IsNullOrEmpty(c.LastMove)){if(log!=null)log.Add(target.Data.name+": 사슬묶기 실패: 마지막으로 사용한 기술이 없다.");return false;}switch(name){case "침묵":c.Silenced=Math.Max(1,turns);break;case "망각":c.Forgotten=Math.Max(1,turns);break;case "트집":c.Tormented=true;break;case "회복봉인":c.HealBlock=turns>0?turns:5;break;case "사슬묶기":c.Disabled=turns>0?turns:4;c.DisabledMove=c.LastMove;break;case "검은눈빛":c.MeanLook=true;break;case "조이기":c.Bound=turns>0?turns:4;break;default:return false;}if(log!=null)log.Add(target.Data.name+": "+name);return true;}
   static void ClearTurns(ref int turns,Fighter a,string name,List<string> log){if(turns<=0)return;turns=0;if(log!=null)log.Add(a.Data.name+"의 "+name+"이 풀렸다");}
-  public static void LeaveField(Fighter a,List<string> log=null,Func<double> rng=null){var c=a.Conditions;bool wasOnField=a.OnField;if(wasOnField&&a.FieldOpponent!=null&&a.FieldOpponent.Conditions.AttractSide==a.FieldSide)ClearAttract(a.FieldOpponent,log);if(wasOnField&&a.Status=="잠듦"){c.SleepTurns=SleepDuration(rng);c.SleepFromRest=false;}c.SleepFromRest=false;ClearFlag(ref c.HelpingHand,a,"도우미",log);ClearFlag(ref c.Curled,a,"웅크리기",log);ClearAttract(a,log);ClearTurns(ref c.DeathCount,a,"죽음의 카운트",log);ClearTurns(ref c.RampageTurns,a,"난동부리기",log);c.RampageMove="";ClearMoveStates(a,log);ClearTurns(ref c.Silenced,a,"침묵",log);ClearTurns(ref c.Forgotten,a,"망각",log);ClearTurns(ref c.HealBlock,a,"회복봉인",log);ClearTurns(ref c.Disabled,a,"사슬묶기",log);ClearTurns(ref c.Bound,a,"조이기",log);ClearFlag(ref c.Tormented,a,"트집",log);ClearFlag(ref c.MeanLook,a,"검은눈빛",log);ClearFlag(ref c.Bomb,a,"폭탄",log);ClearTurns(ref c.Intercept,a,"요격",log);ClearTurns(ref c.Rage,a,"분노",log);ClearMindReader(a,log);c.BombSetTurn=c.MindReaderSetTurn=0;ClearFlag(ref c.AquaRing,a,"아쿠아링",log);ClearFlag(ref c.Recharge,a,"반동대기",log);c.DisabledMove=c.LastMove="";c.Confusion=c.Taunt=c.Substitute=c.ProtectChain=c.PriorityModifier=c.PriorityModifierTurns=0;c.Protect=c.Flinch=c.Seed=c.Curse=c.Ingrain=c.FlashFire=c.AbilityEntryApplied=false;a.Stages=new int[6];a.AccuracyStage=a.EvasionStage=a.CriticalStage=a.TrainerAccuracyStage=a.TrainerCriticalStage=0;a.AccuracyMultiplier=a.EvasionMultiplier=1;a.Multipliers=new[]{1d,1d,1d,1d,1d,1d};a.AbilitySuppressed=false;a.OnField=false;}
+  public static void LeaveField(Fighter a,List<string> log=null,Func<double> rng=null){var c=a.Conditions;bool wasOnField=a.OnField;if(wasOnField&&a.FieldOpponent!=null&&a.FieldOpponent.Conditions.AttractSide==a.FieldSide)ClearAttract(a.FieldOpponent,log);if(wasOnField&&a.Status=="잠듦")c.SleepTurns=c.SleepStart;ClearFlag(ref c.HelpingHand,a,"도우미",log);ClearFlag(ref c.Curled,a,"웅크리기",log);ClearAttract(a,log);ClearTurns(ref c.DeathCount,a,"죽음의 카운트",log);ClearTurns(ref c.RampageTurns,a,"난동부리기",log);c.RampageMove="";ClearMoveStates(a,log);ClearTurns(ref c.Silenced,a,"침묵",log);ClearTurns(ref c.Forgotten,a,"망각",log);ClearTurns(ref c.HealBlock,a,"회복봉인",log);ClearTurns(ref c.Disabled,a,"사슬묶기",log);ClearTurns(ref c.Bound,a,"조이기",log);ClearFlag(ref c.Tormented,a,"트집",log);ClearFlag(ref c.MeanLook,a,"검은눈빛",log);ClearFlag(ref c.Bomb,a,"폭탄",log);ClearTurns(ref c.Intercept,a,"요격",log);ClearTurns(ref c.Rage,a,"분노",log);ClearMindReader(a,log);c.BombSetTurn=c.MindReaderSetTurn=0;ClearFlag(ref c.AquaRing,a,"아쿠아링",log);ClearFlag(ref c.Recharge,a,"반동대기",log);c.DisabledMove=c.LastMove="";c.Confusion=c.Taunt=c.Substitute=c.ProtectChain=c.PriorityModifier=c.PriorityModifierTurns=0;c.Protect=c.Flinch=c.Seed=c.Curse=c.Ingrain=c.FlashFire=c.AbilityEntryApplied=false;a.Stages=new int[6];a.AccuracyStage=a.EvasionStage=a.CriticalStage=a.TrainerAccuracyStage=a.TrainerCriticalStage=0;a.AccuracyMultiplier=a.EvasionMultiplier=1;a.Multipliers=new[]{1d,1d,1d,1d,1d,1d};a.AbilitySuppressed=false;a.OnField=false;}
   public static void StruggleRecoil(Fighter a,Fighter b,Rules r,List<string> log){Hurt(a,b,r,Math.Max(1,Max(a,b,r)/4),"발버둥 반동",log,false);}
   public static void ApplyBomb(Fighter target,Rules r){target.Conditions.Bomb=true;target.Conditions.BombSetTurn=r.Turn;}
   public static void ApplyIntercept(Fighter target,int turns=1){target.Conditions.Intercept=Math.Max(1,turns);}
@@ -46,13 +46,13 @@ namespace AABattle {
   public static void AfterDamage(Fighter attacker,Fighter target,Move move,Rules r,int bodyDamage,List<string> log){if(bodyDamage>0&&move.category!="변화"&&target.Conditions.Intercept>0)Hurt(attacker,target,r,Math.Max(1,bodyDamage/2),"요격 반동",log);}
   static readonly Random StateRandom=new Random();
   static double Roll(Func<double> rng){return rng==null?StateRandom.NextDouble():rng();}
-  static int SleepDuration(Func<double> rng){return 1+Math.Min(3,(int)(Roll(rng)*4));}
-  public static string SleepBlock(Fighter f,Rules r){int side=PartySide(f,r);return side>=0&&(r.Parties[side]??new Fighter[0]).Count(x=>x!=null&&x.HP>0&&x.Status=="잠듦")>=2?"파티 잠듦 2체 제한: 더 잠들 수 없다":"";}
+  static int SleepDuration(Func<double> rng){return 1+Math.Min(2,(int)(Roll(rng)*3));}
+  public static string SleepBlock(Fighter f,Rules r){int side=PartySide(f,r);return side>=0&&(r.Parties[side]??new Fighter[0]).Count(x=>x!=null&&x.HP>0&&x.Status=="잠듦"&&!x.Conditions.SleepFromRest)>=2?"파티 잠듦 2체 제한: 더 잠들 수 없다":"";}
   public static int PartySide(Fighter f,Rules r){if(f.FieldSide>=0)return f.FieldSide;for(int side=0;side<2;side++)if((r.Parties[side]??new Fighter[0]).Any(x=>Object.ReferenceEquals(x,f)))return side;return -1;}
   public static void SetParties(Rules r,Fighter[] fighters,IEnumerable<Fighter>[] members=null){for(int side=0;side<2;side++){var all=members==null?r.Parties[side]:members[side];r.Parties[side]=new[]{fighters[side]}.Concat((all??Enumerable.Empty<Fighter>()).Where(x=>x!=null&&x.Data.name!=fighters[side].Data.name)).ToArray();foreach(var member in r.Parties[side])member.FieldSide=side;fighters[side].FieldOpponent=fighters[1-side];}}
   public static void ClearAttract(Fighter target,List<string> log){if(target.Conditions.AttractSide<0)return;target.Conditions.AttractSide=-1;if(log!=null)log.Add(target.Data.name+"의 헤롱헤롱이 풀렸다");}
   public static void ApplyHibernate(Fighter target,Rules r){target.Conditions.Hibernate=r.Turn+1;}
-  public static bool IsRampage(Move m){return m!=null&&new[]{"난동부리기","역린","꽃잎댄스"}.Contains(m.name);}
+  public static bool IsRampage(Move m){return m!=null&&(m.tags??new string[0]).Contains("난동부리기");}
   public static void BeginRampage(Fighter a,Move m,List<string> log){if(!IsRampage(m)||a.Conditions.RampageTurns>0)return;a.Conditions.RampageTurns=2;a.Conditions.RampageMove=m.name;log.Add(a.Data.name+": 난동부리기 2T ("+m.name+")");}
   public static void FinishRampage(Fighter a,Func<double> rng,List<string> log){var c=a.Conditions;if(c.RampageTurns<=0)return;if(--c.RampageTurns==0){c.RampageMove="";c.Confusion=2+Math.Min(3,(int)(Roll(rng)*4));log.Add(a.Data.name+": 난동부리기가 끝나 혼란 "+c.Confusion+"T");}}
   public static readonly string[] Statuses={"정상","화상","독","맹독","마비","잠듦","얼음","동상"};
@@ -106,8 +106,8 @@ namespace AABattle {
    return "";
   }
   public static bool DefensiveNullification(Move move,string reason){if(move==null||move.category=="변화"||string.IsNullOrEmpty(reason)||reason.StartsWith("방어")||reason.StartsWith("대타"))return false;return new[]{"타입 상성","타오르는불꽃","축전","저수","피뢰침","마중물","전기엔진","초식","부유","풍선","방음","방탄","방호 포텐셜"}.Any(reason.Contains);}
-  public static string StatusBlock(Fighter target,Fighter source,string status,Rules r){
-   if(status=="정상")return "";if(target.HP<=0)return "기절 상태";if(target.Status!="정상")return "이미 상태이상이 있음";if(status=="잠듦"){string sleepBlock=SleepBlock(target,r);if(sleepBlock.Length>0)return sleepBlock;}
+  public static string StatusBlock(Fighter target,Fighter source,string status,Rules r,bool fromRest=false){
+   if(status=="정상")return "";if(target.HP<=0)return "기절 상태";if(target.Status!="정상")return "이미 상태이상이 있음";if(status=="잠듦"&&!fromRest){string sleepBlock=SleepBlock(target,r);if(sleepBlock.Length>0)return sleepBlock;}
    if(!Object.ReferenceEquals(target,source)&&PrivilegeRules.Has(target,"왕자의 특권"))return "왕자의 특권: 상대로부터의 상태이상 무효";
    if(r.Terrain=="미스트필드"&&Grounded(target,r))return "미스트필드: 접지 포켓몬의 상태이상 방지";
    if(status=="잠듦"&&r.Terrain=="일렉트릭필드"&&Grounded(target,r))return "일렉트릭필드: 접지 포켓몬의 잠듦 방지";
@@ -118,7 +118,7 @@ namespace AABattle {
    if(status=="얼음"&&Sunny(Weather(target,source,r)))return "쾌청·큰가뭄: 새로운 얼음 상태 방지";
    if(status=="잠듦"&&!BypassAbility(source)&&Ability(target,"불면","의기양양"))return "불면 / 의기양양: 잠듦 무효";return "";
   }
-  public static bool ApplyStatus(Fighter target,Fighter source,string status,Rules r,Func<double> rng,List<string> log){string reason=StatusBlock(target,source,status,r);if(reason.Length>0){log.Add(target.Data.name+" — "+reason);return false;}target.Status=status;target.Conditions.ToxicStage=1;if(status=="잠듦"){target.Conditions.SleepTurns=SleepDuration(rng);target.Conditions.SleepFromRest=false;}log.Add(target.Data.name+": "+status);return true;}
+  public static bool ApplyStatus(Fighter target,Fighter source,string status,Rules r,Func<double> rng,List<string> log,bool fromRest=false){string reason=StatusBlock(target,source,status,r,fromRest);if(reason.Length>0){log.Add(target.Data.name+" — "+reason);return false;}target.Status=status;target.Conditions.ToxicStage=1;if(status=="잠듦"){target.Conditions.SleepTurns=fromRest?2:SleepDuration(rng);target.Conditions.SleepStart=target.Conditions.SleepTurns;target.Conditions.SleepFromRest=fromRest;}log.Add(target.Data.name+": "+status);return true;}
   public static double StatFactor(Fighter a,Fighter b,int index,Rules r,int side=-1){double v=1;string w=Weather(a,b,r);if(index==5){if(a.Status=="마비")v*=.5;if(side>=0&&side<2&&r.Sides[side].Tailwind>0)v*=2;if(Rain(w)&&Ability(a,"쓱쓱")||Sunny(w)&&Ability(a,"엽록소")||w=="모래바람"&&Ability(a,"모래헤치기")||(w=="눈"||w=="싸라기눈")&&Ability(a,"눈치우기"))v*=2;}if(index==1&&a.Status!="정상"&&Ability(a,"근성"))v*=1.5;if(index==4&&w=="모래바람"&&Has(a,"바위"))v*=1.5;if(index==2&&w=="눈"&&Has(a,"얼음"))v*=1.5;return v;}
   public static double PowerFactor(Fighter a,Fighter b,Move m,Rules r){double v=1;string w=Weather(a,b,r);if(a.Status=="화상"&&m.category=="물리"&&!Ability(a,"근성")&&m.name!="객기")v*=.5;if(a.Status=="동상"&&m.category=="특수")v*=.5;if(Sunny(w))v*=m.types.Contains("불꽃")?1.5:m.types.Contains("물")?.5:1;if(Rain(w))v*=m.types.Contains("물")?1.5:m.types.Contains("불꽃")?.5:1;
    v*=ChargePower(a,m);if(a.Conditions.HelpingHand)v*=1.5;if(a.Conditions.Curled&&new[]{"구르기","아이스볼"}.Contains(m.name))v*=2;
@@ -152,7 +152,7 @@ namespace AABattle {
   }
   public static void Absorb(Fighter a,Fighter b,string reason,Rules r,List<string> log){if(reason=="축전"||reason=="저수"){if(Heal(b,a,r,Max(b,a,r)/4,reason,log)>0)AnsweredTriggers.AbilityActivated(b,reason,log.Add);}if(reason=="피뢰침"||reason=="마중물"){if(ChangeStage(b,a,3,1,r,reason,log))AnsweredTriggers.AbilityActivated(b,reason,log.Add);}if(reason=="전기엔진"){if(ChangeStage(b,a,5,1,r,reason,log))AnsweredTriggers.AbilityActivated(b,reason,log.Add);}if(reason=="초식"){if(ChangeStage(b,a,1,1,r,reason,log))AnsweredTriggers.AbilityActivated(b,reason,log.Add);}if(reason=="타오르는불꽃"){b.Conditions.FlashFire=true;AnsweredTriggers.AbilityActivated(b,reason,log.Add);}}
   public static bool BeforeMove(Fighter a,Fighter b,Move m,Rules r,Func<double> rng,List<string> log){var c=a.Conditions;
-   if(a.Status=="잠듦"){c.SleepTurns=Math.Max(0,Math.Max(1,c.SleepTurns)-1);log.Add(a.Data.name+": 쿨쿨 잠들어 있다");if(c.SleepTurns==0){a.Status="정상";c.SleepFromRest=false;log.Add(a.Data.name+": 잠에서 깨어났다.");}return false;}
+   if(a.Status=="잠듦"){if(c.SleepTurns>0){c.SleepTurns--;log.Add(a.Data.name+": 쿨쿨 잠들어 있다");return false;}a.Status="정상";c.SleepFromRest=false;log.Add(a.Data.name+": 잠에서 깨어났다.");}
    if(c.Recharge){c.Recharge=false;log.Add(a.Data.name+": 반동으로 행동할 수 없다.");return false;}
    if(a.Status=="얼음"){if(rng()<.2||new[]{"열탕","플레어드라이브","화염자동차","성스러운불꽃"}.Contains(m.name)){a.Status="정상";log.Add(a.Data.name+": 얼음이 녹았다.");}else{log.Add(a.Data.name+": 얼어서 움직일 수 없다.");return false;}}
    if(c.Flinch){c.Flinch=false;log.Add(a.Data.name+": 풀죽어서 움직일 수 없다.");return false;}
@@ -181,7 +181,7 @@ namespace AABattle {
    if(m.name=="록온"||m.name=="마음의눈"){ApplyMindReader(b,attackerSide,r);log.Add(b.Data.name+": 마음의눈 ("+(attackerSide+1)+"팀)");return true;}
    if(m.name=="헤롱헤롱"){b.Conditions.AttractSide=attackerSide;log.Add(b.Data.name+": 헤롱헤롱");return true;}
    if(m.name=="멸망의노래"){foreach(var target in new[]{a,b})if(target.OnField&&target.HP>0&&target.Conditions.DeathCount==0){target.Conditions.DeathCount=4;log.Add(target.Data.name+": 죽음의 카운트 4");}return true;}
-   if(m.name=="잠자기"){if(c.HealBlock>0){Heal(a,b,r,max,m.name,log);return false;}string previous=a.Status;a.Status="정상";if(!ApplyStatus(a,a,"잠듦",r,rng,log)){a.Status=previous;return false;}c.SleepTurns=2;c.SleepFromRest=true;Heal(a,b,r,max,m.name,log);return true;}
+   if(m.name=="잠자기"){if(c.HealBlock>0){Heal(a,b,r,max,m.name,log);return false;}string previous=a.Status;a.Status="정상";if(!ApplyStatus(a,a,"잠듦",r,rng,log,true)){a.Status=previous;return false;}Heal(a,b,r,max,m.name,log);return true;}
    switch(m.name){
     case "도우미":c.HelpingHand=true;log.Add(a.Data.name+": 도우미");return true;
     case "웅크리기":c.Curled=true;ChangeStage(a,a,2,1,r,m.name,log);ChangeStage(a,a,4,1,r,m.name,log);return true;
