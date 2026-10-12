@@ -357,6 +357,8 @@ namespace AABattle {
      previous = outcome;
     }
    } finally { current = saved; }
+   // 소지품의 「1번만」: 발동하면 소지품이 사라진다
+   if (source.Pokemon != null && source.Pokemon.id == ItemRuntime.Slot && source.Uses == "1/시") ItemRuntime.Lose(source.Owner, "소비", x => Say(log, x));
   }
 
   static bool PotentialUsageLimited(PotentialInstance source) { int count; bool perTurn; return PotentialUsage.TryLimit(source.Uses, out count, out perTurn); }
@@ -548,6 +550,9 @@ namespace AABattle {
       return EffectOutcome.Success;
      });
     // F3 상태이상 치유
+    PotentialExecutors.Register("상태 치유",
+     c => { string t; string[] n; return StateCure.TryParse(c.Line, out t, out n); },
+     c => { string t; string[] n; StateCure.TryParse(c.Line, out t, out n); var lines = new List<string>(); bool done = StateCure.Cure(t == "상대" ? c.Opponent : c.Owner, n, lines); foreach (var x in lines) c.Say(x); return done ? EffectOutcome.Success : EffectOutcome.Failed; });
     PotentialExecutors.Register("기능확장 부여",
      c => { string subject; string[] moves; return FunctionExtensions.TryGrant(c.Line, out subject, out moves); },
      c => {

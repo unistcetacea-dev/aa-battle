@@ -310,6 +310,8 @@ namespace AABattle {
     return Scalar(Subj(m.Groups["s"].Value) + "의 " + st, action, rate);
    }
    // F4b 타입·상성
+   string cure = StateCure.Normalize(text);
+   if (cure != null) return cure;
    string extension = FunctionExtensions.Normalize(text);
    if (extension != null) return extension;
    string typed = TypeRules.Normalize(text);
@@ -595,6 +597,8 @@ namespace AABattle {
   }
   static string ClassifySentence(string s) {
    ScalarEffect scalar; SpeciesEffect species; FractionEffect fraction; RankEffect rank; string target;
+   string cureTarget; string[] cureNames;
+   if (StateCure.TryParse(s, out cureTarget, out cureNames)) return "상태 치유";
    string grantSubject; string[] grantMoves;
    if (FunctionExtensions.TryGrant(s, out grantSubject, out grantMoves)) return "기능확장 부여";
    string typed = TypeRules.Classify(s);

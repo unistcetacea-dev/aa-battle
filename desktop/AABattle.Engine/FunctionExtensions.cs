@@ -64,7 +64,10 @@ namespace AABattle {
   // 이 포켓몬이 지금 기능확장으로 고를 수 있는 기술 이름(자기 기술 목록에 있는 것은 뺀다)
   public static string[] Available(Fighter f, Fighter opponent, Rules rules, TrainerRecord trainer, IEnumerable<Fighter> party) {
    if (f == null || f.Data == null) return new string[0];
+   if (f.Conditions.ChoiceMove.Length > 0 && ItemRuntime.Choice(f)) return new string[0];   // 구애된 상태에서는 기능확장 불가(오레마스 시스템)
    var names = new List<string>();
+   var machine = System.Text.RegularExpressions.Regex.Match(ItemRuntime.Name(f), @"^기술머신\((?<m>[^)]+)\)$");
+   if (machine.Success) names.Add(machine.Groups["m"].Value.Trim());
    foreach (var p in (f.Data.potentials ?? new Potential[0]).Where(x => x != null)) {
     string condition, effect; PotentialLibrary.Split(p.description ?? "", out condition, out effect);
     names.AddRange(Grants(effect.Length > 0 ? effect : p.description, TriggerStructures.Clauses(p), f, opponent, rules, false));

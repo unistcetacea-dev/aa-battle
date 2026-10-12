@@ -14,6 +14,7 @@
     <EmbeddedResource Include="..\..\research\potentials\potential-catalog.json" LogicalName="potentials.json" />
     <EmbeddedResource Include="..\..\research\abilities\ability-catalog.gz.b64" LogicalName="abilities.b64" />
     <EmbeddedResource Include="..\..\research\moves\move-classification.tsv" LogicalName="move-classification.tsv" />
+    <EmbeddedResource Include="..\..\research\items\abaddon-items.txt" LogicalName="items.txt" />
     <EmbeddedResource Include="..\..\lib\reference-data.json" LogicalName="data.json" />
     <EmbeddedResource Include="..\..\lib\reference-aa.json" LogicalName="aa.json" />
     <EmbeddedResource Include="..\..\public\fonts\HeadKasen.ttf" LogicalName="HeadKasen.ttf" />
