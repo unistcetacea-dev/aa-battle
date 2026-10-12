@@ -27,9 +27,9 @@ namespace AABattle {
     if(t=="땅"&&d=="비행"&&Grounded(b,r))k=1;
     if(d=="고스트"&&(t=="노말"||t=="격투")&&Ability(a,"배짱"))k=1;
     if(d=="비행"&&k>1&&weather=="난기류")k=1;
-    // 포텐셜: 상성 무효 관통(0→1), 타입 내성 관통(반감→1)
+    // 포텐셜: 상성 무효 관통(0→1), 타입 내성 관통(반감·무효→1, 사용자 결정)
     if(k==0&&p.PierceImmune)k=1;
-    if(k>0&&k<1&&(p.PierceAll||p.PierceTypes.Contains(d)))k=1;
+    if(k<1&&(p.PierceAll||p.PierceTypes.Contains(d)))k=1;
     return v*k;})).ToArray();
    // 확정 30: 복수 타입 기술은 각 타입 배율의 곱. 타입 추가·유리한 상성이면 가장 유리한 타입 하나
    double type=p.Favorable?each.Max():each.Aggregate(1.0,(x,y)=>x*y);

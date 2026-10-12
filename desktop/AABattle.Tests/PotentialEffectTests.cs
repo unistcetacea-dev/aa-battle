@@ -78,12 +78,12 @@ namespace AABattle {
    Assert.That(Engine.Calculate(TestData.Db, fireUser, rock, Mv("물"), new Rules()).Stab, Is.EqualTo(1.5));
   }
 
-  [Test] public void ResistPierceKeepsImmunityAndIgnoreAllDoesNot() {
+  [Test] public void ResistPierceAndIgnoreAllCoverImmunity() {
    var water = F("물"); var ghost = F("고스트");
    var pierce = F("노말", P(Field, "자신의 「불꽃」기술이 상대의 타입내성을 관통한다"));
    Assert.That(Mechanics.TypeEffect(TestData.Db, pierce, water, Mv("불꽃"), new Rules()), Is.EqualTo(1));
    var normalPierce = F("노말", P(Field, "자신의 「노말」기술이 상대의 타입내성을 관통한다"));
-   Assert.That(Mechanics.TypeEffect(TestData.Db, normalPierce, ghost, Mv("노말"), new Rules()), Is.EqualTo(0), "immunity is not resistance");
+   Assert.That(Mechanics.TypeEffect(TestData.Db, normalPierce, ghost, Mv("노말"), new Rules()), Is.EqualTo(1), "resist pierce also breaks immunity");
    var ignore = F("노말", P(Field, "자신의 「노말」기술이 타입상성을 무시한다"));
    Assert.That(Mechanics.TypeEffect(TestData.Db, ignore, ghost, Mv("노말"), new Rules()), Is.EqualTo(1));
    var holy = F("노말", P(Field, "자신의 「노말」기술이 타입상성에 의해 무시되지 않는다"));
