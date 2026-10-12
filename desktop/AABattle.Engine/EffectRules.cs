@@ -24,6 +24,9 @@ namespace AABattle {
    clean=Regex.Replace(clean,@"랜덤한\s*능력(?!치)","랜덤한 능력치");
    clean=Regex.Replace(clean,@"제일\s*(높은|낮은)\s*능력치?",m=>"가장 "+m.Groups[1].Value+" 능력");
    clean=Regex.Replace(clean,@"가장\s*(높은|낮은)\s*능력치",m=>"가장 "+m.Groups[1].Value+" 능력");
+   // 편집기 모듈 표준 문장으로 바꿀 수 있는 변형(배율 동사·기술 조건·종족치·최대 HP 1/N)
+   string module=EffectModules.Normalize(clean);
+   if(module!=null)return probabilistic?WithProbability(probability,module):module;
    var rank=RankUp.Match(clean);if(!rank.Success)rank=RankDown.Match(clean);string normalized;if(rank.Success&&!rank.Groups["target"].Value.Contains("까지")){int amount=rank.Groups["rank"].Success?int.Parse(rank.Groups["rank"].Value):rank.Groups["degree"].Value=="매우 크게"?3:rank.Groups["degree"].Value=="크게"?2:1;normalized=CanonicalRank(rank.Groups["target"].Value,RankDown.IsMatch(clean)?-amount:amount);}else normalized=Scalar.Replace(clean,m=>Canonical(m.Groups["target"].Value,m.Groups["action"].Value,double.Parse(m.Groups["rate"].Value,System.Globalization.CultureInfo.InvariantCulture)));return probabilistic?WithProbability(probability,normalized):normalized;
   }
   public static string NormalizeLines(string text){return string.Join("\r\n",(text??"").Replace("\r","").Split('\n').Select(Normalize).Where(x=>x.Length>0));}

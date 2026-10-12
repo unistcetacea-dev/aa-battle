@@ -262,6 +262,7 @@ namespace AABattle {
   // 효과 문장을 독립 효과 목록으로 나눈다: 줄바꿈 → 문장 끝 → 대가 연결어
   static List<Step> Split(string effect) {
    var steps = new List<Step>();
+   effect = Regex.Replace(effect ?? "", @"[.．。]\s*(이 대미지로는 빈사로 할 수 없다)", " $1");
    foreach (string raw in (effect ?? "").Replace("\r", "").Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries)) {
     foreach (string sentence in Regex.Split(raw.Trim(), @"(?<=[.．。])\s+")) {
      string text = sentence.Trim();
