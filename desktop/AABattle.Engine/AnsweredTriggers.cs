@@ -29,7 +29,7 @@ namespace AABattle {
   static bool IsCritical(string text){return text.Contains("급소")&&(text.Contains("맞았")||text.Contains("명중"));}
   static bool IsContact(string text,bool received){return text.Contains("접촉")&&(received?(text.Contains("받았")||text.Contains("당했")):(text.Contains("명중")||text.Contains("성공")));}
   static bool IsDefendBlock(string text){return text.Contains("방어")&&(text.Contains("무효화")||text.Contains("막았"));}
-  static bool IsNoAttack(string text,bool self){return (self?text.StartsWith("자신")||text.StartsWith("자기"):text.StartsWith("상대"))&&text.Contains("공격")&&text.Contains("않");}
+  static bool IsNoAttack(string text,bool self){return (self?text.StartsWith("자신")||text.StartsWith("자기"):text.StartsWith("상대"))&&text.Contains("공격")&&text.Contains("않")&&text.Contains("선택");}
   static bool IsBothAttack(string text){return text.Contains("서로")&&text.Contains("공격")&&(text.Contains("내보")||text.Contains("선택"));}
   static bool IsBothSureHit(string text){return text.Contains("서로")&&text.Contains("필중")&&(text.Contains("내보")||text.Contains("선택"));}
   static bool IsAbility(string text,string ability){return text.Contains("특성")&&text.Contains("발동")&&(text.Contains("「"+ability+"」")||text.Contains("『"+ability+"』")||text.Contains(ability));}
@@ -65,10 +65,11 @@ namespace AABattle {
   public static void Selected(Fighter[] fighters,BattleCommand[] commands,Action<string> log){
    if(fighters==null||commands==null||fighters.Length!=2||commands.Length!=2)return;
    bool[] attack=new bool[2];bool[] sure=new bool[2];
-   for(int i=0;i<2;i++){var command=commands[i]??new BattleCommand();attack[i]=!command.IsSwitch&&command.Move!=null&&command.Move.category!="변화";sure[i]=attack[i]&&(command.Form??"").Contains("맞춰라")||attack[i]&&Mechanics.SureHit(command.Move);}
+   for(int i=0;i<2;i++){var command=commands[i]??new BattleCommand();fighters[i].Conditions.NotAttacking=command.IsSwitch||command.Move==null||command.Move.category=="변화";attack[i]=!command.IsSwitch&&command.Move!=null&&command.Move.category!="변화";sure[i]=attack[i]&&(command.Form??"").Contains("맞춰라")||attack[i]&&Mechanics.SureHit(command.Move);}
    for(int i=0;i<2;i++){int other=1-i;Fire(fighters[i],x=>IsNoAttack(x,true)&&!attack[i],fighters[i].Data.name+"이 공격하지 않는 행동을 선택",log);Fire(fighters[i],x=>IsNoAttack(x,false)&&!attack[other],fighters[other].Data.name+"이 공격하지 않는 행동을 선택",log);Fire(fighters[i],x=>IsBothAttack(x)&&attack[0]&&attack[1],"서로 공격기를 선택",log);Fire(fighters[i],x=>IsBothSureHit(x)&&sure[0]&&sure[1],"서로 필중 공격기를 선택",log);}
   }
-  public static void AbilityActivated(Fighter owner,string ability,Action<string> log){if(owner!=null&&ability==owner.Data.ability)Fire(owner,x=>IsAbility(x,ability),owner.Data.name+"의 특성 「"+ability+"」이 실제로 발동",log);}
+  // 특성 발동(확정 15): 트리거 모듈 사건
+  public static void AbilityActivated(Fighter owner,string ability,Action<string> log){if(owner==null||ability!=AbilityRuntime.Name(owner))return;var scope=EffectScope.Current;TriggerModules.Raise(new TriggerFact{Kind="특성 발동",Method=ability},owner,scope==null?null:scope.Opponent(owner),owner.Data.name+"의 특성 「"+ability+"」이 실제로 발동",log);}
   public static void WeatherChanged(Fighter source,Fighter opponent,string before,string after,Action<string> log){StateWatch.CheckCurrent(log);}
   public static void TerrainChanged(Fighter source,Fighter opponent,string before,string after,Action<string> log){StateWatch.CheckCurrent(log);}
   public static void StageChanged(Fighter target,Fighter other,int index,int before,int after,Action<string> log){StateWatch.CheckCurrent(log);}

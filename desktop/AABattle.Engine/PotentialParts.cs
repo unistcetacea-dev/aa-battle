@@ -98,10 +98,11 @@ namespace AABattle {
   public static string StripActivation(string text,out string activation){activation="";string rest=text??"";Match m;while((m=ActivationPrefix.Match(rest)).Success){activation=Merge(activation,m.Groups[1].Value);rest=m.Groups[2].Value.Trim();}return rest;}
   static string Merge(string current,string value){var parts=(current??"").Split(new[]{" / "},StringSplitOptions.RemoveEmptyEntries).ToList();if(!string.IsNullOrEmpty(value)&&!parts.Contains(value))parts.Add(value);return string.Join(" / ",parts);}
   static void Add(Dictionary<string,PotentialPart> map,string kind,string text,PotentialRecord p,string source){
+   string leading="";if(kind=="T")text=StripActivation(text,out leading);
    text=kind=="T"?TriggerStructures.Normalize(text):EffectNormalizer.Normalize(text);if(text.Length==0)return;
    // 발동 방식·사용 횟수는 트리거가 아니라 포텐셜의 속성이므로 트리거를 나누지 않고 함께 모아 표시한다. 원문은 raws에 남는다.
    string mode=kind=="T"?Clean(p.activation):"",uses=kind=="T"?Clean(p.uses):"";
-   if(kind=="T"){string prefix;text=StripActivation(text,out prefix);if(text.Length==0)return;mode=Merge(mode,prefix);}
+   if(kind=="T"){string prefix;text=StripActivation(text,out prefix);if(text.Length==0)return;mode=Merge(Merge(mode,leading),prefix);}
    string key=kind=="T"?TriggerKey(text):EffectKey(text);PotentialPart part;
    if(!map.TryGetValue(key,out part)){string id;using(var sha=SHA256.Create())id=BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(kind+key))).Replace("-","").Substring(0,16).ToLowerInvariant();part=new PotentialPart{id=kind.ToLowerInvariant()+"-"+id,key=key,text=text,activation="",uses=""};map.Add(key,part);}
    if(kind=="T"){part.activation=Merge(part.activation,mode);part.uses=Merge(part.uses,uses);}part.variants.Add(text);

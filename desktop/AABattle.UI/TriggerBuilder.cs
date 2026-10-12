@@ -18,11 +18,13 @@ namespace AABattle {
   TableLayoutPanel triggerTable;
 
   const string AlwaysKind = "상시 (X)";
-  static readonly string[] SubjectModules = { "등장", "교대", "퇴장", "기술 사용", "체력", "체력 변화", "회복", "랭크" };
+  static readonly string[] SubjectModules = { "등장", "교대", "퇴장", "기술 사용", "체력", "체력 변화", "회복", "랭크", "공격하지 않음" };
   // 상태 모듈은 상태 도감 선택(상태이상·상태변화)으로 입력한다
   static readonly string[] StatusModules = { "상태", "상태 됨", "상태 해제" };
   const string ReleaseKind = "상태가 해제되었을 때", FaintKind = "빈사가 되었을 때";
-  static string[] UiModules() { return TriggerModules.EventModules.Concat(TriggerModules.StateModules).Where(x => !StatusModules.Contains(x)).Distinct().ToArray(); }
+  // 편집기에서 모듈 입력으로 고르는 것(나머지는 기존 구조·확정 목록 입력을 쓴다)
+  static readonly string[] OwnInputModules = { "등장", "교대", "퇴장", "타이밍", "피격", "명중", "급소", "쓰러뜨림", "기술 사용", "체력 변화", "회복", "날씨 변화", "장소 변화", "랭크", "특성 발동", "체력", "날씨", "장소", "플레이버", "공격하지 않음" };
+  static string[] UiModules() { return OwnInputModules; }
 
   static string[] TriggerKinds() {
    return new[] { AlwaysKind, TriggerStructures.FieldLabel, TriggerStructures.ObserverLabel }
@@ -50,6 +52,7 @@ namespace AABattle {
     case "장소": return EffectModules.TerrainNames.Concat(new[] { "트릭룸", "중력" }).ToArray();
     case "장소 변화": return EffectModules.TerrainNames.Concat(new[] { "트릭룸 전개", "트릭룸 해제", "중력 전개", "중력 해제" }).ToArray();
     case "랭크": return new[] { "오름", "크게 오름", "내려감" };
+    case "플레이버": return new[] { "소속", "트레이너 이름", "트레이너 성별" };
    }
    return new string[0];
   }
@@ -137,12 +140,12 @@ namespace AABattle {
     string variant = triggerEntryMethod.Text;
     bool typed = module && variant.Contains("타입") || opponentType;
     bool number = kind == "타이밍" && (variant.StartsWith("배수") || variant.Contains("N T째")) || variant.StartsWith("1/N");
-    bool condition = kind == "피격" || kind == "명중" || kind == "급소" || kind == "기술 사용" || kind == "쓰러뜨림" && variant == "기술로" || kind == "타이밍" && variant.StartsWith("사건") || kind == "랭크";
+    bool condition = kind == "피격" || kind == "명중" || kind == "급소" || kind == "기술 사용" || kind == "쓰러뜨림" && variant == "기술로" || kind == "타이밍" && variant.StartsWith("사건") || kind == "랭크" || kind == "특성 발동" || kind == "플레이버";
     ShowTriggerRow(triggerSubject, module && SubjectModules.Contains(kind) || status || faint, "주체");
     ShowTriggerRow(triggerEntryMethod, module && TriggerVariants(kind, triggerSubject.Text).Length > 0, kind == "등장" ? "등장 방식" : kind == "타이밍" ? "타이밍" : kind == "기술 사용" ? "시점" : "구분");
     ShowTriggerRow(triggerType, typed);
     ShowTriggerRow(triggerNumber, number, variant.StartsWith("배수") ? "배수 N" : variant.StartsWith("1/N") ? "1/N의 N" : "N T째");
-    ShowTriggerRow(triggerCondition, condition, kind == "타이밍" ? "사건 트리거" : kind == "랭크" ? "능력(비우면 능력 전체)" : "기술 조건");
+    ShowTriggerRow(triggerCondition, condition, kind == "타이밍" ? "사건 트리거" : kind == "랭크" ? "능력(비우면 능력 전체)" : kind == "특성 발동" ? "특성(비우면 모든 특성)" : kind == "플레이버" ? (variant == "트레이너 성별" ? "남성 / 여성" : "이름") : "기술 조건");
     ShowTriggerRow(triggerGranted, granted, "부여된 이름");
     ShowTriggerRow(triggerStatusButton, status, "상태 이름");
     ShowTriggerRow(triggerAptitude, aptitude);
@@ -176,7 +179,14 @@ namespace AABattle {
     case "체력 변화":
      spec.Op = variant.StartsWith("1/N") ? "이하" : variant.StartsWith("가득하지") ? "가득 아님" : variant.StartsWith("「1」") ? "1" : variant == "감소" ? "감소" : "가득"; spec.Bottom = Math.Max(1, n);
      return TriggerModules.Canonical(spec);
-    case "회복": return TriggerModules.Canonical(spec);
+    case "회복": case "공격하지 않음": return TriggerModules.Canonical(spec);
+    case "특성 발동": spec.Names = triggerCondition.Text.Trim().Length == 0 ? new string[0] : new[] { triggerCondition.Text.Trim().Trim('「', '」') }; return TriggerModules.Canonical(spec);
+    case "플레이버": {
+     string name = triggerCondition.Text.Trim().Trim('「', '」', '《', '》');
+     if (name.Length == 0) return "이름을 입력하세요.";
+     string text = variant == "소속" ? "소속이 《" + name + "》일 때" : variant == "트레이너 성별" ? "트레이너가 「" + name + "」일 때" : "「" + name + "」가 트레이너일 때";
+     return TriggerStructures.Normalize(text);
+    }
     case "날씨": case "날씨 변화": spec.Place = variant == "날씨 있음" || variant == "모든 변화" ? "" : variant; return TriggerModules.Canonical(spec);
     case "장소": spec.Place = variant; return TriggerModules.Canonical(spec);
     case "장소 변화": spec.Place = variant.Split(' ')[0]; spec.Release = variant.EndsWith("해제"); return TriggerModules.Canonical(spec);
@@ -231,6 +241,7 @@ namespace AABattle {
   bool LoadTriggerModule(string line) {
    var spec = TriggerModules.Parse(TriggerStructures.Normalize(line));
    if (spec.Module.Length == 0) return false;
+   if (!UiModules().Contains(spec.Module) && !StatusModules.Contains(spec.Module)) return false;
    if (StatusModules.Contains(spec.Module)) {
     bool change = spec.Names.All(x => !Mechanics.Statuses.Contains(x) && x != "상태이상");
     string kind = spec.Module == "상태 해제" ? ReleaseKind : spec.Names.Contains("빈사") ? FaintKind : spec.Module == "상태" ? (change ? "상태변화일 때" : "상태이상일 때") : (change ? "상태변화가 되었을 때" : "상태이상이 되었을 때");
@@ -240,7 +251,7 @@ namespace AABattle {
     return true;
    }
    triggerKind.SelectedItem = spec.Module;
-   if (SubjectModules.Contains(spec.Module)) triggerSubject.SelectedItem = spec.Opponent ? "상대" : "자신";
+   if (SubjectModules.Contains(spec.Module)) triggerSubject.SelectedItem = spec.Opponent || spec.Subject == "상대" ? "상대" : "자신";
    string variant = "";
    string condition = spec.Condition.Empty ? "" : Regex.Replace(spec.Condition.Text, "」「", " ").Trim('「', '」');
    switch (spec.Module) {
@@ -261,6 +272,13 @@ namespace AABattle {
     case "날씨 변화": variant = spec.Place.Length == 0 ? "모든 변화" : spec.Place; break;
     case "장소": variant = spec.Place; break;
     case "장소 변화": variant = spec.Place + (spec.Place == "트릭룸" || spec.Place == "중력" ? (spec.Release ? " 해제" : " 전개") : ""); break;
+    case "특성 발동": condition = spec.Names.Length > 0 ? spec.Names[0] : ""; break;
+    case "플레이버": {
+     var m = Regex.Match(spec.Place, @"《(?<v>[^》]+)》|「(?<v>[^」]+)」");
+     variant = spec.Place.StartsWith("소속") ? "소속" : spec.Place.StartsWith("트레이너가") ? "트레이너 성별" : "트레이너 이름";
+     condition = m.Success ? m.Groups["v"].Value : "";
+     break;
+    }
     case "랭크": variant = spec.Rise ? (spec.Big ? "크게 오름" : "오름") : "내려감"; condition = string.Join(" ", spec.Stats.Select(i => new[] { "", "공격", "방어", "특공", "특방", "속도", "명중", "회피" }[i])); break;
    }
    SetChoices(triggerEntryMethod, TriggerVariants(spec.Module, triggerSubject.Text), variant);

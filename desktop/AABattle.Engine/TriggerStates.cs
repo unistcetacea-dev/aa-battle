@@ -121,7 +121,7 @@ namespace AABattle {
     return true;
    }
    // 랭크(실제 변화)
-   m = Regex.Match(t, @"^(?:(?<s>자신|상대)(?:의)?\s*)?(?<st>「[^」]+」|능력(?:\s*랭크)?|능력치|[가-힣]+)\s*(?:의\s*랭크)?(?:이|가)\s*(?<big>크게\s*)?(?<v>올랐을|올라갔을|상승했을|내려갔을|떨어졌을|하락했을|감소했을|감소\(저하\)했을|저하했을)\s*때$");
+   m = Regex.Match(t, @"^(?:(?<s>자신|상대)(?:의)?\s*)?(?<st>「[^」]+」|능력(?:\s*랭크)?|능력치|[가-힣]+)\s*(?:의\s*랭크)?(?:이|가)\s*(?<big>크게\s*)?(?<v>올랐을|올라갔을|상승했을|내려갔을|내렸을|떨어졌을|하락했을|감소했을|감소\(저하\)했을|저하했을)\s*때$");
    if (m.Success) {
     var stats = StatList(m.Groups["st"].Value);
     if (stats == null) return false;
@@ -163,7 +163,7 @@ namespace AABattle {
      string stat = s.Stats.Length == 0 ? "능력" : s.Stats.SequenceEqual(new[] { 1, 2, 3, 4, 5 }) ? "「전능력치」" : "「" + string.Join("/", s.Stats.Select(i => StatNames[i])) + "」";
      return Of(s.Subject) + " " + stat + Particle(stat, "이", "가") + " " + (s.Rise ? (s.Big ? "크게 올랐을 때" : "올랐을 때") : "내려갔을 때");
    }
-   return "";
+   return CanonicalCondition(s);
   }
 
   // ===== 상태 조건(지금 성립하는가) =====
@@ -210,7 +210,7 @@ namespace AABattle {
      if (s.Place == "중력") return rules.Gravity > 0;
      return rules.Terrain == s.Place;
    }
-   return false;
+   return HoldsCondition(s, owner, opponent, rules);
   }
 
   // ===== 사건 대조 =====
@@ -237,7 +237,7 @@ namespace AABattle {
      if (s.Big && Math.Abs(f.Delta) < 2) return false;
      return s.Stats.Length == 0 || s.Stats.Contains(f.Stat);
    }
-   return false;
+   return MatchesCondition(s, f);
   }
  }
 

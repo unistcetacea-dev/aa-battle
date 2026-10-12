@@ -84,6 +84,49 @@ namespace AABattle {
   [TestCase("상대가 「마비」상태가 된 T 종료시", "「상대가 「마비」 상태이상이 되었을 때」가 성립한 T 종료 시")]
   public void NormalizesStageTwoWording(string raw, string expected) { NormalizesCollectedWording(raw, expected); }
 
+  // 3단계: 구성 · 진영 · 소지품 · 특성 · 보유 · 트레이너 · 플레이버 · 행동 선택
+  [TestCase("상대가 「고스트」타입일 때", "적진에 「고스트」 포켓몬이 있을 때")]
+  [TestCase("소속이 《 칼데아 》일 때", "소속이 《칼데아》일 때")]
+  [TestCase("「캐롤」이 트레이너일 때", "「캐롤」이 트레이너일 때")]
+  [TestCase("소지품이 「달인의띠」일 때", "자신의 소지품이 「달인의띠」일 때")]
+  [TestCase("소지품이 있을 때", "자신이 소지품을 가지고 있을 때")]
+  [TestCase("「부유」 특성을 가지고 있을 때", "자신의 특성이 「부유」일 때")]
+  [TestCase("특성 「짓궂은마음」이 발동했을 때", "자신의 「짓궂은마음」 특성이 발동했을 때")]
+  [TestCase("「최후의 1체」일 때", "자신만 생존해 있을 때")]
+  [TestCase("아군의 「빈사」상태인 포켓몬의 수가 상대보다 많을 때", "아군의 빈사 수가 상대보다 많을 때")]
+  [TestCase("자진이 「순풍」일 때", "자진에 「순풍」이 있을 때")]
+  [TestCase("상대 진영의 「압정」이 2겹 이상일 때", "적진의 「압정」이 2겹 이상일 때")]
+  [TestCase("자신이 공격을 하지 않을 때", "자신이 공격하지 않을 때")]
+  [TestCase("자신이 『수렵대원』일 때", "자신이 『수렵대원』을 보유하고 있을 때")]
+  [TestCase("「방어」등의 기술로 상대의 기술을 무효화했을 때", "「방어」 등의 기술로 상대의 기술을 무효화했을 때")]
+  [TestCase("트레이너가 「통솔:A」 이상일 때", "트레이너가 「통솔:A」 이상일 때")]
+  [TestCase("『계약의 특권』이 부여되어 있을 때", "『계약의 특권』이 부여되어 있을 때")]
+  [TestCase("상대의 「속」이 내렸을 때", "상대의 「속도」가 내려갔을 때")]
+  public void NormalizesStageThreeWording(string raw, string expected) { NormalizesCollectedWording(raw, expected); }
+
+  // 확정 39: 인물·소속 조건은 상시
+  [Test] public void FlavorConditionActsAsPassive() {
+   var flavored = F("노말", P("소속이 《칼데아》일 때", "종족 ①", "자신의 「공격」을 강화(1.5배)한다.")); var plain = F(); var target = F();
+   Assert.That(Engine.Effective(flavored, target, 1, new Rules()), Is.GreaterThan(Engine.Effective(plain, target, 1, new Rules())));
+  }
+
+  [Test] public void SideHazardSurvivorAndNotAttackingConditions() {
+   var rules = new Rules(); rules.Sides[1].StealthRock = true;
+   var hazard = F("노말", P("T 종료 시\n적진에 「스텔스록」이 있을 때"));
+   Assert.That(Turn(hazard, F(), Idle(), Idle(), rules).Fighters[0].Stages[1], Is.EqualTo(1), "hazard on opponent side");
+   var last = F("노말", P("T 종료 시\n자신만 생존해 있을 때"));
+   Assert.That(Turn(last, F(), Idle(), Idle()).Fighters[0].Stages[1], Is.EqualTo(1), "last one alive");
+   var idle = F("노말", P("T 종료 시\n자신이 공격하지 않을 때"));
+   Assert.That(Turn(idle, F(), Idle(), Idle()).Fighters[0].Stages[1], Is.EqualTo(1), "status move is not attacking");
+   var attacker = F("노말", P("T 종료 시\n자신이 공격하지 않을 때"));
+   Assert.That(Turn(attacker, F(), Tackle(), Idle()).Fighters[0].Stages[1], Is.EqualTo(0), "attacked this turn");
+  }
+
+  [Test] public void AbilityActivationEvent() {
+   var owner = F("노말", P("특성 「위협」이 발동했을 때", "종족 ①", "자신의 「방어」가 오른다.")); owner.Data.ability = "위협";
+   Assert.That(Turn(owner, F(), Idle(), Idle()).Fighters[0].Stages[2], Is.EqualTo(1));
+  }
+
   [Test] public void FaintedOwnerTriggersOnBecomingFainted() {
    var owner = F("노말", P("쓰러졌을 때", "종족 ①", "상대에게 최대 HP의 1/4 대미지를 준다.")); owner.HP = 1;
    var attacker = F();
@@ -133,7 +176,6 @@ namespace AABattle {
   [TestCase("「나무열매」를 사용했을 때")]
   [TestCase("우선도 「-3」의 기술을 내보낼 때")]
   [TestCase("「효과가굉장」인 공격을 받을 때")]
-  [TestCase("자신이 지령을 받았을 때")]
   public void LeavesOtherWordingOutOfModules(string raw) {
    Assert.That(TriggerModules.Classify(raw), Is.Empty);
   }

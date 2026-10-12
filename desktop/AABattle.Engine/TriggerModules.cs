@@ -48,8 +48,8 @@ namespace AABattle {
  }
 
  public static partial class TriggerModules {
-  public static readonly string[] EventModules = { "등장", "교대", "퇴장", "타이밍", "피격", "명중", "급소", "쓰러뜨림", "기술 사용", "상태 됨", "상태 해제", "체력 변화", "회복", "날씨 변화", "장소 변화", "랭크" };
-  public static readonly string[] StateModules = { "상태", "체력", "날씨", "장소" };
+  public static readonly string[] EventModules = { "등장", "교대", "퇴장", "타이밍", "피격", "명중", "급소", "쓰러뜨림", "기술 사용", "상태 됨", "상태 해제", "체력 변화", "회복", "날씨 변화", "장소 변화", "랭크", "특성 발동", "배틀 시작", "지령", "해석", "피격·무효화", "대미지", "행동 선택", "방어 성공", "간접 대미지", "드레인" };
+  public static readonly string[] StateModules = { "상태", "체력", "날씨", "장소", "상시", "PT 참가", "적진 타입", "트레이너 자질", "플레이버", "부여", "포텐셜 보유", "소지품", "특성", "생존", "빈사 수", "진영", "공격하지 않음", "능력 변화 합" };
   public static readonly string[] EntryMethods = { "선발", "죽어내밀기", "임의교대", "통상교대", "강제교대", "선발 또는 죽어내밀기" };
   static readonly ConcurrentDictionary<string, TriggerSpec> specs = new ConcurrentDictionary<string, TriggerSpec>();
   static readonly TriggerSpec None = new TriggerSpec();
@@ -114,6 +114,7 @@ namespace AABattle {
    string t = Clean(text);
    if (t.Length == 0) return false;
    if (TryParseState(t, out spec)) return true;
+   if (TryParseCondition(t, out spec)) return true;
    Match m; MoveCondition c;
    // 타이밍
    m = Regex.Match(t, @"^(?:매\s*)?(?:「?(?<n>\d+)」?\s*(?:의\s*)?배수\s*(?:의\s*)?)?(?:T|턴)\s*(?:의\s*)?(?<k>개시|시작|종료|최후|마지막)\s*(?:시|시에|에)?$");

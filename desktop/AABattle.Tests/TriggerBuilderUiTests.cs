@@ -17,6 +17,15 @@ namespace AABattle {
    return Field<PixelText>(form, "triggerPreview").Text;
   }
 
+  // 효과 안내: 모듈로 읽히는 트리거는 구현됨, 나머지는 미구현으로 나온다
+  [Test] public void GuideListsTriggersWithStatus() {
+   var entries = EffectImplementationDex.TriggerEntries();
+   var entry = entries.First(x => x.effect == "죽어내밀기로 장소에 나올 때");
+   Assert.That(entry.status, Is.EqualTo("자동 구현"));
+   Assert.That(entry.family, Is.EqualTo("트리거 · 등장"));
+   Assert.That(entries.Any(x => x.status == "미구현" && x.family == "트리거 · 기타"), Is.True);
+  }
+
   [Test] public void StageTwoModulesBuildEngineSentences() {
    var cases = new[] {
     new object[] { "체력", "자신", "1/N 이하", "", 4, "자신의 체력이 1/4 이하일 때" },
@@ -24,7 +33,10 @@ namespace AABattle {
     new object[] { "랭크", "상대", "내려감", "속도", null, "상대의 「속도」가 내려갔을 때" },
     new object[] { "날씨", null, "비", "", null, "날씨가 「비」일 때" },
     new object[] { "장소 변화", null, "중력 해제", "", null, "「중력」이 해제되었을 때" },
-    new object[] { "빈사가 되었을 때", "상대", null, "", null, "상대가 「빈사」 상태가 되었을 때" }
+    new object[] { "빈사가 되었을 때", "상대", null, "", null, "상대가 「빈사」 상태가 되었을 때" },
+    new object[] { "플레이버", null, "소속", "칼데아", null, "소속이 《칼데아》일 때" },
+    new object[] { "공격하지 않음", "상대", null, "", null, "상대가 공격하지 않을 때" },
+    new object[] { "특성 발동", null, null, "위협", null, "자신의 「위협」 특성이 발동했을 때" }
    };
    using (var form = new DataEditorForm())
     foreach (var c in cases) {
