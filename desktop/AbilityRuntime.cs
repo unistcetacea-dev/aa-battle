@@ -33,7 +33,7 @@ namespace AABattle {
 
   public static void Leave(Fighter owner,Fighter opponent,Rules rules,SwitchReason reason,List<string> log){
    if(owner==null||opponent==null||rules==null||log==null||owner.HP<=0||reason==SwitchReason.Fainted||owner.AbilitySuppressed)return;string ability=Name(owner);
-   if(ability=="재생력"){int max=Engine.Stats(owner,opponent.Data.level,rules)[0],gain=Math.Min(max-owner.HP,Math.Max(1,max/3));if(gain>0){owner.HP+=gain;log.Add(owner.Data.name+"의 「재생력」: HP +"+gain);AnsweredTriggers.Healed(owner,gain,ability,log.Add);AnsweredTriggers.AbilityActivated(owner,ability,log.Add);}}
+   if(ability=="재생력"){int max=Engine.Stats(owner,opponent.Data.level,rules)[0];if(Mechanics.Heal(owner,opponent,rules,Math.Max(1,max/3),"「재생력」",log)>0)AnsweredTriggers.AbilityActivated(owner,ability,log.Add);}
    if(ability=="자연회복"&&owner.Status!="정상"){string old=owner.Status;owner.Status="정상";log.Add(owner.Data.name+"의 「자연회복」: "+old+" 치유");AnsweredTriggers.AbilityActivated(owner,ability,log.Add);}
   }
   public static void EndTurn(Fighter owner,Fighter opponent,Rules rules,List<string> log){if(owner==null||owner.HP<=0||owner.AbilitySuppressed||Name(owner)!="가속")return;if(Mechanics.ChangeStage(owner,opponent,5,1,rules,"가속",log))AnsweredTriggers.AbilityActivated(owner,"가속",log.Add);}
