@@ -6,6 +6,6 @@
     <ApplicationManifest>..\app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AABattle.Core\AABattle.Core.csproj" />
+    <ProjectReference Include="..\AABattle.UI\AABattle.UI.csproj" />
   </ItemGroup>
 </Project>

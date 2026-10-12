@@ -9,8 +9,9 @@ Windows C# WinForms 프로그램이다. 현재 상태는 `PROJECT_HANDOFF.md`, �
 
 ## 코드
 - 빌드는 .NET SDK 8 이상, 대상은 .NET Framework 4.8(`net48`), C#은 최신 문법(`LangVersion=latest`)이다. 단 런타임 기능이 필요한 것(기본 인터페이스 메서드, `Span` 기반 API, `System.Text.Json` 등)은 쓰지 않는다. JSON은 기존 `JavaScriptSerializer`를 쓴다.
-- 솔루션은 `desktop/AABattle.sln`이다. 새 `.cs` 파일은 `desktop/`에 두면 `AABattle.Core`에 자동 포함된다. 짧은 한국어 주석은 유지하되, 새 코드는 한 줄 압축을 피하고 읽을 수 있게 여러 줄로 쓴다.
-- UI: `BattleApp.cs`, `DataEditor.cs`, `RetroEditor.cs`, `CatalogUI.cs`, `StartUI.cs`. 계산: `BattleEngine.cs`, `Mechanics.cs`. 편성 규칙: `TeamRules.cs`. 포텐셜 부품: `PotentialParts.cs`.
+- 솔루션은 `desktop/AABattle.sln`이다. 프로젝트 폴더에 `.cs` 파일을 두면 자동 포함된다. 짧은 한국어 주석은 유지하되, 새 코드는 한 줄 압축을 피하고 읽을 수 있게 여러 줄로 쓴다. 한 파일이 커지면(약 40KB 이상) 주제별 파일이나 `partial` 클래스로 나눈다.
+- `desktop/AABattle.Engine`: 계산·규칙·데이터 모델. UI 참조가 없으며 WinForms·System.Drawing을 쓰면 빌드가 실패한다. 계산 `BattleEngine.cs`(Engine)·`Mechanics.cs`·`MechanicsStates.cs`(상태변화), 데이터 `BattleData.cs`·`DataModels.cs`·`ConditionState.cs`, 트리거 `TriggerStructures.cs`·`RuntimeTriggers.cs`·`EntryTriggers.cs`, 효과 `EffectRules.cs`, 편성 `TeamRules.cs`·`TrainerAccessRules.cs`, 포텐셜 `PotentialParts.cs`·`PotentialLibrary.cs`·`EditorTemplates.cs`.
+- `desktop/AABattle.UI`: 화면. 배틀 `BattleApp.cs`(MainForm)·`BattleWidgets.cs`·`BattleDialogs.cs`, 테마 `Theme.cs`, 컨트롤 `PixelControls.cs`, 편집기 `DataEditor.cs`·`RetroEditor.cs`·`CatalogUI.cs`·`EffectBuilder.cs`, 시작 `StartUI.cs`. 규칙 판단은 UI에 두지 않고 엔진에 둔다.
 - 시스템과 도감은 내장 Pokemon BW 폰트, AA는 HeadKasen을 사용한다. 흑백 도트 UI를 유지한다. 도트 폰트는 16·24·32·48px로만 쓰고(`Theme.UI`, 편집기는 `Theme.Enlarge`), 입력·선택·표·대화창은 `PixelControls.cs`의 픽셀 컨트롤을 쓴다. Windows 기본 컨트롤(`Label`, `TextBox`, `NumericUpDown` 등)과 `MessageBox`는 글자를 깨뜨리므로 쓰지 않는다.
 
 ## 규칙의 기준

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 배틀 화면·편집기·도감 등 WinForms UI. 계산은 AABattle.Engine을 쓴다 -->
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <AssemblyName>AABattle.UI</AssemblyName>
+    <RootNamespace>AABattle</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.IO.Compression" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AABattle.Engine\AABattle.Engine.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="AABattle" />
+    <InternalsVisibleTo Include="AABattleDataEditor" />
+    <InternalsVisibleTo Include="AABattle.Tests" />
+  </ItemGroup>
+</Project>

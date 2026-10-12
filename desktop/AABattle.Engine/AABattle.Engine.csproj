@@ -1,18 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- 엔진·UI·데이터 전체. 두 실행 파일과 테스트가 이 라이브러리를 공유한다 -->
+  <!-- 전투 계산·상태·포텐셜 규칙과 데이터 모델. UI(WinForms) 참조 금지 -->
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <AssemblyName>AABattle.Core</AssemblyName>
+    <AssemblyName>AABattle.Engine</AssemblyName>
     <RootNamespace>AABattle</RootNamespace>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\*.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.IO.Compression" />
   </ItemGroup>
@@ -26,8 +20,7 @@
     <EmbeddedResource Include="..\..\public\fonts\pokemon-bw.otf" LogicalName="pokemon-bw.otf" />
   </ItemGroup>
   <ItemGroup>
-    <InternalsVisibleTo Include="AABattle" />
-    <InternalsVisibleTo Include="AABattleDataEditor" />
+    <InternalsVisibleTo Include="AABattle.UI" />
     <InternalsVisibleTo Include="AABattle.Tests" />
   </ItemGroup>
 </Project>

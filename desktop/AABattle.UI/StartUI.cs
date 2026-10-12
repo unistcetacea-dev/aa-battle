@@ -7,7 +7,6 @@ using System.Web.Script.Serialization;
 using System.IO;
 using System.Text;
 namespace AABattle {
- public class TeamRecord {public string name="";public TrainerRecord trainer;public List<PokemonRecord> members=new List<PokemonRecord>();public FieldEffectRecord fieldEffect=new FieldEffectRecord();public override string ToString(){return (name.Length>0?name:"이름 없는 팀")+"  ·  "+members.Count+"체"+(fieldEffect!=null&&fieldEffect.enabled&&fieldEffect.name.Length>0?"  ·  《"+fieldEffect.name+"》":"");}}
 
  partial class DataEditorForm {
   PixelChoiceList teamLibrary;

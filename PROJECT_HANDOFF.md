@@ -367,3 +367,8 @@ Codex 공유 링크는 특정 시점의 읽기 전용 대화 스냅샷이다. �
 - 깨지기 쉬운 고정 개수 검사(내장 정의 4151개, 역할 42개·범용 6개·선 4개·상대 타입 17개 등)는 존재·내용 검사로 완화했다. 64행과 같은 수면 상한 검사가 `ChargeAndTypeSwap`에 중복돼 있던 것을 지웠다.
 - 아직 실행 코드 안에 남은 작은 `Test()` 메서드(`EffectBuilder`, `EntryTriggers`, `CatalogUI` 등)는 `SuiteTests`에서 호출한다. 이후 작업에서 점진적으로 `AABattle.Tests`로 옮긴다.
 - `verify.ps1`: 빌드 → `dotnet test` → (`-Visual`) 화면 캡처. `-Fast`는 UI 검사를 건너뛴다.
+
+## 2026-10-12 엔진/UI 분리와 파일 분할
+- `AABattle.Core`를 `AABattle.Engine`(계산·규칙·데이터 모델·내장 리소스, UI 참조 없음)과 `AABattle.UI`(WinForms 화면)로 나눴다. UI 파일 안에 있던 순수 로직(`EffectNormalizer`·`EffectStructures`·`EditorTemplate`·`EditorBridge`·`PotentialLibrary`·`BattleStateReport`·`RuleBook`·`TurnSelection`)과 저장 데이터 모델(`EditorProject`·`TrainerRecord`·`PokemonRecord`·`TeamRecord` 등)은 엔진으로 옮겼다. 내용은 바꾸지 않았다.
+- 큰 파일을 클래스 단위로 나눴다. 엔진: `BattleData`·`TrainerAccessRules`·`TriggerStructures`·`RuntimeTriggers`·`PriorityEffectRuntime`·`ConditionState`·`MechanicsStates`(`Mechanics`는 `partial`). UI: `Theme`·`BattleWidgets`·`BattleDialogs`. `CatalogTests`는 `AABattle.Tests`로 옮겼다.
+- 검증: `verify.ps1 -Visual` 통과(테스트 45개), 배틀·편집기 캡처 동일.

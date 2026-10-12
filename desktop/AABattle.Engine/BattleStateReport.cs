@@ -1,17 +1,14 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Text;
-using System.Drawing;
-using System.Windows.Forms;
+using System.Globalization;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using System.Web.Script.Serialization;
 
 namespace AABattle {
- class BattleStatePanel:Card {
-  PixelLabel title;PixelText body;
-  public BattleStatePanel(){title=new PixelLabel{Text="전장 전체 현황",Font=Theme.UI(12),Dock=DockStyle.Top,Height=42,TextAlign=ContentAlignment.MiddleCenter};body=new PixelText{Dock=DockStyle.Fill,Font=Theme.UI(9)};Controls.Add(body);Controls.Add(title);body.BringToFront();}
-  public void SetReport(string value){body.Text=value;}
- }
-
+ // 전장 현황 텍스트 보고서
  static class BattleStateReport {
   static readonly string[] StatNames={"체력","공격","방어","특공","특방","속도"};
  public static string Build(Database db,Fighter[] fighters,Rules rules,TurnSelection[] selections,TrainerRecord[] trainers,TrainerBattleState[] trainerStates,IEnumerable<Fighter>[] reserves=null,bool[] here=null){
