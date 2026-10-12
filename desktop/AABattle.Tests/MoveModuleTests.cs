@@ -50,7 +50,7 @@ namespace AABattle {
   [Test] public void DreamEaterFailsUnlessAsleep() {
    var t = Turn(F(), F(), M("꿈먹기"), Idle());
    Assert.That(t.Fighters[1].HP, Is.EqualTo(Mechanics.MaxHP(t.Fighters[1], t.Fighters[0], new Rules())));
-   Assert.That(Log(t), Does.Contain("잠들어 있지 않아"));
+   Assert.That(Log(t), Does.Contain("「잠듦」 상태가 아니면 실패한다"));
   }
 
   // 조이기: 4～5T, 끈기갈고리손톱은 5T, 조임밴드는 턴 끝 대미지 1/6

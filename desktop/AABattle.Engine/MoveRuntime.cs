@@ -118,13 +118,13 @@ namespace AABattle {
   // 다른 곳(계산·MoveModules·TypeRules)이 처리하는 문장
   static bool Ignored(Move m, string s) {
    if (Regex.IsMatch(s, @"^「[^」]+」 기술$|^\d+(?:~\d+)?회 「[^」]+」 기술$|^(?:특수|추가)효과 없음$")) return true;
-   if (Regex.IsMatch(s, @"급소에 맞기 쉽다|반드시 급소에 맞는다|유리한 타입 상성|능력치로 대미지를 계산한다|「방어」 기술을 관통한다|성별이 같으면 실패한다")) return true;
+   if (Regex.IsMatch(s, @"급소에 맞기 쉽다|반드시 급소에 맞는다|유리한 타입 상성|능력치로 대미지를 계산한다|「방어」 기술을 관통한다")) return true;
+   if (FailModules.IsModule(s)) return true;
    if (Regex.IsMatch(s, @"준 대미지의 \d+/\d+만큼 HP를 회복한다|「모으기」 기술|모습을 감추|^날씨가 「[^」]+」일 때")) return true;
    if (m.tags != null && m.tags.Contains("조이기") && s.Contains("「조이기」 상태로 한다")) return true;
    if (Regex.IsMatch(s, @"^준 대미지의 \d+/\d+만큼 반동 대미지를 받는다$")) return true;
    if (Regex.IsMatch(s, @"기술을 「방어」한다$|무효화했을 때\s*,|연속해서 내보내면 실패(?:하기 쉽다|한다)$")) return true;
    if (m.tags != null && m.tags.Contains("난동부리기") && s.Contains("「난동부리기」 상태로 한다")) return true;
-   if (s.Contains("「잠듦」 상태가 아니면 실패한다") || s.Contains("「필드에 나온 후 최초」가 아니면 실패한다")) return true;
    if (Regex.IsMatch(s, @"^상대가 「[^」]+」\s*(?:상태|도중|중)?일 때\s*,\s*위력이 강화\(\d+(?:\.\d+)?배\)된다$|^「[^」]+」 타입이 내보내면 「필중」 효과가 부여된다$|^1T째에 자신의 「[^」]+」을 올리고")) return true;
    return false;
   }

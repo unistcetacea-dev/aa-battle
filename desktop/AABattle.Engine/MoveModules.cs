@@ -154,12 +154,7 @@ namespace AABattle {
   }
 
   // ===== 실패 조건 =====
-  public static string FailReason(Fighter a, Fighter b, Move m) {
-   string t = Plain(m);
-   if (t.Contains("상대가 「잠듦」 상태가 아니면 실패한다") && b != null && b.Status != "잠듦") return "상대가 잠들어 있지 않아 실패했다.";
-   if (t.Contains("「필드에 나온 후 최초」가 아니면 실패한다") && a != null && a.Conditions.FieldTurn > 1) return "장소에 나온 첫 T가 아니라 실패했다.";
-   return "";
-  }
+  public static string FailReason(Fighter a, Fighter b, Move m) { return FailModules.Reason(a, b, m, EffectScope.Current == null ? new Rules() : EffectScope.Current.Rules); }
 
   // ===== 모으기 =====
   public static bool Charges(Move m) { return Tagged(m, "모으기"); }
