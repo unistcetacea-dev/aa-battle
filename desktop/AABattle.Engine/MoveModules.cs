@@ -12,7 +12,10 @@ namespace AABattle {
  //  급소     「급소에 맞기 쉽다(C+N)」 · 「반드시 급소에 맞는다」(태그 「확정급소」)
  //  방어 관통 「상대의 「방어」 기술을 관통한다」(태그 「방어관통」)
  //  필중     「날씨가 「비」일 때, 「필중」 효과가 부여된다」 · 「「독」 타입이 내보내면 「필중」 효과가 부여된다」
- //  조건 위력 「상대가 「X」 상태(도중·중)일 때, 위력이 강화(N배)된다」
+ //  조건 위력 「상대가 「X」 상태(도중·중)일 때, 위력이 강화(N배)된다」 · 「전체 필드가 「X」 상태일 때, …」
+ //  대미지 계산 「상대의 「방어」 능력치를 반감해서」 · 「자신과 상대의 「X」 능력치를 반전해」(공격 쪽 능력치를 상대에게서, 방어 쪽을 자신에게서)
+ //            「상대의 「공격」 능력치로」(공격 쪽 능력치를 상대에게서) · 「상대의 「방어/특방/회피」의 상승(강화)을 관통한다」
+ //  상성      「상대가 「X」 타입일 때, 「효과가 굉장」해진다」 · 「상대가 자신과 같은 타입일 때, …」 · 「타입 상성에 의해 무효화되지 않는다」
  //  실패     꿈먹기(잠듦이 아니면) · 수상한촉수(장소에 나온 첫 T가 아니면)
  // 소지품·포텐셜용 계속 효과(표준 문장)
  //  드레인 강화      자신의 「드레인」 기술의 회복량을 N배로 한다.
@@ -188,6 +191,11 @@ namespace AABattle {
     var x = Regex.Match(part, @"^상대가 「(?<s>[^」]+)」\s*(?:상태|도중|중)?일 때\s*,\s*위력이 강화\((?<n>\d+(?:\.\d+)?)배\)된다$");
     if (x.Success && InState(b, x.Groups["s"].Value)) v *= double.Parse(x.Groups["n"].Value);
    }
+   // 「전체 필드가 「X」 상태일 때, 위력이 강화(N배)된다」
+   foreach (string part in Parts(m)) {
+    var x = Regex.Match(part, @"^전체 필드가 「(?<s>[^」]+)」 상태일 때\s*,\s*위력이 강화\((?<n>\d+(?:\.\d+)?)배\)된다$");
+    if (x.Success && r != null && r.Terrain == x.Groups["s"].Value) v *= double.Parse(x.Groups["n"].Value);
+   }
    // 날씨 위력(솔라빔 등)
    string w = ActiveWeather(a, b, r);
    foreach (var part in WeatherParts(m)) {
@@ -220,6 +228,39 @@ namespace AABattle {
   static bool InState(Fighter f, string name) {
    if (f == null) return false;
    return f.Status == name || name == "상태이상" && f.Status != "정상" || f.Conditions.Hidden == name || Mechanics.HasCondition(f, name);
+  }
+
+  // ===== 대미지 계산 문장 =====
+  public static bool HalvesDefense(Move m) { return Plain(m).Contains("「방어」 능력치를 반감해서 대미지를 계산한다"); }
+  public static bool SwapsStats(Move m) { return Plain(m).Contains("능력치를 반전해 대미지를 계산한다"); }
+  public static bool FoeAttack(Move m) { return Parts(m).Any(x => Regex.IsMatch(x, @"^상대의 「(?:공격|특공)」 능력치로 대미지를 계산한다$")); }
+  public static bool IgnoresRaise(Move m, string stat) {
+   foreach (string part in Parts(m)) {
+    var x = Regex.Match(part, @"^상대의 「(?<s>[^」]+)」의 상승\(강화\)을 관통한다$");
+    if (x.Success && x.Groups["s"].Value.Split('/').Contains(stat)) return true;
+   }
+   return false;
+  }
+  // 대미지 식의 공격 쪽·방어 쪽 능력치
+  public static double AttackStat(Fighter a, Fighter b, Move m, int i, Rules r, int attackerSide, int defenderSide) {
+   return SwapsStats(m) || FoeAttack(m) ? Engine.Effective(b, a, i, r, 1, defenderSide) : Engine.Effective(a, b, i, r, 1, attackerSide);
+  }
+  public static double DefenseStat(Fighter a, Fighter b, Move m, int i, Rules r, int attackerSide, int defenderSide) {
+   var rules = r;
+   if (IgnoresRaise(m, i == 2 ? "방어" : i == 4 ? "특방" : i == 1 ? "공격" : i == 3 ? "특공" : "속도")) { rules = r.Copy(); rules.IgnoreDefenderRaise = true; }
+   double v = SwapsStats(m) ? Engine.Effective(a, b, i, rules, 2, attackerSide) : Engine.Effective(b, a, i, rules, 2, defenderSide);
+   return HalvesDefense(m) ? Math.Max(1, Math.Floor(v / 2)) : v;
+  }
+  // 타입별 배율 덮어쓰기(Mechanics.TypeEffect의 방어 타입 하나마다)
+  public static double TypeOverride(Fighter a, Move m, string defenseType, double k) {
+   if (m == null) return k;
+   foreach (string part in Parts(m)) {
+    var x = Regex.Match(part, @"^상대가 (?<t>(?:「[^」]+」)+) 타입일 때\s*,\s*「효과가 굉장」해진다$");
+    if (x.Success && Regex.Matches(x.Groups["t"].Value, "「([^」]+)」").Cast<Match>().Any(t => t.Groups[1].Value == defenseType)) k = 2;
+    if (Regex.IsMatch(part, @"^상대가 자신과 같은 타입일 때\s*,\s*「효과가 굉장」해진다$") && a != null && (a.Data.types ?? new string[0]).Contains(defenseType)) k = 2;
+    if (part == "타입 상성에 의해 무효화되지 않는다" && k == 0) k = 1;
+   }
+   return k;
   }
 
   // 이 기술 행동이 모으기 T인가(true면 행동은 여기서 끝난다). 2T째는 모으기 상태를 풀고 false

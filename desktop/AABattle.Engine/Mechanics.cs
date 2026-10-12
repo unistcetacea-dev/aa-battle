@@ -26,7 +26,7 @@ namespace AABattle {
    var each=m.types.Concat(p.Added).Distinct().Select(t=>b.Data.types.Aggregate(1.0,(v,d)=>{double k=db.chart.ContainsKey(d)&&db.chart[d].ContainsKey(t)?db.chart[d][t]:1;
     if(t=="땅"&&d=="비행"&&Grounded(b,r))k=1;
     if(d=="고스트"&&(t=="노말"||t=="격투")&&Ability(a,"배짱"))k=1;
-    if(d=="비행"&&k>1&&weather=="난기류")k=1;
+    if(d=="비행"&&k>1&&weather=="난기류")k=1;k=MoveModules.TypeOverride(a,m,d,k);
     // 포텐셜: 상성 무효 관통(0→1), 타입 내성 관통(반감·무효→1, 사용자 결정)
     if(k==0&&p.PierceImmune)k=1;
     if(k<1&&(p.PierceAll||p.PierceTypes.Contains(d)))k=1;
@@ -119,7 +119,7 @@ namespace AABattle {
    if(c.Confusion>0){c.Confusion--;if(rng()<1.0/3){var plain=new Rules{LevelCorrection=r.LevelCorrection,HPCorrection=r.HPCorrection};int attack=Engine.Effective(a,b,1,plain),defense=Engine.Effective(a,b,2,plain);int damage=(int)Math.Floor(((2*a.Data.level+10)/250.0*attack/defense*40+2)*(.85+(int)(rng()*16)/100.0));Hurt(a,b,r,damage,"혼란 자해 (위력40)",log,false);return false;}log.Add(a.Data.name+": 혼란을 버티고 행동했다.");}
    if(a.Status=="마비"&&rng()<.25){log.Add(a.Data.name+": 몸이 저려 움직일 수 없다.");return false;}return true;
   }
-  public static double Accuracy(Fighter a,Fighter b,Move m,Rules r,int attackerSide=-1){if(SureHit(b,m,attackerSide))return double.PositiveInfinity;if(Ohko(m))return a.Data.level<b.Data.level?0:Math.Min(100,m.accuracy+a.Data.level-b.Data.level);if(m.name=="발버둥")return double.PositiveInfinity;string w=Weather(a,b,r);if(MoveModules.SureHit(a,b,m,r))return double.PositiveInfinity;if((m.name=="번개"||m.name=="폭풍")&&Sunny(w))return 50;double stage=Engine.Stage(a.AccuracyStage-b.EvasionStage);return Math.Min(100,m.accuracy*(r.Gravity>0?5.0/3:1)*stage*a.AccuracyMultiplier*PotentialModifiers.Stat(a,b,6,r)*PotentialModifiers.Accuracy(a,b,m,r)/(b.EvasionMultiplier*PotentialModifiers.Stat(b,a,7,r)*AbilityRuntime.Evasion(a,b)));}
+  public static double Accuracy(Fighter a,Fighter b,Move m,Rules r,int attackerSide=-1){if(SureHit(b,m,attackerSide))return double.PositiveInfinity;if(Ohko(m))return a.Data.level<b.Data.level?0:Math.Min(100,m.accuracy+a.Data.level-b.Data.level);if(m.name=="발버둥")return double.PositiveInfinity;string w=Weather(a,b,r);if(MoveModules.SureHit(a,b,m,r))return double.PositiveInfinity;if((m.name=="번개"||m.name=="폭풍")&&Sunny(w))return 50;double stage=Engine.Stage(a.AccuracyStage-(MoveModules.IgnoresRaise(m,"회피")?Math.Min(0,b.EvasionStage):b.EvasionStage));return Math.Min(100,m.accuracy*(r.Gravity>0?5.0/3:1)*stage*a.AccuracyMultiplier*PotentialModifiers.Stat(a,b,6,r)*PotentialModifiers.Accuracy(a,b,m,r)/(b.EvasionMultiplier*PotentialModifiers.Stat(b,a,7,r)*AbilityRuntime.Evasion(a,b)));}
   public static readonly Dictionary<string,string> StatusMoves=new Dictionary<string,string>{{"도깨비불","화상"},{"맹독","맹독"},{"독가루","독"},{"독가스","독"},{"전기자석파","마비"},{"저리가루","마비"},{"뱀눈초리","마비"},{"버섯포자","잠듦"},{"수면가루","잠듦"},{"최면술","잠듦"},{"악마의키스","잠듦"}};
   public static readonly Dictionary<string,string> WeatherMoves=new Dictionary<string,string>{{"쾌청","쾌청"},{"비바라기","비"},{"모래바람","모래바람"},{"설경","눈"},{"싸라기눈","싸라기눈"}};
   public static readonly string[] HazardMoves={"스텔스록","압정뿌리기","독압정","끈적끈적네트"};

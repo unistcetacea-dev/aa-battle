@@ -132,5 +132,19 @@ namespace AABattle {
    var crash = Turn(F(), F("고스트"), M("무릎차기"), Idle());
    Assert.That(crash.Fighters[0].HP, Is.EqualTo(max - max / 2), "고스트에게 무효화 → 반동\n" + Log(crash));
   }
+
+  // 대미지 계산 문장: 방어 반감 · 상대 능력치 · 상승 관통 · 상성 지정 · 무효 관통
+  static int Max(Fighter a, Fighter b, Move m) { return Engine.Calculate(TestData.Db, a, b, m, new Rules()).Max; }
+  [Test] public void CalculationSentences() {
+   var plain = M("자폭").Copy(); plain.effect = "";
+   Assert.That(Max(F(), F(), M("자폭")), Is.GreaterThan(Max(F(), F(), plain) * 1.8));
+   var strong = F(); strong.Stages[1] = 2;
+   Assert.That(Max(F(), strong, M("속임수")), Is.GreaterThan(Max(F(), F(), M("속임수")) * 1.8), "상대의 공격으로 계산");
+   var wall = F(); wall.Stages[2] = 2;
+   Assert.That(Max(F(), wall, M("성스러운칼")), Is.EqualTo(Max(F(), F(), M("성스러운칼"))), "방어 상승 관통");
+   Assert.That(Mechanics.TypeEffect(TestData.Db, F(), F("물"), M("프리즈드라이"), new Rules()), Is.EqualTo(2));
+   Assert.That(Mechanics.TypeEffect(TestData.Db, F(), F("고스트"), M("성스러운노래"), new Rules()), Is.EqualTo(2));
+   Assert.That(Mechanics.TypeEffect(TestData.Db, F(), F("고스트"), M("미라클펀치"), new Rules()), Is.EqualTo(1));
+  }
  }
 }

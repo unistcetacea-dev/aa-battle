@@ -8,7 +8,7 @@ using System.Web.Script.Serialization;
 namespace AABattle {
  public class SideFieldState {public bool StealthRock,StickyWeb;public int Spikes,ToxicSpikes;public int Reflect,LightScreen,Tailwind;public SideFieldState Copy(){return (SideFieldState)MemberwiseClone();}public void ClearHazards(){StealthRock=StickyWeb=false;Spikes=ToxicSpikes=0;}public void Clear(){ClearHazards();Reflect=LightScreen=Tailwind=0;}public bool Any(){return StealthRock||StickyWeb||Spikes>0||ToxicSpikes>0||Reflect>0||LightScreen>0||Tailwind>0;}public bool HasHazards(){return StealthRock||StickyWeb||Spikes>0||ToxicSpikes>0;}}
   public class Rules {
-  public string Weather="없음", Terrain="없음"; public bool Critical, HPCorrection;
+  public string Weather="없음", Terrain="없음"; public bool Critical, HPCorrection, IgnoreDefenderRaise;
   public Func<Fighter,Fighter,Potential,bool> OptionalEffectPrompt;
   public Func<PotentialInstance,Fighter,string[],string> ChooseStat;
   public Func<Fighter,Move[],Move> ChooseExtraMove;                           // 추가행동 기술 선택(없으면 첫 후보)        // 「임의의 능력」 선택(없거나 null을 돌려주면 판정 대기)
@@ -45,7 +45,7 @@ namespace AABattle {
   public static int[] Stats(Fighter f,int other,Rules r){var p=f.Data;int low=Math.Min(p.level,other);double c=1+Math.Max(0,p.level-other)*r.LevelCorrection/100;return p.@base.Select((v,i)=>{int species=v+(i==0?PrivilegeRules.HpBonus(f,r):0);return i==0?(int)(r.HPCorrection?Math.Floor((Math.Floor((species*2+p.iv[i])*low/100.0)+10+low)*c):Math.Floor((species*2+p.iv[i])*p.level/100.0+10+p.level)):(int)Math.Floor((Math.Floor((species*2+p.iv[i])*low/100.0)+5)*c);}).ToArray();}
   public static double Stage(int n){return n>=0?(2+n)/2.0:2.0/(2-n);}
   public static int Effective(Fighter a,Fighter b,int i,Rules r,int role=0,int side=-1){return EffectiveAtLevel(a,b,b.Data.level,i,r,role,side);}
-  public static int EffectiveAtLevel(Fighter a,Fighter environmentOpponent,int otherLevel,int i,Rules r,int role=0,int side=-1){int s=a.Stages[i];double m=a.Multipliers[i]*PotentialModifiers.Stat(a,environmentOpponent,i,r);bool ignoreRank,ignoreBoost;if(StatIgnoreRuntime.TryIgnorePositive(environmentOpponent,a,i,out ignoreRank,out ignoreBoost)){if(ignoreRank)s=Math.Min(0,s);if(ignoreBoost)m=Math.Min(1,m);}if(r.Critical&&role==1){s=Math.Max(0,s);m=Math.Max(1,m);}if(r.Critical&&role==2){s=Math.Min(0,s);m=Math.Min(1,m);}return Math.Max(1,(int)Math.Floor(Stats(a,otherLevel,r)[i]*m*Stage(s)*Mechanics.StatFactor(a,environmentOpponent,i,r,side)));}
+  public static int EffectiveAtLevel(Fighter a,Fighter environmentOpponent,int otherLevel,int i,Rules r,int role=0,int side=-1){int s=a.Stages[i];double m=a.Multipliers[i]*PotentialModifiers.Stat(a,environmentOpponent,i,r);bool ignoreRank,ignoreBoost;if(StatIgnoreRuntime.TryIgnorePositive(environmentOpponent,a,i,out ignoreRank,out ignoreBoost)){if(ignoreRank)s=Math.Min(0,s);if(ignoreBoost)m=Math.Min(1,m);}if(r.Critical&&role==1){s=Math.Max(0,s);m=Math.Max(1,m);}if((r.Critical||r.IgnoreDefenderRaise)&&role==2){s=Math.Min(0,s);m=Math.Min(1,m);}return Math.Max(1,(int)Math.Floor(Stats(a,otherLevel,r)[i]*m*Stage(s)*Mechanics.StatFactor(a,environmentOpponent,i,r,side)));}
   public static double Match(Database db,string[] at,string[] dt){return at.Length==0?1:at.Max(t=>dt.Aggregate(1.0,(n,d)=>n*(db.chart.ContainsKey(d)&&db.chart[d].ContainsKey(t)?db.chart[d][t]:1)));}
   public static Damage Calculate(Database db,Fighter a,Fighter b,Move m,Rules r,int attackerSide=-1,bool actionOverride=true){
    m=Mechanics.JudgedMove(a,actionOverride?Mechanics.ActionMove(db,a,m):m);Rules active=r;if(r.Critical&&AbilityRuntime.BlocksCritical(a,b)){active=r.Copy();active.Critical=false;}
@@ -55,7 +55,7 @@ namespace AABattle {
    double normalStab=active.Stab>0?active.Stab:TypeRules.MoveTypes(a,b,m,active).Any(t=>a.Data.types.Contains(t))?1.5:1,stab=AbilityRuntime.Stab(a,TypeRules.StabOverride(a,b,m,active,normalStab)),type=Mechanics.TypeEffect(db,a,b,m,active);
    string reason=Mechanics.Block(db,a,b,m,active);if(reason.Length>0)type=0;
    power*=PotentialModifiers.Power(a,b,m,active,type);
-   int defenderSide=attackerSide>=0&&attackerSide<2?1-attackerSide:-1;double basis=Math.Floor(((2*a.Data.level+10)/250.0*Effective(a,b,ai,active,1,attackerSide)/Effective(b,a,di,active,2,defenderSide)*power+2)*stab*type*(active.Critical?2:1)*active.DamageMultiplier*Mechanics.DamageFactor(a,b,m,active,defenderSide)*AbilityRuntime.Damage(a,b,active)*PotentialModifiers.Damage(a,b,m,active,type));
+   int defenderSide=attackerSide>=0&&attackerSide<2?1-attackerSide:-1;double basis=Math.Floor(((2*a.Data.level+10)/250.0*MoveModules.AttackStat(a,b,m,ai,active,attackerSide,defenderSide)/MoveModules.DefenseStat(a,b,m,di,active,attackerSide,defenderSide)*power+2)*stab*type*(active.Critical?2:1)*active.DamageMultiplier*Mechanics.DamageFactor(a,b,m,active,defenderSide)*AbilityRuntime.Damage(a,b,active)*PotentialModifiers.Damage(a,b,m,active,type));
    bool supported=m.category!="변화"&&(m.power>0||Mechanics.Ohko(m));
    int[] rolls=Enumerable.Range(85,16).Select(v=>supported?(Mechanics.Ohko(m)?(type>0?b.HP:0):(int)Math.Min(int.MaxValue,Math.Floor(basis*v/100))):0).ToArray();
    return new Damage{Min=rolls[0],Max=rolls[15],Rolls=rolls,Stab=stab,Type=type,Supported=supported,Reason=reason};

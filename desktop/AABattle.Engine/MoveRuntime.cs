@@ -48,6 +48,9 @@ namespace AABattle {
    s = s.Trim().TrimEnd(',').Trim();
    if (s.Length == 0 || s.StartsWith("(")) return;
    if (s == "「방어」 기술" && ProtectModules.IsGuard(m)) { into.Add("자신을 「방어」 상태로 한다."); return; }
+   // 「…상태로 하고, …」
+   var split = Regex.Match(s, @"^(?<a>.+?상태로) 하고\s*,\s*(?<b>.+)$");
+   if (split.Success) { Read(m, split.Groups["a"].Value + " 한다", into, plan); Read(m, split.Groups["b"].Value, into, plan); return; }
    if (Ignored(m, s)) return;
    if (s == "「빈사」가 되는 공격을 남은 HP 「1」로 버틴다") { into.Add("자신을 「버티기」 상태로 한다."); return; }
    // 반동: 준 대미지 비율은 MoveModules.Recoil, 최대 HP 비율은 기술을 낸 뒤 언제나, 「빗나가거나 무효화됐을 때」는 그때만
@@ -72,9 +75,6 @@ namespace AABattle {
     foreach (Match t in Regex.Matches(x.Groups["r"].Value, @"「([^」]+?)([+-])\s*(\d)」")) Add(into, plan, s, Rank(x.Groups["s"].Value, t.Groups[1].Value, t.Groups[2].Value, int.Parse(t.Groups[3].Value)));
     return;
    }
-   // 「…상태로 하고, …」
-   x = Regex.Match(s, @"^(?<a>.+?상태로) 하고\s*,\s*(?<b>.+)$");
-   if (x.Success) { Read(m, x.Groups["a"].Value + " 한다", into, plan); Read(m, x.Groups["b"].Value, into, plan); return; }
    // 행동불능(반동): 「다음 T 종료 후까지 자신을 「행동불능」 상태로 한다」
    x = Regex.Match(s, @"^다음 T 종료 후까지\s*,?\s*(?<r>자신을 「행동불능」 상태로 한다)$");
    if (x.Success) { into.Add(x.Groups["r"].Value + "."); return; }
@@ -120,6 +120,7 @@ namespace AABattle {
    if (Regex.IsMatch(s, @"^「[^」]+」 기술$|^\d+(?:~\d+)?회 「[^」]+」 기술$|^(?:특수|추가)효과 없음$")) return true;
    if (Regex.IsMatch(s, @"급소에 맞기 쉽다|반드시 급소에 맞는다|유리한 타입 상성|능력치로 대미지를 계산한다|「방어」 기술을 관통한다")) return true;
    if (FailModules.IsModule(s)) return true;
+   if (Regex.IsMatch(s, @"능력치를 반감해서 대미지를 계산한다$|능력치를 반전해 대미지를 계산한다$|의 상승\(강화\)을 관통한다$|타입일 때\s*,\s*「효과가 굉장」해진다$|^타입 상성에 의해 무효화되지 않는다$|^전체 필드가 「[^」]+」 상태일 때\s*,\s*위력이 강화")) return true;
    if (Regex.IsMatch(s, @"준 대미지의 \d+/\d+만큼 HP를 회복한다|「모으기」 기술|모습을 감추|^날씨가 「[^」]+」일 때")) return true;
    if (m.tags != null && m.tags.Contains("조이기") && s.Contains("「조이기」 상태로 한다")) return true;
    if (Regex.IsMatch(s, @"^준 대미지의 \d+/\d+만큼 반동 대미지를 받는다$")) return true;
