@@ -476,6 +476,21 @@ namespace AABattle {
       c.Say(target.Data.name + ": " + c.Source.Label + "의 강제교대 요청");
       return EffectOutcome.Success;
      });
+    // F4b 추가행동(확정 29): 사건으로 얻으면 행동 사이에 넣는다(가장 먼저 → 바로 다음, 가장 마지막에 → 턴 끝)
+    PotentialExecutors.Register("추가행동",
+     c => { ExtraActionGrant g; int every; return ExtraActionRuntime.TryParse(c.Line, out g, out every); },
+     c => {
+      ExtraActionGrant g; int every; ExtraActionRuntime.TryParse(c.Line, out g, out every);
+      var scope = EffectScope.Current; var rules = c.Rules ?? new Rules();
+      if (scope == null || c.Owner == null || c.Owner.HP <= 0) return EffectOutcome.Failed;
+      if (every > 0 && (rules.Turn <= 0 || rules.Turn % every != 0)) { c.Say(c.Source.Label + ": 「" + every + "」배수 T가 아니다"); return EffectOutcome.Failed; }
+      g.Side = Array.IndexOf(scope.Fighters, c.Owner); if (g.Side < 0) g.Side = Mechanics.PartySide(c.Owner, rules);
+      if (g.Side < 0) return EffectOutcome.Failed;
+      g.Owner = c.Owner; g.Source = c.Source.Label;
+      scope.ExtraActions.Add(g);
+      c.Say(c.Owner.Data.name + ": 추가행동을 얻었다 (" + (g.First ? "바로 다음" : "턴 마지막") + ")");
+      return EffectOutcome.Success;
+     });
     // F3 상태이상 치유
     PotentialExecutors.Register("상태이상 치유",
      c => { string t; return EffectModules.TryCure(c.Line, out t); },

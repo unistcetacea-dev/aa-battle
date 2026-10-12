@@ -211,6 +211,40 @@ namespace AABattle {
    Assert.That(Mechanics.ApplyStatus(guarded, F(), "화상", new Rules(), () => .5, new List<string>()), Is.True);
   }
 
+  // ===== F4b 추가행동(확정 29) =====
+  static Move Tackle() { return TestData.Db.moves.First(x => x.name == "몸통박치기"); }
+  static int Uses(TurnResult t, Fighter f, string move) { return t.Log.Count(x => x.StartsWith(f.Data.name + "의 " + move + "!")); }
+
+  [Test] public void EventExtraActionActsAgainAtTurnEndOnce() {
+   var owner = F("노말", P(TriggerStructures.AttackSuccessLabel, "가장 마지막에 추가행동을 얻는다."));
+   var other = F(); other.Data.name = "상대E";
+   var turn = Engine.Resolve(TestData.Db, new[] { owner, other }, new[] { Tackle(), Idle() }, new Rules(), () => .5);
+   Assert.That(Uses(turn, owner, "몸통박치기"), Is.EqualTo(2), string.Join("\n", turn.Log));
+   Assert.That(turn.Log.Any(x => x.Contains("추가행동 중에는 추가행동을 얻을 수 없다")), Is.True, "no extra action during an extra action");
+  }
+
+  [Test] public void ContinuousExtraActionFirstRespectsTurnMultiple() {
+   var owner = F("노말", P(Field, "가장 먼저 추가행동을 얻는다."));
+   var other = F(); other.Data.name = "상대F";
+   var turn = Engine.Resolve(TestData.Db, new[] { owner, other }, new[] { Tackle(), Idle() }, new Rules(), () => .5);
+   Assert.That(Uses(turn, owner, "몸통박치기"), Is.EqualTo(2));
+   var everyTwo = F("노말", P(Field, "「2」배수T, 가장 마지막에 추가행동을 얻는다"));
+   var first = Engine.Resolve(TestData.Db, new[] { everyTwo, F() }, new[] { Tackle(), Idle() }, new Rules { Turn = 1 }, () => .5);
+   var second = Engine.Resolve(TestData.Db, new[] { everyTwo, F() }, new[] { Tackle(), Idle() }, new Rules { Turn = 2 }, () => .5);
+   Assert.That(Uses(first, everyTwo, "몸통박치기"), Is.EqualTo(1));
+   Assert.That(Uses(second, everyTwo, "몸통박치기"), Is.EqualTo(2));
+  }
+
+  [Test] public void ExtraActionNeedsMatchingMoveAndLivingOwner() {
+   var owner = F("노말", P(Field, "가장 마지막에 「불꽃」 기술에 의한 추가행동을 얻는다."));
+   var turn = Engine.Resolve(TestData.Db, new[] { owner, F() }, new[] { Tackle(), Idle() }, new Rules(), () => .5);
+   Assert.That(turn.Log.Any(x => x.Contains("추가행동에 쓸 수 있는 기술이 없다")), Is.True);
+   var fragile = F("노말", P(Field, "가장 마지막에 추가행동을 얻는다.")); fragile.HP = 1;
+   var hitter = F(); var strong = Tackle().Copy(); strong.power = 250; strong.priority = 5;
+   var lost = Engine.Resolve(TestData.Db, new[] { fragile, hitter }, new[] { Tackle(), strong }, new Rules(), () => .5);
+   Assert.That(lost.Log.Any(x => x.Contains("추가행동이 사라졌다")), Is.True, string.Join("\n", lost.Log));
+  }
+
   [Test] public void SpeciesRaiseToTrainerAptitude() {
    var owner = F("노말", P(TriggerStructures.TurnEndLabel, "자신의 「방어」의 종족치를 트레이너의 「육성」과 같은 랭크까지 올린다")); var other = F();
    var trainer = new TrainerRecord(); trainer.training.rank = "A";

@@ -44,6 +44,7 @@ namespace AABattle {
   public readonly Rules Rules;
   public readonly Func<double> Rng;
   public readonly TrainerBattleState[] States;   // 진영별 트레이너·포텐셜 사용 이력
+  public readonly List<ExtraActionGrant> ExtraActions = new List<ExtraActionGrant>();   // 사건으로 얻은 추가행동(행동 사이에 넣는다)
   public readonly List<KeyValuePair<int, string>> ForcedSwitches = new List<KeyValuePair<int, string>>();  // 강제교대 요청(진영, 출처). 엔진의 교대 단계가 처리
   readonly EffectScope previous;
   EffectScope(Fighter[] fighters, Rules rules, Func<double> rng, TrainerBattleState[] states) { Fighters = fighters; Rules = rules; Rng = rng; States = states; previous = current; }

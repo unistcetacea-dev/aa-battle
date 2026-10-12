@@ -301,6 +301,9 @@ namespace AABattle {
     string st = m.Groups["st"].Value.StartsWith("「") || m.Groups["st"].Value == "전능력치" ? m.Groups["st"].Value : "「" + m.Groups["st"].Value + "」";
     return Scalar(Subj(m.Groups["s"].Value) + "의 " + st, action, rate);
    }
+   // F4b 추가행동
+   string extra = NormalizeExtra(text);
+   if (extra != null) return extra;
    // F4a 장소·교대 모듈
    string place = NormalizePlace(text);
    if (place != null) return place;
@@ -346,6 +349,20 @@ namespace AABattle {
    m = Regex.Match(text, @"^(?:자신은\s*)?「(?<s>[^」]+)」\s*상태(?:가|에)\s*(?:되지|걸리지)\s*않는다$");
    if (m.Success && m.Groups["s"].Value.Split('/').All(x => MajorStatuses.Contains(x.Trim()))) return "자신은 「" + m.Groups["s"].Value + "」상태가 되지 않는다.";
    return null;
+  }
+
+  // 추가행동 변형 → 「「N」배수 T, 가장 먼저/마지막에 「조건」 기술에 의한 추가행동을 얻는다」. 지령에 의한 추가행동권은 다른 규칙이라 바꾸지 않는다
+  static string NormalizeExtra(string text) {
+   string t = Regex.Replace(text, @"추가\s*행동권?", "추가행동");
+   if (!t.Contains("추가행동") || t.Contains("지령")) return null;
+   var m = Regex.Match(t, @"^(?:「?(?<n>\d+)」?\s*(?:의\s*)?배수\s*(?:의\s*)?T\s*,?\s*)?(?:(?<pos>가장\s*먼저|가장\s*마지막에|제일\s*마지막에|T의\s*최후에|최후에)\s*,?\s*)?(?:(?:기술\s*)?(?<c>(?:「[^」]+」\s*)+)(?:등의\s*)?(?:기술)?(?:에\s*의한|로)\s*)?추가행동을\s*얻는다$");
+   if (!m.Success) return null;
+   MoveCondition c = new MoveCondition();
+   if (m.Groups["c"].Success && !MoveCondition.TryParse(m.Groups["c"].Value, out c)) return null;
+   if (m.Groups["c"].Success && c.Tags.Count > 0 && Regex.IsMatch(m.Groups["c"].Value, @"^「[^」/]+」$") && !text.Contains("기술")) return null;
+   if (m.Groups["c"].Success && Regex.IsMatch(text, @"기술\s*「[^」]+」에\s*의한")) { c = new MoveCondition(); c.Names.Add(Regex.Match(text, @"기술\s*「(?<v>[^」]+)」").Groups["v"].Value); }
+   int every = m.Groups["n"].Success ? int.Parse(m.Groups["n"].Value) : 0;
+   return ExtraActionRuntime.Canonical(every, m.Groups["pos"].Value.Contains("먼저"), c, false);
   }
 
   // 장소 전개: kind = 날씨·지형·중력·트릭룸
@@ -536,6 +553,8 @@ namespace AABattle {
    if (IsForcedSwitch(s)) return "강제교대";
    if (IsForcedSwitchImmunity(s)) return "강제교대 무효";
    if (IsFloating(s)) return "부유";
+   ExtraActionGrant extra; int every;
+   if (ExtraActionRuntime.TryParse(s, out extra, out every)) return "추가행동";
    if (TryStatusImmunity(s, out statuses)) return "상태이상 면역";
    if (EffectStructures.IsPriority(s)) return "우선도 변화";
    if (EffectStructures.IsStatIgnore(s)) return "능력 상승·강화 무시";

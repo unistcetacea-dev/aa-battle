@@ -158,6 +158,7 @@ namespace AABattle {
     foreach (string s in list) yield return s;
    }
   }
+  public static IEnumerable<string> Sentences(Fighter owner, Fighter opponent, Rules rules, string keyword = null) { return ContinuousSentences(owner, opponent, rules, keyword); }
   // 부유: 「자신은 공중에 떠오른다」(중력·철구·뿌리박기는 Grounded가 먼저 판정)
   public static bool Floating(Fighter f, Rules rules) { return f != null && f.HP > 0 && ContinuousSentences(f, null, rules, "떠오").Any(EffectModules.IsFloating); }
   // 상태이상 면역: 「자신은 「독」상태가 되지 않는다」
