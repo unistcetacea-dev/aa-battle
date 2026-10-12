@@ -10,9 +10,19 @@ namespace AABattle {
  public static class AbilityModules {
   public const string Slot = "특성";
   // 모듈로 표현할 수 없는 전용 규칙만 남긴다
-  public static readonly HashSet<string> Dedicated = new HashSet<string>(new[] { "다운로드", "단순", "심술꾸러기", "미러아머", "날씨부정", "에어록", "틈새포착", "부식", "자연회복", "화학변화가스" });
+  public static readonly HashSet<string> Dedicated = new HashSet<string>();
   // 도감 문장의 모듈 표현
   public static readonly Dictionary<string, string> Rewrites = new Dictionary<string, string> {
+   { "다운로드", "필드에 나왔을 때, 상대의 「방어」가 「특방」보다 높을 때, 자신의 「특공」이 오른다. 필드에 나왔을 때, 상대의 「방어」가 「특방」 이하일 때, 자신의 「공격」이 오른다." },
+   { "단순", "자신의 능력 변화량을 1 늘린다." },
+   { "심술꾸러기", "자신에 대한 능력 변화를 반대로 한다." },
+   { "미러아머", "상대에 의한 능력 하락을 상대에게 되돌린다." },
+   { "날씨부정", "날씨의 효과를 무효화한다." },
+   { "에어록", "날씨의 효과를 무효화한다." },
+   { "틈새포착", "자신의 「변화」 기술이 상대의 「방어」 기술을 관통한다." },
+   { "부식", "자신이 거는 「독」「맹독」은 타입 면역을 관통한다." },
+   { "자연회복", "강제교대를 포함해 장소를 떠날 때, 자신의 「상태이상」을 치유한다." },
+   { "화학변화가스", "상대의 〔특성〕을 무효화한다." },
    { "가뭄", "필드에 나왔을 때, 5T 동안 날씨를 「쾌청」으로 한다." }, { "잔비", "필드에 나왔을 때, 5T 동안 날씨를 「비」로 한다." }, { "모래날림", "필드에 나왔을 때, 5T 동안 날씨를 「모래바람」으로 한다." }, { "눈퍼뜨리기", "필드에 나왔을 때, 5T 동안 날씨를 「싸라기눈」으로 한다." },
    { "그래스메이커", "필드에 나왔을 때, 5T 동안 지형을 「그래스필드」로 한다." }, { "일렉트릭메이커", "필드에 나왔을 때, 5T 동안 지형을 「일렉트릭필드」로 한다." }, { "사이코메이커", "필드에 나왔을 때, 5T 동안 지형을 「사이코필드」로 한다." }, { "미스트메이커", "필드에 나왔을 때, 5T 동안 지형을 「미스트필드」로 한다." },
    { "위협", "필드에 나왔을 때, 상대의 「공격」이 내린다." }, { "쓱쓱", "날씨가 「비」일 때, 자신의 「속도」를 강화(2배)한다." }, { "엽록소", "날씨가 「쾌청」일 때, 자신의 「속도」를 강화(2배)한다." }, { "모래헤치기", "날씨가 「모래바람」일 때, 자신의 「속도」를 강화(2배)한다. 자신은 「모래바람」의 대미지를 받지 않는다." }, { "눈치우기", "날씨가 「싸라기눈」일 때, 자신의 「속도」를 강화(2배)한다." },
@@ -66,6 +76,12 @@ namespace AABattle {
   public static string Status(AbilityDefinition d) { return d == null ? "미구현" : Dedicated.Contains(d.name) || Runnable(d) ? "자동" : "수동"; }
 
   // 배틀 포켓몬의 포텐셜 목록에서 특성 슬롯을 지금 특성(무효화 포함)에 맞춘다
+  public static IEnumerable<Potential> UnsuppressedPotentials(Fighter f) {
+   if (f == null || f.Data == null) return new Potential[0];
+   var ordinary = (f.Data.potentials ?? new Potential[0]).Where(p => p == null || p.id != Slot);
+   var definition = AbilityCatalog.Find(AbilityRuntime.Name(f));
+   return Runnable(definition) ? ordinary.Concat(ToPotentials(definition)) : ordinary;
+  }
   public static void Sync(Fighter f) {
    if (f == null || f.Data == null) return;
    var list = (f.Data.potentials ?? new Potential[0]).Where(p => p == null || p.id != Slot).ToList();

@@ -12,13 +12,13 @@ namespace AABattle {
   public static bool Has(Fighter f,string type){return f.Data.types.Contains(type);}
   public static bool Ability(Fighter f,params string[] names){return f!=null&&names.Any(x=>AbilityRuntime.Has(f,x));}
   public static bool Grounded(Fighter f,Rules r){if(r.Gravity>0||ItemRuntime.Holds(f,"검은철구","철구")||f.Conditions.Ingrain)return true;return !Has(f,"비행")&&!(f.Data.item=="풍선"&&!f.Conditions.BalloonPopped)&&!PotentialModifiers.Floating(f,r)&&!StateTicks.Floating(f);}
-  public static string Weather(Fighter a,Fighter b,Rules r){return (a.HP>0&&Ability(a,"날씨부정","에어록"))||(b.HP>0&&Ability(b,"날씨부정","에어록"))?"없음":r.Weather;}
+  public static string Weather(Fighter a,Fighter b,Rules r){return AbilityPhrases.NegatesWeather(a,b,r)?"없음":r.Weather;}
   public static bool Sunny(string w){return w=="쾌청"||w=="큰가뭄";}
   public static bool Rain(string w){return w=="비"||w=="강한 비";}
   public static bool BypassAbility(Fighter a){return a!=null&&(a.Conditions.PiercingAbility||AbilityPhrases.PiercesAbility(a));}
   public static bool Sound(Move m){return (m.tags??new string[0]).Any(t=>t.Contains("소리"))||(m.effect??"").Contains("「소리」");}
   public static bool Powder(Move m){return new[]{"수면가루","독가루","저리가루","버섯포자","분노가루","분진"}.Contains(m.name);}
-  public static bool BypassSub(Fighter a,Move m){return Ability(a,"틈새포착")||Sound(m)||m.name=="도발"||m.name=="앙코르";}
+  public static bool BypassSub(Fighter a,Move m){return Sound(m)||m.name=="도발"||m.name=="앙코르";}
   public static double TypeEffect(Database db,Fighter a,Fighter b,Move m,Rules r){
    if(m.types.Length==0)return 1;string weather=Weather(a,b,r);
    var p=TypeRules.For(a,b,m,r);
@@ -39,7 +39,7 @@ namespace AABattle {
   public static int Priority(Fighter a,Move m,Fighter opponent){return Priority(a,m)+PriorityEffectRuntime.ForMove(a,opponent,null,null,null);}
   public static int Priority(Fighter a,Move m,Fighter opponent,TrainerRecord ownTrainer,TrainerRecord opponentTrainer){return Priority(a,m)+PriorityEffectRuntime.ForMove(a,opponent,ownTrainer,opponentTrainer,null);}
   public static string Block(Database db,Fighter a,Fighter b,Move m,Rules r){
-   if(ProtectModules.Blocks(db,b,m)||StateTicks.QuickGuarded(a,b,m,r))return ProtectModules.Blocked;if(m.category=="변화"&&b.Conditions.MagicCoat&&!a.Conditions.MagicCoat)return StateTicks.Reflected;if(Ohko(m)){if(a.Data.level<b.Data.level)return "일격필살 실패: 대상 레벨이 더 높다";if(!BypassAbility(a)&&AbilityPhrases.BlocksOhko(b,a))return (AbilityRuntime.Name(b).Length>0?"〔"+AbilityRuntime.Name(b)+"〕":"특성/포텐셜")+": 일격필살 무효";}
+   if((ProtectModules.Blocks(db,b,m)||StateTicks.QuickGuarded(a,b,m,r))&&!AbilityPhrases.PiercesProtect(a,b,m,r))return ProtectModules.Blocked;if(m.category=="변화"&&b.Conditions.MagicCoat&&!a.Conditions.MagicCoat)return StateTicks.Reflected;if(Ohko(m)){if(a.Data.level<b.Data.level)return "일격필살 실패: 대상 레벨이 더 높다";if(!BypassAbility(a)&&AbilityPhrases.BlocksOhko(b,a))return (AbilityRuntime.Name(b).Length>0?"〔"+AbilityRuntime.Name(b)+"〕":"특성/포텐셜")+": 일격필살 무효";}
    if(Powder(m)&&(Has(b,"풀")||b.Data.item=="방진고글"))return "풀 타입 / 방진고글: 가루 기술 무효";
    if(r.Terrain=="사이코필드"&&Grounded(b,r)&&Priority(a,m,b)>0)return "사이코필드: 접지 대상에게 우선도 기술 무효";
    string w=Weather(a,b,r);
@@ -60,7 +60,7 @@ namespace AABattle {
    if(r.Terrain=="미스트필드"&&Grounded(target,r))return "미스트필드: 접지 포켓몬의 상태이상 방지";
    if(status=="잠듦"&&r.Terrain=="일렉트릭필드"&&Grounded(target,r))return "일렉트릭필드: 접지 포켓몬의 잠듦 방지";
    if(status=="화상"&&Has(target,"불꽃"))return "불꽃 타입: 화상 무효";
-   if((status=="독"||status=="맹독")&&(Has(target,"독")||Has(target,"강철"))&&!Ability(source,"부식"))return "독·강철 타입: 독 무효";
+   if((status=="독"||status=="맹독")&&(Has(target,"독")||Has(target,"강철"))&&!AbilityPhrases.PiercesStatusType(source,target,status,r))return "독·강철 타입: 독 무효";
    if(status=="마비"&&Has(target,"전기"))return "전기 타입: 마비 무효";
    if((status=="얼음"||status=="동상")&&Has(target,"얼음"))return "얼음 타입: 결빙 무효";
    if(status=="얼음"&&Sunny(Weather(target,source,r)))return "쾌청·큰가뭄: 새로운 얼음 상태 방지";
@@ -79,7 +79,7 @@ namespace AABattle {
   public static void ScheduleDelayedMove(Fighter source,Fighter target,Move move,Rules r,int sourceSide,List<string> log){var delayed=new DelayedAttackState{Move=new Move{name=move.name,category=move.category,effect=move.effect,attack=move.attack,defense=move.defense,types=(move.types??new string[0]).ToArray(),tags=(move.tags??new string[0]).ToArray(),power=move.power*ChargePower(source,move)*(source.Conditions.HelpingHand?1.5:1),accuracy=move.accuracy,priority=move.priority},SourceName=source.Data.name,SourceSide=sourceSide,SourceLevel=source.Data.level,SourceSpecialAttack=Engine.Stats(source,target.Data.level,r)[move.category=="물리"?1:3],SourceTypes=(source.Data.types??new string[0]).ToArray(),TurnsRemaining=2};if(target.Conditions.DelayedAttacks==null)target.Conditions.DelayedAttacks=new List<DelayedAttackState>();target.Conditions.DelayedAttacks.Add(delayed);log.Add(target.Data.name+": "+move.name+" 상태 — 다음 T의 최후에 판정 (방어 관통)");}
   public static void ResolveDelayedMoves(Database db,Fighter[] fighters,Rules r,Func<double> rng,List<string> log,Action<int,DelayedAttackState,int,bool> onDamage=null){for(int side=0;side<2;side++){var target=fighters[side];var opponent=fighters[1-side];var pending=(target.Conditions.DelayedAttacks??new List<DelayedAttackState>()).Where(x=>x!=null).ToArray();target.Conditions.DelayedAttacks.Clear();foreach(var delayed in pending){if(delayed.TurnsRemaining>1){delayed.TurnsRemaining--;target.Conditions.DelayedAttacks.Add(delayed);continue;}if(target.HP<=0)continue;double accuracy=DelayedAccuracy(target,delayed,r);if((rng==null?0:rng()*100)>=accuracy){log.Add(target.Data.name+"의 "+delayed.Move.name+"! 그러나 최후 명중판정에서 빗나갔다!");continue;}var damage=Engine.CalculateDelayed(db,target,opponent,delayed,r);if(damage.Type==0){log.Add(target.Data.name+"의 "+delayed.Move.name+" — 타입 상성으로 무효");continue;}if(!damage.Supported){log.Add(delayed.Move.name+": 예약 위력 — 수동 판정");continue;}int amount=damage.Rolls[Math.Min(15,(int)((rng==null?0:rng())*16))];if(target.Conditions.Substitute>0){target.Conditions.Substitute=Math.Max(0,target.Conditions.Substitute-amount);log.Add(delayed.Move.name+": 대타에 "+amount+" 대미지. 남은 대타 HP "+target.Conditions.Substitute);continue;}int before=target.HP;target.HP=Math.Max(0,target.HP-amount);int actual=before-target.HP;log.Add(delayed.SourceName+"의 "+delayed.Move.name+"! "+target.Data.name+"에게 "+amount+" 대미지."+(damage.Type>1?" 효과가 굉장했다!":damage.Type<1?" 효과가 별로다.":""));if(actual>0){var source=DelayedSource(delayed);RuntimeTriggers.Damaged(target,actual,delayed.SourceName+"의 "+delayed.Move.name,log.Add);AnsweredTriggers.HpChanged(target,source,r,before,target.HP,delayed.SourceName+"의 "+delayed.Move.name,log.Add);RuntimeTriggers.Received(target,source,delayed.Move,actual,log.Add);RuntimeTriggers.AttackSucceeded(source,target,delayed.Move,log.Add);RuntimeTriggers.Hit(source,target,delayed.Move,actual,false,false,1,log.Add);}if(target.HP==0)log.Add(target.Data.name+"은 쓰러졌다!");if(onDamage!=null)onDamage(side,delayed,actual,target.HP==0);}}}
   static double DelayedAccuracy(Fighter target,DelayedAttackState delayed,Rules r){double stage=Engine.Stage(-target.EvasionStage);return Math.Min(100,(delayed.Move.accuracy<=0?100:delayed.Move.accuracy)*(r.Gravity>0?5.0/3:1)*stage/Math.Max(.0001,target.EvasionMultiplier));}
-  public static double DamageFactor(Fighter a,Fighter b,Move m,Rules r,int targetSide=-1){double v=PrivilegeRules.ContractType(b).Length>0&&m.types.Contains(PrivilegeRules.ContractType(b))?.5:1;if(r.Critical||Ability(a,"틈새포착"))return v;var field=targetSide>=0&&targetSide<2?r.Sides[targetSide]:null;if(field!=null&&(m.category=="물리"&&field.Reflect>0||m.category=="특수"&&field.LightScreen>0))v*=.5;return v;}
+  public static double DamageFactor(Fighter a,Fighter b,Move m,Rules r,int targetSide=-1){double v=PrivilegeRules.ContractType(b).Length>0&&m.types.Contains(PrivilegeRules.ContractType(b))?.5:1;if(r.Critical)return v;var field=targetSide>=0&&targetSide<2?r.Sides[targetSide]:null;if(field!=null&&(m.category=="물리"&&field.Reflect>0||m.category=="특수"&&field.LightScreen>0))v*=.5;return v;}
   static int Max(Fighter a,Fighter b,Rules r){return Engine.Stats(a,b.Data.level,r)[0];}
   public static int MaxHP(Fighter a,Fighter b,Rules r){return Max(a,b,r);}
   public static bool Contact(Move move){return move!=null&&(move.tags??new string[0]).Any(x=>x=="접촉"||x.Contains("접촉"));}
@@ -92,9 +92,9 @@ namespace AABattle {
   public static bool ChangeStage(Fighter target,Fighter other,int index,int amount,Rules r,string reason,List<string> log){return ChangeStage(target,other,index,amount,r,reason,log,false);}
   static bool ChangeStage(Fighter target,Fighter other,int index,int amount,Rules r,string reason,List<string> log,bool reflected){
    if(target==null||index<0||index>=target.Stages.Length||amount==0)return false;bool opponent=other!=null&&!Object.ReferenceEquals(target,other);int resolved=amount;
-   if(Ability(target,"심술꾸러기"))resolved=-resolved;if(Ability(target,"단순"))resolved+=Math.Sign(resolved);
+   resolved=AbilityPhrases.StageAmount(target,other,r,resolved);
    if(resolved<0&&opponent&&!BypassAbility(other)&&AbilityPhrases.BlocksDrop(target,index)){log.Add(target.Data.name+"의 「"+AbilityRuntime.Name(target)+"」: 능력이 내려가지 않는다");return false;}if(resolved<0&&opponent&&StateTicks.Mist(target,r)){log.Add(target.Data.name+": 흰안개로 능력이 내려가지 않는다");return false;}
-   if(resolved<0&&opponent&&!reflected&&!BypassAbility(other)&&Ability(target,"미러아머")){log.Add(target.Data.name+"의 「미러아머」: "+Engine.Names[index]+" 감소 반사");AnsweredTriggers.AbilityActivated(target,"미러아머",log.Add);return ChangeStage(other,target,index,resolved,r,"미러아머",log,true);}
+   if(resolved<0&&opponent&&!reflected&&AbilityPhrases.ReflectsStage(target,other,r,log))return ChangeStage(other,target,index,resolved,r,"능력 하락 반사",log,true);
    int before=target.Stages[index],after=Math.Max(-6,Math.Min(6,before+resolved));if(before==after)return false;target.Stages[index]=after;target.Conditions.StageByOpponent=opponent;StateWatch.CheckCurrent(log.Add);target.Conditions.StageByOpponent=false;log.Add(target.Data.name+": "+Engine.Names[index]+" "+(resolved>0?"+":"")+(after-before)+(reason.Length>0?" ("+reason+")":""));AnsweredTriggers.StageChanged(target,other,index,before,after,log.Add);
    return true;
   }

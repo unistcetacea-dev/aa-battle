@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace AABattle {
  // 특성 모듈(사용자 결정): 도감 문장을 같은 실행기로, 슬롯 「특성」·로그 〔특성명〕은 따로
- [TestFixture] public class AbilityModuleTests {
+ [TestFixture] public partial class AbilityModuleTests {
   static int ids;
   static Fighter F(string ability = "", string type = "노말") {
    return new Fighter(new Pokemon {

@@ -52,6 +52,13 @@ namespace AABattle {
   // ===== 수집 원문 → 구조 =====
   static bool TryParseState(string t, out TriggerSpec spec) {
    spec = null; Match m;
+   m = Regex.Match(t, @"^(?<s>자신|아군|상대)의\s*「(?<a>공격|방어|특공|특방|속도)」(?:이|가)\s*「(?<b>공격|방어|특공|특방|속도)」\s*(?:(?:보다\s*)?(?<low>이하일)|보다\s*(?<high>높을))\s*때$");
+   if (m.Success) {
+    spec = new TriggerSpec { Module = "능력치 비교", Subject = m.Groups["s"].Value,
+     Stats = new[] { Array.IndexOf(StatNames, m.Groups["a"].Value), Array.IndexOf(StatNames, m.Groups["b"].Value) },
+     Op = m.Groups["high"].Success ? "높음" : "이하" };
+    return true;
+   }
    // 빈사(쓰러졌을 때)
    m = Regex.Match(t, @"^(?:(?<s>자신|상대)(?:이|가)\s*)?(?:「빈사」\s*(?:상태)?(?:가|이)\s*(?:됐을|되었을)\s*때|쓰러졌을\s*때)$");
    if (m.Success) { spec = new TriggerSpec { Module = "상태 됨", Subject = m.Groups["s"].Success ? m.Groups["s"].Value : "자신", Names = new[] { "빈사" } }; return true; }
@@ -136,6 +143,7 @@ namespace AABattle {
   // ===== 표준 문장 =====
   static string CanonicalState(TriggerSpec s) {
    switch (s.Module) {
+    case "능력치 비교": return Of(s.Subject) + " 「" + StatNames[s.Stats[0]] + "」" + Particle(StatNames[s.Stats[0]], "이", "가") + " 「" + StatNames[s.Stats[1]] + "」" + (s.Op == "높음" ? "보다 높을 때" : " 이하일 때");
     case "상태": return Owner(s.Subject) + " " + Bracket(s.Names) + (Category(s.Names).Length > 0 ? " " + Category(s.Names) : "") + "일 때";
     case "상태 됨":
      if (s.Names.Length == 1 && s.Names[0] == "빈사") return Owner(s.Subject) + " 「빈사」 상태가 되었을 때";
@@ -192,6 +200,10 @@ namespace AABattle {
    if (owner == null || rules == null) return false;
    var target = s.Subject == "상대" ? opponent : owner;
    switch (s.Module) {
+    case "능력치 비교":
+     if (target == null || !target.OnField || target.HP <= 0) return false;
+     var other = ReferenceEquals(target, owner) ? opponent ?? target : owner;
+     return CompareStats(target, other, s, rules);
     case "상태":
      if (s.Subject == "자신과 상대") return HasState(owner, s.Names) && HasState(opponent, s.Names);
      return target != null && (s.Names.Contains("빈사") || target.HP > 0) && HasState(target, s.Names);
@@ -212,6 +224,17 @@ namespace AABattle {
      return rules.Terrain == s.Place;
    }
    return HoldsCondition(s, owner, opponent, rules);
+  }
+  // 비교 조건이 능력치 배율 자체를 바꾸어도 자기 조건을 재귀 평가하지 않는다.
+  [ThreadStatic] static HashSet<TriggerSpec> comparingStats;
+  static bool CompareStats(Fighter target, Fighter other, TriggerSpec spec, Rules rules) {
+   if (comparingStats == null) comparingStats = new HashSet<TriggerSpec>();
+   if (!comparingStats.Add(spec)) return false;
+   try {
+    int left = Engine.Effective(target, other, spec.Stats[0], rules);
+    int right = Engine.Effective(target, other, spec.Stats[1], rules);
+    return spec.Op == "높음" ? left > right : left <= right;
+   } finally { comparingStats.Remove(spec); }
   }
 
   // ===== 사건 대조 =====

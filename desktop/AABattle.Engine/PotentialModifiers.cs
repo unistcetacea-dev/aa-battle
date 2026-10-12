@@ -143,12 +143,12 @@ namespace AABattle {
 
   // 계속 성립하는 포텐셜의 표준 문장(확률·기간 없는 것)
   static readonly Dictionary<string, List<string>> sentenceCache = new Dictionary<string, List<string>>();
-  static IEnumerable<string> ContinuousSentences(Fighter owner, Fighter opponent, Rules rules, string keyword = null) {
+  static IEnumerable<string> ContinuousSentences(Fighter owner, Fighter opponent, Rules rules, string keyword = null, IEnumerable<Potential> potentials = null, bool ignoreAbilityBypass = false) {
    if (owner == null || owner.Data == null) yield break;
-   foreach (var p in (owner.Data.potentials ?? new Potential[0]).Where(x => x != null)) {
+   foreach (var p in (potentials ?? owner.Data.potentials ?? new Potential[0]).Where(x => x != null)) {
     if (keyword != null && (p.description ?? "").IndexOf(keyword, StringComparison.Ordinal) < 0) continue;   // 관련 낱말이 없으면 조건 판정 생략
     if (!Continuous(p, owner, opponent, rules ?? new Rules())) continue;
-    if (AbilityModules.Ignored(p, owner, opponent ?? PotentialQueue.OpponentOf(owner))) continue;
+    if (!ignoreAbilityBypass && AbilityModules.Ignored(p, owner, opponent ?? PotentialQueue.OpponentOf(owner))) continue;
     List<string> list;
     lock (sentenceCache) {
      if (!sentenceCache.TryGetValue(p.description ?? "", out list)) {
@@ -161,7 +161,9 @@ namespace AABattle {
     foreach (string s in list) yield return s;
    }
   }
-  public static IEnumerable<string> Sentences(Fighter owner, Fighter opponent, Rules rules, string keyword = null) { return ContinuousSentences(owner, opponent, rules, keyword); }
+  public static IEnumerable<string> Sentences(Fighter owner, Fighter opponent, Rules rules, string keyword = null, IEnumerable<Potential> potentials = null, bool ignoreAbilityBypass = false) {
+   return ContinuousSentences(owner, opponent, rules, keyword, potentials, ignoreAbilityBypass);
+  }
   // 「자신은 상대보다 먼저 행동한다」(계속) 또는 사건으로 얻은 이번 순서 우선(ConditionState.ActFirst)
   // 행동 순서 등급: 2 = 가장 먼저, 1 = 상대보다 먼저, 0 = 없음(사용자 타이밍 규칙)
   public static int FirstTier(Fighter f, Fighter opponent, Rules rules) {

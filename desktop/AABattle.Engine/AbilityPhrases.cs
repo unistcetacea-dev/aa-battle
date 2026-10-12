@@ -19,6 +19,18 @@ namespace AABattle {
   public const string MagicGuard = "자신은 공격 이외의 대미지를 받지 않는다";
   public const string HazardProof = "자신은 설치물의 영향을 받지 않는다";
   public const string Pierce = "자신의 기술은 상대의 〔방호 특성〕을 관통한다";
+  public const string ExtraStage = "자신의 능력 변화량을 1 늘린다";
+  public const string ReverseStage = "자신에 대한 능력 변화를 반대로 한다";
+  public const string ReflectStage = "상대에 의한 능력 하락을 상대에게 되돌린다";
+  public const string NoWeather = "날씨의 효과를 무효화한다";
+  public const string StatusProtectPierce = "자신의 「변화」 기술이 상대의 「방어」 기술을 관통한다";
+  public const string PoisonPierce = "자신이 거는 「독」「맹독」은 타입 면역을 관통한다";
+  public const string SuppressAbility = "상대의 〔특성〕을 무효화한다";
+  static readonly Dictionary<string, string> ContinuousRules = new Dictionary<string, string> {
+   { ExtraStage, "능력 변화량 추가" }, { ReverseStage, "능력 변화 반전" }, { ReflectStage, "능력 하락 반사" },
+   { NoWeather, "날씨 효과 무효" }, { StatusProtectPierce, "변화기술 방어 관통" },
+   { PoisonPierce, "독 타입 면역 관통" }, { SuppressAbility, "상대 특성 무효" }
+  };
   static readonly Regex DropImmune = new Regex(@"^자신은 상대에 의해 (?:(?<s>「[^」]+」)이|능력이) 내려가지 않는다$");
   static readonly Regex AddType = new Regex(@"^자신의 타입에 「(?<t>[^」]+)」를 추가한다$");
   static readonly Regex Priority = new Regex(@"^자신의 (?<c>(?:「[^」]+」)+) 기술의 우선도를 \+(?<n>\d)한다$");
@@ -134,11 +146,13 @@ namespace AABattle {
   // ===== 새 계속 효과 모듈 =====
   public static string Normalize(string text) {
    string t = Clean(text);
-   if (t == NoCritical || t == Sturdy || t == MagicGuard || t == HazardProof || t == Pierce || DropImmune.IsMatch(t) || AddType.IsMatch(t) || Priority.IsMatch(t) || WeatherDamageRule(t) || StatusPower.IsMatch(t)) return t + ".";
+   if (ContinuousRules.ContainsKey(t) || t == NoCritical || t == Sturdy || t == MagicGuard || t == HazardProof || t == Pierce || DropImmune.IsMatch(t) || AddType.IsMatch(t) || Priority.IsMatch(t) || WeatherDamageRule(t) || StatusPower.IsMatch(t)) return t + ".";
    return null;
   }
   public static string Classify(string sentence) {
    string s = Clean(sentence);
+   string module;
+   if (ContinuousRules.TryGetValue(s, out module)) return module;
    if (s == NoCritical) return "급소 무효";
    if (s == Sturdy) return "반드시 버팀";
    if (s == MagicGuard) return "간접 대미지 무효";
@@ -155,6 +169,45 @@ namespace AABattle {
    if (f == null) return new string[0];
    var rules = EffectScope.Current == null ? new Rules() : EffectScope.Current.Rules;
    return PotentialModifiers.Sentences(f, other, rules, keyword).Select(Clean);
+  }
+  static bool HasRule(Fighter owner, Fighter other, Rules rules, string text, bool global = false) {
+   return PotentialModifiers.Sentences(owner, other, rules, text, null, global).Any(x => Clean(x) == text);
+  }
+  public static int StageAmount(Fighter target, Fighter source, Rules rules, int amount) {
+   if (HasRule(target, source, rules, ReverseStage)) amount = -amount;
+   if (HasRule(target, source, rules, ExtraStage)) amount += Math.Sign(amount);
+   return amount;
+  }
+  public static bool ReflectsStage(Fighter target, Fighter source, Rules rules, List<string> log) {
+   if (!HasRule(target, source, rules, ReflectStage)) return false;
+   foreach (var p in (target.Data.potentials ?? new Potential[0]).Where(p => p != null && (p.description ?? "").Contains(ReflectStage))) {
+    if (!PotentialModifiers.Continuous(p, target, source, rules) || AbilityModules.Ignored(p, target, source)) continue;
+    log.Add(target.Data.name + (p.id == AbilityModules.Slot ? "의 〔" + AbilityRuntime.Name(target) + "〕" : "의 『" + p.name + "』") + ": 능력 하락 반사");
+    if (p.id == AbilityModules.Slot) AnsweredTriggers.AbilityActivated(target, AbilityRuntime.Name(target), log.Add);
+    break;
+   }
+   return true;
+  }
+  // 조건부 날씨 무효는 무효화 전 날씨로 조건을 판정한다.
+  [ThreadStatic] static bool checkingWeather;
+  public static bool NegatesWeather(Fighter a, Fighter b, Rules rules) {
+   if (checkingWeather) return false;
+   checkingWeather = true;
+   try { return HasRule(a, b, rules, NoWeather, true) || HasRule(b, a, rules, NoWeather, true); }
+   finally { checkingWeather = false; }
+  }
+  public static bool PiercesProtect(Fighter a, Fighter b, Move move, Rules rules) {
+   return move != null && move.category == "변화" && HasRule(a, b, rules, StatusProtectPierce);
+  }
+  public static bool PiercesStatusType(Fighter source, Fighter target, string status, Rules rules) {
+   return (status == "독" || status == "맹독") && HasRule(source, target, rules, PoisonPierce);
+  }
+  public static bool SuppressesAbilities(Fighter owner, Fighter other, bool abilityOnly = false) {
+   var rules = EffectScope.Current == null ? new Rules() : EffectScope.Current.Rules;
+   // 제거된 슬롯도 원래 문장으로 조회한다. 양쪽 판정이 끝날 때까지 상태를 바꾸지 않는다.
+   var potentials = AbilityModules.UnsuppressedPotentials(owner);
+   if (abilityOnly) potentials = potentials.Where(p => p != null && p.id == AbilityModules.Slot);
+   return PotentialModifiers.Sentences(owner, other, rules, SuppressAbility, potentials, true).Any(x => Clean(x) == SuppressAbility);
   }
   public static bool NoCrit(Fighter target, Fighter attacker) { return Lines(target, attacker, "급소").Any(x => x == NoCritical); }
   public static bool Endures(Fighter target, Fighter attacker) { return Lines(target, attacker, "버틴다").Any(x => x == Sturdy); }
