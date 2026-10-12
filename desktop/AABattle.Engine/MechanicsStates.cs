@@ -52,7 +52,11 @@ namespace AABattle {
   static int SleepDuration(Func<double> rng){return 1+Math.Min(2,(int)(Roll(rng)*3));}
   public static string SleepBlock(Fighter f,Rules r){int side=PartySide(f,r);return side>=0&&(r.Parties[side]??new Fighter[0]).Count(x=>x!=null&&x.HP>0&&x.Status=="잠듦"&&!x.Conditions.SleepFromRest)>=2?"파티 잠듦 2체 제한: 더 잠들 수 없다":"";}
   public static int PartySide(Fighter f,Rules r){if(f.FieldSide>=0)return f.FieldSide;for(int side=0;side<2;side++)if((r.Parties[side]??new Fighter[0]).Any(x=>Object.ReferenceEquals(x,f)))return side;return -1;}
-  public static void SetParties(Rules r,Fighter[] fighters,IEnumerable<Fighter>[] members=null){for(int side=0;side<2;side++){var all=members==null?r.Parties[side]:members[side];r.Parties[side]=new[]{fighters[side]}.Concat((all??Enumerable.Empty<Fighter>()).Where(x=>x!=null&&x.Data.name!=fighters[side].Data.name)).ToArray();foreach(var member in r.Parties[side])member.FieldSide=side;fighters[side].FieldOpponent=fighters[1-side];}}
+  // 같은 파티 멤버인가. 둘 다 id가 있으면 id로, 아니면 이름으로 비교한다(같은 종족 두 마리를 구분)
+  public static bool SameMember(Pokemon a,Pokemon b){if(a==null||b==null)return false;if(!string.IsNullOrEmpty(a.id)&&!string.IsNullOrEmpty(b.id))return a.id==b.id;return a.name==b.name;}
+  public static bool SameMember(Fighter a,Fighter b){return a!=null&&b!=null&&SameMember(a.Data,b.Data);}
+  public static string MemberKey(Pokemon p){return p==null?"":!string.IsNullOrEmpty(p.id)?"#"+p.id:p.name;}
+  public static void SetParties(Rules r,Fighter[] fighters,IEnumerable<Fighter>[] members=null){for(int side=0;side<2;side++){var all=members==null?r.Parties[side]:members[side];r.Parties[side]=new[]{fighters[side]}.Concat((all??Enumerable.Empty<Fighter>()).Where(x=>x!=null&&!SameMember(x,fighters[side]))).ToArray();foreach(var member in r.Parties[side])member.FieldSide=side;fighters[side].FieldOpponent=fighters[1-side];}}
   public static void ClearAttract(Fighter target,List<string> log){if(target.Conditions.AttractSide<0)return;target.Conditions.AttractSide=-1;if(log!=null)log.Add(target.Data.name+"의 헤롱헤롱이 풀렸다");}
   public static void ApplyHibernate(Fighter target,Rules r){target.Conditions.Hibernate=r.Turn+1;}
   public static bool IsRampage(Move m){return m!=null&&(m.tags??new string[0]).Contains("난동부리기");}

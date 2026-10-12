@@ -4,7 +4,7 @@ Windows C# WinForms 프로그램이다. 현재 상태는 `PROJECT_HANDOFF.md`, �
 
 ## 공동 개발
 - Claude가 설계·지시서·리뷰를, ChatGPT(Codex)가 지시서대로 구현을 맡는다. 지시서에 적힌 파일·범위만 수정하고, 범위 밖 발견은 고치지 말고 보고한다.
-- 작업마다 `main`에서 `task/<작업명>` 브랜치를 만들어 커밋·push한다. `main`에는 직접 커밋하지 않는다. 병합은 리뷰 후 Claude가 한다.
+- 작업마다 `main`에서 `task/<작업명>` 브랜치를 만들어 커밋한다. verify(UI 변경은 `-Visual` 포함)가 모두 통과하면 최신 `origin/main` 위로 rebase하고 verify를 다시 실행한 뒤 `main`에 fast-forward 병합하고 push한다. 실패하거나 판단이 필요하면 브랜치만 push하고 보고한다. Claude는 병합 뒤에 리뷰하고, 문제가 있으면 수정 지시서를 낸다.
 - 완료 보고는 이 형식으로 짧게 쓴다: 브랜치/커밋 해시 · 바꾼 파일과 이유(파일당 한 줄) · verify 결과(PASS 줄 그대로) · 지시서와 다르게 한 점 · 범위 밖 발견 사항.
 
 ## 코드
