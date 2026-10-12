@@ -59,6 +59,55 @@ namespace AABattle {
    Assert.That(Max(hunter, target, Mv("불꽃")), Is.EqualTo(Max(plain, target, Mv("불꽃"))));
   }
 
+  // ===== F4b 타입·상성(확정 30) =====
+  [Test] public void MultiTypeMoveMultipliesEachTypeAndStabOnce() {
+   var user = F("불꽃"); var grass = F("풀"); var water = F("물");
+   var both = new Move { name = "복합검사", category = "물리", types = new[] { "불꽃", "물" }, tags = new string[0], power = 80, accuracy = 100, attack = "공격", defense = "방어" };
+   Assert.That(Mechanics.TypeEffect(TestData.Db, user, grass, both, new Rules()), Is.EqualTo(1), "fire 2 x water 0.5");
+   Assert.That(Mechanics.TypeEffect(TestData.Db, user, water, both, new Rules()), Is.EqualTo(.25), "fire 0.5 x water 0.5");
+   Assert.That(Engine.Calculate(TestData.Db, user, grass, both, new Rules()).Stab, Is.EqualTo(1.5));
+  }
+
+  [Test] public void AddedTypeUsesMoreFavorableMatchupAndCountsForStab() {
+   var adder = F("비행", P(Field, "자신의 「물」기술에 「불꽃」타입을 부여해 유리한 타입으로 계산한다"));
+   var grass = F("풀"); var rock = F("바위");
+   Assert.That(Mechanics.TypeEffect(TestData.Db, adder, grass, Mv("물"), new Rules()), Is.EqualTo(2), "fire beats grass");
+   Assert.That(Mechanics.TypeEffect(TestData.Db, adder, rock, Mv("물"), new Rules()), Is.EqualTo(2), "water beats rock");
+   Assert.That(Mechanics.TypeEffect(TestData.Db, adder, grass, Mv("전기"), new Rules()), Is.EqualTo(.5), "other moves unchanged");
+   var fireUser = F("불꽃", P(Field, "자신의 「물」기술에 「불꽃」타입을 부여해 유리한 타입으로 계산한다"));
+   Assert.That(Engine.Calculate(TestData.Db, fireUser, rock, Mv("물"), new Rules()).Stab, Is.EqualTo(1.5));
+  }
+
+  [Test] public void ResistPierceKeepsImmunityAndIgnoreAllDoesNot() {
+   var water = F("물"); var ghost = F("고스트");
+   var pierce = F("노말", P(Field, "자신의 「불꽃」기술이 상대의 타입내성을 관통한다"));
+   Assert.That(Mechanics.TypeEffect(TestData.Db, pierce, water, Mv("불꽃"), new Rules()), Is.EqualTo(1));
+   var normalPierce = F("노말", P(Field, "자신의 「노말」기술이 상대의 타입내성을 관통한다"));
+   Assert.That(Mechanics.TypeEffect(TestData.Db, normalPierce, ghost, Mv("노말"), new Rules()), Is.EqualTo(0), "immunity is not resistance");
+   var ignore = F("노말", P(Field, "자신의 「노말」기술이 타입상성을 무시한다"));
+   Assert.That(Mechanics.TypeEffect(TestData.Db, ignore, ghost, Mv("노말"), new Rules()), Is.EqualTo(1));
+   var holy = F("노말", P(Field, "자신의 「노말」기술이 타입상성에 의해 무시되지 않는다"));
+   Assert.That(Mechanics.TypeEffect(TestData.Db, holy, ghost, Mv("노말"), new Rules()), Is.EqualTo(1));
+  }
+
+  [Test] public void StabMultiplierOverrideOnlyWhenTypeMatches() {
+   var user = F("불꽃", P(Field, "자신의 불꽃기술의 타입일치배율을 강화(2배)한다."));
+   var target = F();
+   Assert.That(Engine.Calculate(TestData.Db, user, target, Mv("불꽃"), new Rules()).Stab, Is.EqualTo(2));
+   var other = F("물", P(Field, "자신의 불꽃기술의 타입일치배율을 강화(2배)한다."));
+   Assert.That(Engine.Calculate(TestData.Db, other, target, Mv("불꽃"), new Rules()).Stab, Is.EqualTo(1));
+  }
+
+  [Test] public void TypeChangeFailsWhenSameAndRevertsOnLeave() {
+   var owner = F("노말", P(TriggerStructures.EntryLabel, "상대를 「고스트」 타입으로 한다")); var target = F("물");
+   Fire(owner, target, TriggerStructures.EntryLabel);
+   Assert.That(target.Data.types, Is.EqualTo(new[] { "고스트" }));
+   var log = Fire(owner, target, TriggerStructures.EntryLabel);
+   Assert.That(log.Any(x => x.Contains("이미")), Is.True, "same type change fails");
+   Mechanics.LeaveField(target);
+   Assert.That(target.Data.types, Is.EqualTo(new[] { "물" }));
+  }
+
   // ===== F2 사건 배율 =====
   [Test] public void EventMultiplierLastsUntilLeavingField() {
    var owner = F("노말", P(TriggerStructures.TurnEndLabel, "자신의 「공격」을 강화(2배)한다.")); var other = F();

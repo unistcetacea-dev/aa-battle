@@ -50,7 +50,7 @@ namespace AABattle {
    int ai=Math.Max(1,Array.IndexOf(Names,m.attack??(m.category=="물리"?"공격":"특공"))),di=Math.Max(1,Array.IndexOf(Names,m.defense??(m.category=="물리"?"방어":"특방")));
    double power=Math.Max(0,Math.Floor(m.power+active.PowerBonus)*active.PowerMultiplier);
    power*=Mechanics.PowerFactor(a,b,m,active)*AbilityRuntime.Power(a,m);
-   double normalStab=active.Stab>0?active.Stab:m.types.Any(t=>a.Data.types.Contains(t))?1.5:1,stab=AbilityRuntime.Stab(a,normalStab),type=Mechanics.TypeEffect(db,a,b,m,active);
+   double normalStab=active.Stab>0?active.Stab:TypeRules.MoveTypes(a,b,m,active).Any(t=>a.Data.types.Contains(t))?1.5:1,stab=AbilityRuntime.Stab(a,TypeRules.StabOverride(a,b,m,active,normalStab)),type=Mechanics.TypeEffect(db,a,b,m,active);
    string reason=Mechanics.Block(db,a,b,m,active);if(reason.Length>0)type=0;
    power*=PotentialModifiers.Power(a,b,m,active,type);
    int defenderSide=attackerSide>=0&&attackerSide<2?1-attackerSide:-1;double basis=Math.Floor(((2*a.Data.level+10)/250.0*Effective(a,b,ai,active,1,attackerSide)/Effective(b,a,di,active,2,defenderSide)*power+2)*stab*type*(active.Critical?2:1)*active.DamageMultiplier*Mechanics.DamageFactor(a,b,m,active,defenderSide)*AbilityRuntime.Damage(a,b,active)*PotentialModifiers.Damage(a,b,m,active,type));

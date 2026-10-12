@@ -308,6 +308,9 @@ namespace AABattle {
     string st = m.Groups["st"].Value.StartsWith("「") || m.Groups["st"].Value == "전능력치" ? m.Groups["st"].Value : "「" + m.Groups["st"].Value + "」";
     return Scalar(Subj(m.Groups["s"].Value) + "의 " + st, action, rate);
    }
+   // F4b 타입·상성
+   string typed = TypeRules.Normalize(text);
+   if (typed != null) return typed;
    // G 방호·회피·관통
    string guard = NormalizeGuard(text);
    if (guard != null) return guard;
@@ -589,6 +592,8 @@ namespace AABattle {
   }
   static string ClassifySentence(string s) {
    ScalarEffect scalar; SpeciesEffect species; FractionEffect fraction; RankEffect rank; string target;
+   string typed = TypeRules.Classify(s);
+   if (typed.Length > 0) return typed;
    if (TryScalar(s, out scalar)) return "수치 배율";
    if (TrySpecies(s, out species)) return "종족치 변경";
    if (TryFraction(s, out fraction)) return "최대 HP의 1/N";

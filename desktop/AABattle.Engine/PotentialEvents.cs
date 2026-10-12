@@ -507,6 +507,31 @@ namespace AABattle {
     PotentialExecutors.Register("먼저 행동",
      c => EffectModules.IsActFirst(c.Line),
      c => { if (c.Owner == null || c.Owner.HP <= 0) return EffectOutcome.Failed; c.Owner.Conditions.ActFirst = Math.Max(c.Owner.Conditions.ActFirst, EffectModules.ActFirstTier(c.Line)); c.Say(c.Owner.Data.name + ": 다음 행동 순서에서 상대보다 먼저 행동한다"); return EffectOutcome.Success; });
+    // F4b 포켓몬 타입 변경(확정 30): 같은 타입이면 실패, 다르면 마지막 것. 교대하면 원래 타입
+    PotentialExecutors.Register("타입 변경",
+     c => { int turns; string subject; string[] types; return Duration(c.Line, out turns) == c.Line && TypeRules.TryTypeChange(c.Line, out subject, out types); },
+     c => {
+      string subject; string[] types; TypeRules.TryTypeChange(c.Line, out subject, out types);
+      var target = Recipient(c, subject);
+      if (target == null || target.HP <= 0) return EffectOutcome.Failed;
+      var current = target.Data.types ?? new string[0];
+      if (current.Length == types.Length && current.All(types.Contains)) { c.Say(target.Data.name + ": 이미 「" + string.Join("/", types) + "」 타입이다"); return EffectOutcome.Failed; }
+      if (target.Conditions.OriginalTypes == null) target.Conditions.OriginalTypes = current.ToArray();
+      target.Data.types = types.ToArray();
+      c.Say(target.Data.name + ": 「" + string.Join("/", types) + "」 타입이 되었다 (" + c.Source.Label + ")");
+      return EffectOutcome.Success;
+     });
+    // F4b 사건으로 걸린 상성 지정·타입 내성 관통·자속 배율·유리한 상성: 수치 배율과 같은 기간 규칙
+    PotentialExecutors.Register("상성 상태",
+     c => { int turns; string k = TypeRules.Classify(Duration(c.Line, out turns)); return k.Length > 0 && k != "타입 변경"; },
+     c => {
+      int turns; string body = Duration(c.Line, out turns);
+      var owner = c.Owner; if (owner == null || owner.HP <= 0) return EffectOutcome.Failed;
+      bool action = turns == 0 && ActionEvent(c.Event);
+      PotentialModifiers.Add(owner, new ActiveModifier { Key = c.Source.Key, Text = body, Source = c.Source.Label, Turns = turns == 0 ? -1 : turns, Action = action });
+      c.Say(owner.Data.name + ": " + body + (action ? " (이번 행동)" : turns > 0 ? " (" + turns + "T)" : " (필드를 떠날 때까지)"));
+      return EffectOutcome.Success;
+     });
     // F3 상태이상 치유
     PotentialExecutors.Register("상태이상 치유",
      c => { string t; return EffectModules.TryCure(c.Line, out t); },

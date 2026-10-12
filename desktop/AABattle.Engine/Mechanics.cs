@@ -21,10 +21,19 @@ namespace AABattle {
   public static bool BypassSub(Fighter a,Move m){return Ability(a,"틈새포착")||Sound(m)||m.name=="도발"||m.name=="앙코르";}
   public static double TypeEffect(Database db,Fighter a,Fighter b,Move m,Rules r){
    if(m.types.Length==0)return 1;string weather=Weather(a,b,r);
-   return m.types.Max(t=>b.Data.types.Aggregate(1.0,(v,d)=>{double k=db.chart.ContainsKey(d)&&db.chart[d].ContainsKey(t)?db.chart[d][t]:1;
+   var p=TypeRules.For(a,b,m,r);
+   if(p.IgnoreAll)return TypeRules.Adjust(a,b,m,r,1);
+   var each=m.types.Concat(p.Added).Distinct().Select(t=>b.Data.types.Aggregate(1.0,(v,d)=>{double k=db.chart.ContainsKey(d)&&db.chart[d].ContainsKey(t)?db.chart[d][t]:1;
     if(t=="땅"&&d=="비행"&&Grounded(b,r))k=1;
     if(d=="고스트"&&(t=="노말"||t=="격투")&&Ability(a,"배짱"))k=1;
-    if(d=="비행"&&k>1&&weather=="난기류")k=1;return v*k;}));
+    if(d=="비행"&&k>1&&weather=="난기류")k=1;
+    // 포텐셜: 상성 무효 관통(0→1), 타입 내성 관통(반감→1)
+    if(k==0&&p.PierceImmune)k=1;
+    if(k>0&&k<1&&(p.PierceAll||p.PierceTypes.Contains(d)))k=1;
+    return v*k;})).ToArray();
+   // 확정 30: 복수 타입 기술은 각 타입 배율의 곱. 타입 추가·유리한 상성이면 가장 유리한 타입 하나
+   double type=p.Favorable?each.Max():each.Aggregate(1.0,(x,y)=>x*y);
+   return TypeRules.Adjust(a,b,m,r,type);
   }
   public static int Priority(Fighter a,Move m){return m.priority+(m.category=="변화"&&Ability(a,"짓궂은마음")?1:0);}
   public static int Priority(Fighter a,Move m,Fighter opponent){return Priority(a,m)+PriorityEffectRuntime.ForMove(a,opponent,null,null,null);}
