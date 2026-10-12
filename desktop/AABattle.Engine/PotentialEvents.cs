@@ -50,7 +50,7 @@ namespace AABattle {
   public string Key = "", Name = "", Slot = "", Uses = "", Activation = "", Effect = "", Description = "";
   public string[] Clauses = new string[0];
   public bool IsTrainer { get { return Trainer != null; } }
-  public string Label { get { return IsTrainer ? "TRAINER 『" + Name + "』" : "『" + Name + "』"; } }
+  public string Label { get { return IsTrainer ? "TRAINER 『" + Name + "』" : Slot == AbilityModules.Slot ? "〔" + Name + "〕" : "『" + Name + "』"; } }
   // OptionalEffectPrompt는 Potential을 받으므로 트레이너 포텐셜은 임시 Potential로 넘긴다
   public Potential AsPotential() {
    return Pokemon ?? new Potential { id = Slot, name = Name, description = Effect, activation = Activation, uses = Uses, triggers = Clauses };
@@ -336,6 +336,7 @@ namespace AABattle {
    // e. 소비(이후 효과가 실패해도 돌려주지 않는다)
    if (!declared && usage != null) usage.Use(source.Key, source.Uses);
    Say(log, head + " · 효과 적용: " + source.Effect);
+   if (source.Slot == AbilityModules.Slot && source.Owner != null) AnsweredTriggers.AbilityActivated(source.Owner, Regex.Replace(source.Name, @" \(\d+\)$", ""), x => Say(log, x));
    chainFired.Add(source.Key);
    // f. 실행. 실행 중 생긴 사건은 같은 연쇄, 깊이+1로 즉시 처리된다
    var saved = current;

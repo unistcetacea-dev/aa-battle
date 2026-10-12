@@ -15,7 +15,7 @@ namespace AABattle {
   public static string Weather(Fighter a,Fighter b,Rules r){return (a.HP>0&&Ability(a,"날씨부정","에어록"))||(b.HP>0&&Ability(b,"날씨부정","에어록"))?"없음":r.Weather;}
   public static bool Sunny(string w){return w=="쾌청"||w=="큰가뭄";}
   public static bool Rain(string w){return w=="비"||w=="강한 비";}
-  public static bool BypassAbility(Fighter a){return a!=null&&a.Conditions.PiercingAbility||Ability(a,"틀깨기","터보블레이즈","테라볼티지");}
+  public static bool BypassAbility(Fighter a){return a!=null&&(a.Conditions.PiercingAbility||AbilityPhrases.PiercesAbility(a))||Ability(a,"틀깨기","터보블레이즈","테라볼티지");}
   public static bool Sound(Move m){return (m.tags??new string[0]).Any(t=>t.Contains("소리"))||(m.effect??"").Contains("「소리」");}
   public static bool Powder(Move m){return new[]{"수면가루","독가루","저리가루","버섯포자","분노가루","분진"}.Contains(m.name);}
   public static bool BypassSub(Fighter a,Move m){return Ability(a,"틈새포착")||Sound(m)||m.name=="도발"||m.name=="앙코르";}
@@ -35,7 +35,7 @@ namespace AABattle {
    double type=p.Favorable?each.Max():each.Aggregate(1.0,(x,y)=>x*y);
    return TypeRules.Adjust(a,b,m,r,type);
   }
-  public static int Priority(Fighter a,Move m){return m.priority+(m.category=="변화"&&Ability(a,"짓궂은마음")?1:0);}
+  public static int Priority(Fighter a,Move m){return m.priority+(m.category=="변화"&&Ability(a,"짓궂은마음")?1:0)+AbilityPhrases.PriorityBonus(a,m);}
   public static int Priority(Fighter a,Move m,Fighter opponent){return Priority(a,m)+PriorityEffectRuntime.ForMove(a,opponent,null,null,null);}
   public static int Priority(Fighter a,Move m,Fighter opponent,TrainerRecord ownTrainer,TrainerRecord opponentTrainer){return Priority(a,m)+PriorityEffectRuntime.ForMove(a,opponent,ownTrainer,opponentTrainer,null);}
   public static string Block(Database db,Fighter a,Fighter b,Move m,Rules r){
@@ -94,7 +94,7 @@ namespace AABattle {
   public static int MaxHP(Fighter a,Fighter b,Rules r){return Max(a,b,r);}
   public static bool Contact(Move move){return move!=null&&(move.tags??new string[0]).Any(x=>x=="접촉"||x.Contains("접촉"));}
   public static bool SureHit(Move move){return move!=null&&(move.tags??new string[0]).Any(x=>x.Contains("필중"))||move!=null&&new[]{"손가락흔들기"}.Contains(move.name);}
-  internal static void Hurt(Fighter a,Fighter b,Rules r,int damage,string reason,List<string> log,bool indirect=true){if(a.HP<=0||indirect&&Ability(a,"매직가드"))return;int before=a.HP;int loss=Math.Min(a.HP,Math.Max(1,damage));a.HP-=loss;log.Add(a.Data.name+" — "+reason+": HP -"+loss);RuntimeTriggers.Damaged(a,loss,reason,log.Add);AnsweredTriggers.HpChanged(a,b,r,before,a.HP,reason,log.Add);if(indirect)AnsweredTriggers.IndirectDamage(a,b,loss,reason,log.Add);if(a.HP==0)log.Add(a.Data.name+"은 쓰러졌다!");}
+  internal static void Hurt(Fighter a,Fighter b,Rules r,int damage,string reason,List<string> log,bool indirect=true){if(a.HP<=0||indirect&&(Ability(a,"매직가드")||AbilityPhrases.IgnoresIndirect(a)))return;int before=a.HP;int loss=Math.Min(a.HP,Math.Max(1,damage));a.HP-=loss;log.Add(a.Data.name+" — "+reason+": HP -"+loss);RuntimeTriggers.Damaged(a,loss,reason,log.Add);AnsweredTriggers.HpChanged(a,b,r,before,a.HP,reason,log.Add);if(indirect)AnsweredTriggers.IndirectDamage(a,b,loss,reason,log.Add);if(a.HP==0)log.Add(a.Data.name+"은 쓰러졌다!");}
   // 오레마스: 「매 T종료 시의 회복」은 중복되지 않고 회복량이 가장 큰 효과 하나만 적용한다. 아쿠아링은 1/8.
   public static IEnumerable<KeyValuePair<string,int>> TurnEndHeals(Fighter a,Fighter b,Rules r,int max){var c=a.Conditions;if(r.Terrain=="그래스필드"&&Grounded(a,r))yield return new KeyValuePair<string,int>("그래스필드",Math.Max(1,max/16));if(a.Data.item=="먹다남은음식")yield return new KeyValuePair<string,int>("먹다남은음식",Math.Max(1,max/16));if(a.Data.item=="검은진흙"&&Has(a,"독"))yield return new KeyValuePair<string,int>("검은진흙",Math.Max(1,max/16));if(c.AquaRing)yield return new KeyValuePair<string,int>("아쿠아링",Math.Max(1,max/8));if(c.Ingrain)yield return new KeyValuePair<string,int>("뿌리박기",Math.Max(1,max/16));}
   public static KeyValuePair<string,int> TurnEndHeal(Fighter a,Fighter b,Rules r,int max){var all=TurnEndHeals(a,b,r,max).ToList();if(all.Count==0)return new KeyValuePair<string,int>("",0);var best=all.OrderByDescending(x=>x.Value).First();return all.Count==1?best:new KeyValuePair<string,int>(best.Key+" (중복 회복은 가장 큰 효과만)",best.Value);}
@@ -103,7 +103,7 @@ namespace AABattle {
   static bool ChangeStage(Fighter target,Fighter other,int index,int amount,Rules r,string reason,List<string> log,bool reflected){
    if(target==null||index<0||index>=target.Stages.Length||amount==0)return false;bool opponent=other!=null&&!Object.ReferenceEquals(target,other);int resolved=amount;
    if(Ability(target,"심술꾸러기"))resolved=-resolved;if(Ability(target,"단순"))resolved+=Math.Sign(resolved);
-   if(resolved<0&&opponent&&StateTicks.Mist(target,r)){log.Add(target.Data.name+": 흰안개로 능력이 내려가지 않는다");return false;}if(resolved<0&&opponent&&!BypassAbility(other)&&Ability(target,"클리어바디","하얀연기")){string ability=AbilityRuntime.Name(target);log.Add(target.Data.name+"의 「"+ability+"」: 능력 감소 무효");AnsweredTriggers.AbilityActivated(target,ability,log.Add);return false;}
+   if(resolved<0&&opponent&&!BypassAbility(other)&&AbilityPhrases.BlocksDrop(target,index)){log.Add(target.Data.name+"의 「"+AbilityRuntime.Name(target)+"」: 능력이 내려가지 않는다");return false;}if(resolved<0&&opponent&&StateTicks.Mist(target,r)){log.Add(target.Data.name+": 흰안개로 능력이 내려가지 않는다");return false;}if(resolved<0&&opponent&&!BypassAbility(other)&&Ability(target,"클리어바디","하얀연기")){string ability=AbilityRuntime.Name(target);log.Add(target.Data.name+"의 「"+ability+"」: 능력 감소 무효");AnsweredTriggers.AbilityActivated(target,ability,log.Add);return false;}
    if(resolved<0&&opponent&&!reflected&&!BypassAbility(other)&&Ability(target,"미러아머")){log.Add(target.Data.name+"의 「미러아머」: "+Engine.Names[index]+" 감소 반사");AnsweredTriggers.AbilityActivated(target,"미러아머",log.Add);return ChangeStage(other,target,index,resolved,r,"미러아머",log,true);}
    int before=target.Stages[index],after=Math.Max(-6,Math.Min(6,before+resolved));if(before==after)return false;target.Stages[index]=after;target.Conditions.StageByOpponent=opponent;StateWatch.CheckCurrent(log.Add);target.Conditions.StageByOpponent=false;log.Add(target.Data.name+": "+Engine.Names[index]+" "+(resolved>0?"+":"")+(after-before)+(reason.Length>0?" ("+reason+")":""));AnsweredTriggers.StageChanged(target,other,index,before,after,log.Add);
    if(after<before&&opponent){if(Ability(target,"오기")&&ChangeStage(target,other,1,2,r,"오기",log,true))AnsweredTriggers.AbilityActivated(target,"오기",log.Add);if(Ability(target,"승기")&&ChangeStage(target,other,3,2,r,"승기",log,true))AnsweredTriggers.AbilityActivated(target,"승기",log.Add);}return true;
@@ -176,7 +176,7 @@ namespace AABattle {
    if(b.Status=="얼음"&&m.types.Contains("불꽃")){b.Status="정상";log.Add(b.Data.name+": 불꽃 공격으로 얼음이 녹았다.");}
   }
   public static void EnterField(Database db,Fighter entering,Fighter opponent,int side,Rules r,Func<double> rng,List<string> log){StateTicks.Restore(entering,r);
-   var hazards=r.Sides[side];if(hazards==null||!hazards.Any()||entering.HP<=0)return;if(entering.Data.item=="통굽부츠"){log.Add(entering.Data.name+": 통굽부츠로 설치물의 영향을 받지 않는다.");return;}int max=Max(entering,opponent,r);
+   var hazards=r.Sides[side];if(hazards==null||!hazards.Any()||entering.HP<=0)return;if(entering.Data.item=="통굽부츠"||AbilityPhrases.IgnoresHazards(entering)){log.Add(entering.Data.name+": 통굽부츠로 설치물의 영향을 받지 않는다.");return;}int max=Max(entering,opponent,r);
    if(hazards.StealthRock){double type=Engine.Match(db,new[]{"바위"},entering.Data.types);Hurt(entering,opponent,r,(int)Math.Floor(max*type/8.0),"스텔스록",log);if(entering.HP<=0)return;}
    bool grounded=Grounded(entering,r);if(grounded&&hazards.Spikes>0){double[] rate={0,1.0/8,1.0/6,1.0/4};Hurt(entering,opponent,r,(int)Math.Floor(max*rate[Math.Min(3,hazards.Spikes)]),"압정 "+hazards.Spikes+"겹",log);if(entering.HP<=0)return;}
    if(grounded&&hazards.ToxicSpikes>0){if(Has(entering,"독")){hazards.ToxicSpikes=0;log.Add(entering.Data.name+": 독 타입이 독압정을 흡수했다.");}else if(Has(entering,"강철"))log.Add(entering.Data.name+": 강철 타입이라 독압정이 통하지 않는다.");else{var source=opponent.Copy();source.Data.ability="";ApplyStatus(entering,source,hazards.ToxicSpikes>=2?"맹독":"독",r,rng,log);}}

@@ -11,7 +11,7 @@ namespace AABattle {
  // 효과 문장 정규화와 구조 판정. 편집기 UI(EffectBuilder.cs)와 엔진이 함께 쓴다
  public static class EffectNormalizer {
   static readonly Regex Scalar=new Regex(@"(?<target>(?:자신|상대|아군)[^,.\n]*?)\s*(?:을|를|이|가)\s*(?<action>강화|약화|저하)\s*\(\s*(?<rate>[0-9]+(?:\.[0-9]+)?)\s*배\s*\)\s*(?:한다|시킨다|된다)",RegexOptions.Compiled);
-  static readonly Regex Probability=new Regex(@"^(?<label>드물게|저확률|중확률|고확률)(?:로)?\s+(?<effect>.+)$",RegexOptions.Compiled);
+  static readonly Regex Probability=new Regex(@"^(?<label>드물게|저확률|중확률|고확률|\d+할)(?:로)?\s+(?<effect>.+)$",RegexOptions.Compiled);
   const string RankTarget=@"(?<target>.+?(?:전능력치|능력치|능력|「(?:공격|방어|특공|특방|속도|속|명중|회피|C|공/특공|방/특방|공격/특공|방어/특방)」|공격|방어|특공|특방|속도|명중|회피))";
   static readonly Regex RankUp=new Regex("^"+RankTarget+@"(?:을|를|이|가)\s*(?:(?<rank>[123])\s*랭크\s*)?(?<degree>매우 크게|크게)?\s*(?:올린다|오른다|상승시킨다|상승한다)$",RegexOptions.Compiled);
   static readonly Regex RankDown=new Regex("^"+RankTarget+@"(?:을|를|이|가)\s*(?:(?<rank>[123])\s*랭크\s*)?(?<degree>매우 크게|크게)?\s*(?:내린다|떨어진다|저하한다|하락한다|저하시킨다)$",RegexOptions.Compiled);

@@ -70,6 +70,10 @@ namespace AABattle {
    // 행동 선후(교대는 행동이 아니다, 사용자 결정)
    m = Regex.Match(t, @"^(?<s>상대|자신)(?:이|가)\s*(?:자신|상대)?(?:보다)?\s*먼저\s*행동(?<v>할|했을)\s*때$");
    if (m.Success) { bool opp = m.Groups["s"].Value == "상대"; spec = m.Groups["v"].Value == "할" ? new TriggerSpec { Module = "행동 선후", Op = opp ? "상대 먼저" : "자신 먼저" } : new TriggerSpec { Module = "먼저 행동함", Opponent = opp }; return true; }
+   // 무효화(흡수 특성 등): 상대의 「X」 기술을 무효화했을 때
+   m = Regex.Match(t, @"^상대의\s*(?<c>(?:「[^」]+」)+)\s*(?:타입\s*)?(?:기술|공격)을\s*무효화했을\s*때$");
+   MoveCondition nullified;
+   if (m.Success && MoveCondition.TryParse(m.Groups["c"].Value, out nullified)) { spec = new TriggerSpec { Module = "무효화", Condition = nullified }; return true; }
    // 빗나감(명중 판정으로 빗나갔을 때)
    if (Regex.IsMatch(t, @"^(?:자신의\s*기술이|(?:명중률에\s*의해\s*)?기술이)\s*빗나갔을\s*때$")) { spec = new TriggerSpec { Module = "빗나감" }; return true; }
    // 특성 발동(확정 15: 실제로 발동한 순간)
@@ -112,6 +116,7 @@ namespace AABattle {
     case "소지품": if (s.Op == "없음") return s.Subject + (s.Subject == "상대" ? "가" : "이") + " 소지품을 가지고 있지 않을 때"; return s.Names.Length == 0 ? "자신이 소지품을 가지고 있을 때" : Of(s.Subject) + " 소지품이 「" + s.Names[0] + "」일 때";
     case "특성": return Of(s.Subject) + " 특성이 「" + s.Names[0] + "」일 때";
     case "빗나감": return "자신의 기술이 빗나갔을 때";
+    case "무효화": return "상대의 " + s.Condition.Text + " 기술을 무효화했을 때";
     case "행동 선후": return s.Op == "상대 먼저" ? "상대가 자신보다 먼저 행동할 때" : "자신이 상대보다 먼저 행동할 때";
     case "먼저 행동함": return s.Opponent ? "상대가 자신보다 먼저 행동했을 때" : "자신이 상대보다 먼저 행동했을 때";
     case "특성 발동": return s.Names.Length == 0 ? "자신의 특성이 발동했을 때" : "자신의 「" + s.Names[0] + "」 특성이 발동했을 때";
@@ -205,6 +210,7 @@ namespace AABattle {
    if (s.Module == "특성 발동") return f.Kind == "특성 발동" && f.Self && (s.Names.Length == 0 || s.Names.Contains(f.Method));
    if (s.Module == "해석당함") return f.Kind == "해석당함" && f.Self;
    if (s.Module == "빗나감") return f.Kind == "빗나감" && f.Self;
+   if (s.Module == "무효화") return f.Kind == "무효화" && f.Self && f.Move != null && s.Condition.Matches(f.Move, f.User, 1);
    if (s.Module == "먼저 행동함") return f.Kind == "먼저 행동함" && f.Self != s.Opponent;
    return false;
   }

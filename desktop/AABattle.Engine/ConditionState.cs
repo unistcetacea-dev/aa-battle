@@ -29,7 +29,8 @@ namespace AABattle {
   public string ChargeMove="",Hidden="";public bool HeldInSky;       // 모으기 중인 기술 / 숨은 곳(하늘 위·땅속…) / 프리폴로 붙잡힘
   public string ProtectMove="";public bool Enduring;public int SoloChain;  // 「방어」 상태를 만든 기술(막는 범위·반응) / 버티기 / 「별도 판정」 연속 사용 수
   public string Selected="";                                          // 이번 T에 고른 기술의 분류(물리·특수·변화, 교대면 "")
-  public bool PiercingAbility;                                        // 이번 기술이 〔방호 특성〕을 관통한다
+  public string[] AddedTypes=new string[0];                            // 특성 「타입 추가」로 붙인 타입(특성이 바뀌면 뗀다)
+  public bool PiercingAbility,Acting;                                 // 이번 기술이 〔방호 특성〕을 관통한다 / 지금 기술을 내는 중(틀깨기 판정)                                        // 이번 기술이 〔방호 특성〕을 관통한다
   public int TakenPhysical,TakenSpecial;                               // 이번 T에 상대 공격으로 받은 물리·특수 대미지(카운터·미러코트·메탈버스트)
   public bool Minimized,FocusEnergy,MagicCoat,DestinyBond,Nightmare,Grudge,Powder;public string Foresight="",Sealed="";  // 새 상태(StateEffectsMore)
   public int Yawn,MagnetRise,Telekinesis,Embargo,Stockpile;

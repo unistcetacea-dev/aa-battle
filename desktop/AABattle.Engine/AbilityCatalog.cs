@@ -23,7 +23,7 @@ namespace AABattle {
   }
   public static AbilityDefinition Find(string name){return All.FirstOrDefault(x=>x.name==name);}
   static AbilityDefinition Describe(AbilityDefinition ability){
-   var rules=RuleText.Split(ability.effect);ability.triggers=rules.triggers;ability.effects=rules.effects;string text=(ability.effect??"").Replace(" ","");bool auto=Mechanics.KnownAbilities.Contains(ability.name)||AbilityRuntime.EntryAbilities.Contains(ability.name)||AbilityRuntime.SupportedAbilities.Contains(ability.name);
+   var rules=RuleText.Split(ability.effect);ability.triggers=rules.triggers;ability.effects=rules.effects;string text=(ability.effect??"").Replace(" ","");bool auto=Mechanics.KnownAbilities.Contains(ability.name)||AbilityRuntime.EntryAbilities.Contains(ability.name)||AbilityRuntime.SupportedAbilities.Contains(ability.name)||AbilityModules.Runnable(ability);
    if(auto){ability.support="자동";return ability;}
    ability.support="수동";
    if(text.Contains("더블배틀")||text.Contains("인접")||text.Contains("아군전체"))ability.blocker="다인전 대상/범위 엔진 필요";

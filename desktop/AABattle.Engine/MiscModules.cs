@@ -102,6 +102,7 @@ namespace AABattle {
    var c = target.Conditions;
    if (c.AbilityBefore == null) c.AbilityBefore = AbilityRuntime.Name(target);
    target.CurrentAbility = ability; target.AbilityChanged = true;
+   AbilityModules.Sync(target);
    c.AbilityTurns = turns;
    if (log != null) log.Add(target.Data.name + ": 특성이 「" + ability + "」" + EffectModules.Ro(ability) + " 바뀌었다 (" + source + ")");
   }
@@ -110,6 +111,7 @@ namespace AABattle {
    if (c.AbilityBefore == null) return;
    target.CurrentAbility = c.AbilityBefore; target.AbilityChanged = c.AbilityBefore != (target.Data.ability ?? "");
    c.AbilityBefore = null; c.AbilityTurns = 0;
+   AbilityModules.Sync(target);
    if (log != null) log.Add(target.Data.name + ": 특성이 「" + AbilityRuntime.Name(target) + "」" + EffectModules.Ro(AbilityRuntime.Name(target)) + " 돌아왔다");
   }
   public static void TickAbility(Fighter f, List<string> log) {

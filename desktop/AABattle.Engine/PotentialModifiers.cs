@@ -148,6 +148,7 @@ namespace AABattle {
    foreach (var p in (owner.Data.potentials ?? new Potential[0]).Where(x => x != null)) {
     if (keyword != null && (p.description ?? "").IndexOf(keyword, StringComparison.Ordinal) < 0) continue;   // 관련 낱말이 없으면 조건 판정 생략
     if (!Continuous(p, owner, opponent, rules ?? new Rules())) continue;
+    if (AbilityModules.Ignored(p, owner, opponent ?? PotentialQueue.OpponentOf(owner))) continue;
     List<string> list;
     lock (sentenceCache) {
      if (!sentenceCache.TryGetValue(p.description ?? "", out list)) {

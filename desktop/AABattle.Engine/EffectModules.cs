@@ -253,6 +253,8 @@ namespace AABattle {
    // 「상대 기술의」처럼 조사가 빠진 주어
    string moveModule = MoveModules.Normalize(text);
    if (moveModule != null) return moveModule;
+   string abilityModule = AbilityPhrases.Normalize(text);
+   if (abilityModule != null) return abilityModule;
    text = Regex.Replace(text, @"^(자신|상대)\s+(?=기술의|「)", "$1의 ");
    // 「X」의 위력/대미지(괄호 하나가 기술 조건)
    m = Regex.Match(text, "^" + Subject + @"의\s*(?<c>「[^」]+」|공격|물리기술|특수기술)의\s*(?<k>위력|대미지|데미지)(?:을|를|이)\s*(?<v>.+)$");
@@ -606,6 +608,8 @@ namespace AABattle {
    if (SecondaryEffects.IsModule(s)) return "추가효과 부여";
    string moveKind = MoveModules.Classify(s);
    if (moveKind.Length > 0) return moveKind;
+   string abilityKind = AbilityPhrases.Classify(s);
+   if (abilityKind.Length > 0) return abilityKind;
    string miscKind = MiscModules.Classify(s);
    if (miscKind.Length > 0) return miscKind;
    string cureTarget; string[] cureNames; bool cureRelease;

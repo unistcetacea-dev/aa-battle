@@ -12,13 +12,13 @@ namespace AABattle {
 
   public static string Name(Fighter fighter){return fighter==null?"":fighter.AbilityChanged?fighter.CurrentAbility??"":fighter.Data==null?"":fighter.Data.ability??"";}
   public static bool Has(Fighter fighter,string name){return fighter!=null&&fighter.OnField&&Name(fighter)==name&&(!fighter.AbilitySuppressed||name=="화학변화가스");}
-  public static void Reset(Fighter fighter){if(fighter==null)return;fighter.OriginalAbility=fighter.Data==null?"":fighter.Data.ability??"";fighter.CurrentAbility=fighter.OriginalAbility;fighter.AbilityChanged=false;fighter.AbilitySuppressed=false;}
+  public static void Reset(Fighter fighter){if(fighter==null)return;fighter.OriginalAbility=fighter.Data==null?"":fighter.Data.ability??"";fighter.CurrentAbility=fighter.OriginalAbility;fighter.AbilityChanged=false;fighter.AbilitySuppressed=false;AbilityModules.Sync(fighter);}
   // 특성 교체·복사는 등장으로 보지 않으므로 여기서는 이름만 바꾼다.
-  public static void SetCurrent(Fighter fighter,string ability){if(fighter!=null){fighter.CurrentAbility=ability??"";fighter.AbilityChanged=true;}}
+  public static void SetCurrent(Fighter fighter,string ability){if(fighter!=null){fighter.CurrentAbility=ability??"";fighter.AbilityChanged=true;AbilityModules.Sync(fighter);}}
 
   public static void RefreshSuppression(Fighter[] fighters,Action<string> log){
    if(fighters==null||fighters.Length!=2)return;bool[] gas={Gas(fighters[0]),Gas(fighters[1])};
-   for(int i=0;i<2;i++){var f=fighters[i];if(f==null)continue;bool next=gas[1-i]&&Name(f)!="화학변화가스";if(f.AbilitySuppressed==next)continue;f.AbilitySuppressed=next;if(log!=null)log(f.Data.name+": 특성 「"+Name(f)+"」 "+(next?"무효화":"상시 효과 재개"));}
+   for(int i=0;i<2;i++){var f=fighters[i];if(f==null)continue;bool next=gas[1-i]&&Name(f)!="화학변화가스";if(f.AbilitySuppressed==next)continue;f.AbilitySuppressed=next;AbilityModules.Sync(f);if(log!=null)log(f.Data.name+": 특성 「"+Name(f)+"」 "+(next?"무효화":"상시 효과 재개"));}
   }
   static bool Gas(Fighter fighter){return fighter!=null&&fighter.OnField&&fighter.HP>0&&Name(fighter)=="화학변화가스";}
   static bool ChangeStage(Fighter target,Fighter other,int index,int amount,Rules rules,string reason,Action<string> log){var lines=new List<string>();bool changed=Mechanics.ChangeStage(target,other,index,amount,rules,reason,lines);foreach(string line in lines)log(line);return changed;}

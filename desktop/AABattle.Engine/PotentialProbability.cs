@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace AABattle {
  public static class PotentialProbability {
-  public static double? Rate(string text){string value=text??"";if(value.Contains("드물게"))return .10;if(value.Contains("저확률"))return .20;if(value.Contains("중확률"))return .50;return null;}
+  public static double? Rate(string text){string value=text??"";if(value.Contains("드물게"))return .10;if(value.Contains("저확률"))return .20;if(value.Contains("중확률"))return .50;var tenths=System.Text.RegularExpressions.Regex.Match(value,@"(\d+)할");if(tenths.Success)return Math.Min(1,int.Parse(tenths.Groups[1].Value)/10.0);return null;}
   public static bool[] Resolve(string[] effects,Func<double> rng){
    effects=effects??new string[0];rng=rng??new Random().NextDouble;var rates=effects.Select(Rate).ToArray();var result=rates.Select(x=>x.HasValue&&rng()<x.Value).ToArray();var medium=Enumerable.Range(0,effects.Length).Where(i=>rates[i]==.50).ToArray();
    if(medium.Length>=2&&!medium.Any(i=>result[i])){int selected=medium[Math.Min(medium.Length-1,(int)(rng()*medium.Length))];result[selected]=true;}
