@@ -327,3 +327,13 @@ Codex 공유 링크는 특정 시점의 읽기 전용 대화 스냅샷이다. �
 - 사용자 결정: 기술 도우미는 1대1 사용자 자신에게 부여하고 T종료 해제하는 현행 유지. 같은 종족 파티 멤버가 이름 중복으로 합쳐지는 문제는 보류하며 이번에 고치지 않았다.
 - 근거: 사용자 지시서 A와 [Showdown gen5 slp](https://github.com/smogon/pokemon-showdown/blob/master/data/mods/gen5/conditions.ts)의 시작값 리셋. 일반 잠듦 1~3회·깨는 턴 행동·잠자기 예외를 사용자 결정으로 AGENTS.md에도 기록했다.
 - 검증: `./desktop/verify.ps1 -Visual -OutputPath outputs/candidate` 통과(기계 회귀 269건). 일반 수면 난수 양끝/시작값 복제/깨는 행동, 잠자기 2회 후 행동·2체 예외·집계 제외·면역 유지, 퇴장 시작값 복원·잠자기 이력 유지·대기 재정리, 태그 6개·대격분 자동 행동과 편집기 실제 적용을 검사했다. `gen5-sleep.png`에서 99 입력이 최대 3으로 제한됨을, `gen5-conditions.png`와 `gen5-automatic-list.png`에서 자동 기술 6개의 실제 선택 표시를 확인했다.
+
+## 2026-10-12 지시서 B / 앙코르 상태
+- `origin/main`의 cd32a7a에서 `task/state-encore`를 만들었다. cherry-pick 없이 지시서 B의 7개 파일만 수정했다.
+- ConditionState의 EncoreTurns/EncoreMove는 복제·앙코르 기술명 nT 라벨·편집기·퇴장 정리에 연결했다. 기술과 독립된 ApplyEncore/ApplyActionState 공용 부여 경로를 사용한다. 기본 3T이며 매 T종료에 감소하고 0이면 종료 로그와 함께 기술명도 지운다.
+- 공용 부여는 마지막 기술 없음, 앙코르/발버둥/흉내내기·따라하기·흉내쟁이·스케치·변신 계열, 이미 앙코르 중, 기억하지 않는 기술을 사유 로그로 거부한다. 편집기도 같은 검사를 사용하므로 선택 기술은 직전 기술과 일치해야 하며, 기존 앙코르의 남은 T는 편집할 수 있다.
+- ActionMove에서 난동부리기 → 앙코르 → 망각의 발버둥 순으로 선택한다. 난동 중에는 앙코르의 다른 기술 금지를 실행 판정에 적용하지 않아 난동 자동 행동이 우선한다. 난동이 끝나면 남은 앙코르가 적용된다. 아직 행동하지 않은 대상은 자신의 행동 직전에 ActionMove를 다시 호출해 같은 T에도 지정 기술로 바뀐다. 이미 정한 행동 순서는 재정렬하지 않는다.
+- EncoreMove가 사슬묶기·침묵·트집·도발·망각 등으로 사용 불가가 되거나 기억 기술에서 빠지면 RefreshEncore가 해제 로그를 남긴다. 행동 전/턴 종료 전/UI 갱신에 공통 검사를 사용한다. 교대·4식·지령은 막지 않고 다른 기술 버튼만 MoveBlock 사유 「앙코르」로 잠근다. 기술 앙코르는 상대 대상이며 대타를 관통한다.
+- 검증: `./desktop/verify.ps1 -Visual -OutputPath outputs/candidate` 통과(기계 회귀 292건). 부여 실패·복제·기술 제한·같은 T 행동 변경·3T 만료·퇴장·봉인/기억 상실 해제·난동 우선·공용 직접 부여·대타 관통·편집기 실제 적용·기술 버튼/지시 버튼·통상교대를 검사했다. `encore-conditions.png`와 `encore-moves.png`에서 상태 입력과 제한 사유를 확인했다.
+- 기준: [Showdown gen5 moves](https://github.com/smogon/pokemon-showdown/blob/master/data/mods/gen5/moves.ts)와 [상속되는 Encore 구현](https://github.com/smogon/pokemon-showdown/blob/master/data/moves.ts#L4725). gen5/gen6에는 encore 재정의가 없어 기본 구현의 부여·행동 대체·제한을 확인했다. 지속은 사용자 지시대로 부여한 T종료부터 매번 감소하는 3T로 처리하며 행동 후 부여에 1T를 더하지 않는다. PP가 없는 현재 엔진에는 PP 소진 판정을 추가하지 않았다.
+- 범위 밖: 포텐셜 효과 문장 자동 연결과 더블배틀 대상 처리, 기존 같은 종족 이름 중복 문제는 변경하지 않았다.
