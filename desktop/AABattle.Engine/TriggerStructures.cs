@@ -110,7 +110,9 @@ namespace AABattle {
     var clauses=Clauses(potential).ToList();string condition,effect;PotentialLibrary.Split(potential.description??"",out condition,out effect);
      if(!clauses.Any(x=>Normalize(x)==label))continue;
      bool extra=clauses.Any(x=>Normalize(x)!=label);
-     var applied=extra?new List<string>():RunEffect(fighter,potential.name,effect);
+     // F1 효과 큐(사용 제한·확률 묶음·선택 확인) 전까지는 사용 제한이 없고 자동 발동인 포텐셜만 실행한다
+     bool queued=!string.IsNullOrWhiteSpace(potential.uses)||!string.IsNullOrWhiteSpace(potential.activation)&&potential.activation.Trim()!="자동";
+     var applied=extra||queued?new List<string>():RunEffect(fighter,potential.name,effect);
      log("『"+potential.name+"』 "+label+" 트리거 충족"+(extra?" · 추가 조건 확인 필요":"")+(applied.Count>0?" · 효과 적용: ":" · 효과 판정 대기: ")+effect);
      foreach(string line in applied)log(line);
    }
