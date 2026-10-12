@@ -15,7 +15,7 @@ namespace AABattle {
   public static string Weather(Fighter a,Fighter b,Rules r){return (a.HP>0&&Ability(a,"날씨부정","에어록"))||(b.HP>0&&Ability(b,"날씨부정","에어록"))?"없음":r.Weather;}
   public static bool Sunny(string w){return w=="쾌청"||w=="큰가뭄";}
   public static bool Rain(string w){return w=="비"||w=="강한 비";}
-  public static bool BypassAbility(Fighter a){return Ability(a,"틀깨기","터보블레이즈","테라볼티지");}
+  public static bool BypassAbility(Fighter a){return a!=null&&a.Conditions.PiercingAbility||Ability(a,"틀깨기","터보블레이즈","테라볼티지");}
   public static bool Sound(Move m){return (m.tags??new string[0]).Any(t=>t.Contains("소리"))||(m.effect??"").Contains("「소리」");}
   public static bool Powder(Move m){return new[]{"수면가루","독가루","저리가루","버섯포자","분노가루","분진"}.Contains(m.name);}
   public static bool BypassSub(Fighter a,Move m){return Ability(a,"틈새포착")||Sound(m)||m.name=="도발"||m.name=="앙코르";}
@@ -79,7 +79,7 @@ namespace AABattle {
   public static bool ApplyStatus(Fighter target,Fighter source,string status,Rules r,Func<double> rng,List<string> log,bool fromRest=false,bool ignoreImmunity=false){string reason=!ignoreImmunity?StatusBlock(target,source,status,r,fromRest):target.Status!="정상"?"이미 상태이상이 있다.":status=="잠듦"?SleepBlock(target,r):"";if(reason.Length>0){log.Add(target.Data.name+" — "+reason);return false;}target.Status=status;target.Conditions.ToxicStage=1;if(status=="잠듦"){target.Conditions.SleepTurns=fromRest?2:SleepDuration(rng);target.Conditions.SleepStart=target.Conditions.SleepTurns;target.Conditions.SleepFromRest=fromRest;}log.Add(target.Data.name+": "+status);return true;}
   public static double StatFactor(Fighter a,Fighter b,int index,Rules r,int side=-1){double v=1;string w=Weather(a,b,r);if(index==5){if(a.Status=="마비")v*=.5;if(side>=0&&side<2&&r.Sides[side].Tailwind>0)v*=2;if(Rain(w)&&Ability(a,"쓱쓱")||Sunny(w)&&Ability(a,"엽록소")||w=="모래바람"&&Ability(a,"모래헤치기")||(w=="눈"||w=="싸라기눈")&&Ability(a,"눈치우기"))v*=2;}if(index==1&&a.Status!="정상"&&Ability(a,"근성"))v*=1.5;if(index==4&&w=="모래바람"&&Has(a,"바위"))v*=1.5;if(index==2&&w=="눈"&&Has(a,"얼음"))v*=1.5;return v;}
   public static double PowerFactor(Fighter a,Fighter b,Move m,Rules r){double v=1;string w=Weather(a,b,r);if(a.Status=="화상"&&m.category=="물리"&&!Ability(a,"근성")&&m.name!="객기")v*=.5;if(a.Status=="동상"&&m.category=="특수")v*=.5;bool umbrella=(Sunny(w)||Rain(w))&&(MiscModules.IgnoresWeather(a,w,r)||MiscModules.IgnoresWeather(b,w,r));if(!umbrella&&Sunny(w))v*=m.types.Contains("불꽃")?1.5:m.types.Contains("물")?.5:1;if(!umbrella&&Rain(w))v*=m.types.Contains("물")?1.5:m.types.Contains("불꽃")?.5:1;
-   if(IsRollout(m)&&a.Conditions.RolloutMove==m.name)v*=Math.Pow(2,Math.Max(0,Math.Min(4,a.Conditions.RolloutCount)));v*=ChargePower(a,m);v*=MoveModules.PowerFactor(a,b,m,r);if(a.Conditions.HelpingHand)v*=1.5;if(a.Conditions.Curled&&new[]{"구르기","아이스볼"}.Contains(m.name))v*=2;
+   if(IsRollout(m)&&a.Conditions.RolloutMove==m.name)v*=Math.Pow(2,Math.Max(0,Math.Min(4,a.Conditions.RolloutCount)));v*=ChargePower(a,m);v*=MoveModules.PowerFactor(a,b,m,r);if(a.Conditions.HelpingHand)v*=1.5;
    if(m.name=="객기"&&new[]{"화상","독","맹독","마비"}.Contains(a.Status))v*=2;
    string type=r.Terrain=="그래스필드"?"풀":r.Terrain=="일렉트릭필드"?"전기":r.Terrain=="사이코필드"?"에스퍼":r.SheetTerrain&&r.Terrain=="미스트필드"?"페어리":"";
    if(Grounded(a,r)&&m.types.Contains(type))v*=r.SheetTerrain?1.5:1.3;if(r.Terrain=="미스트필드"&&Grounded(b,r)&&m.types.Contains("드래곤"))v*=.5;if(r.Terrain=="그래스필드"&&Grounded(b,r)&&new[]{"지진","땅고르기","매그니튜드"}.Contains(m.name))v*=.5;if(a.Conditions.FlashFire&&m.types.Contains("불꽃"))v*=1.5;return v;}

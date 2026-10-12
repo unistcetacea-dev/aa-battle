@@ -146,5 +146,29 @@ namespace AABattle {
    Assert.That(Mechanics.TypeEffect(TestData.Db, F(), F("고스트"), M("성스러운노래"), new Rules()), Is.EqualTo(2));
    Assert.That(Mechanics.TypeEffect(TestData.Db, F(), F("고스트"), M("미라클펀치"), new Rules()), Is.EqualTo(1));
   }
+
+  // 고정 대미지: 현재 HP 1/2 · 20 · 최대 HP 1/3 · 받은 물리 대미지 2배
+  [Test] public void FixedDamageMoves() {
+   var b = F(); b.HP = 100;
+   Assert.That(Max(F(), b, M("분노의앞니")), Is.EqualTo(50));
+   Assert.That(Max(F(), F(), M("소닉붐")), Is.EqualTo(20));
+   var target = F(); Assert.That(Max(F(), target, M("지구던지기")), Is.EqualTo(Mechanics.MaxHP(target, F(), new Rules()) / 3));
+   Assert.That(Max(F(), F("고스트"), M("소닉붐")), Is.EqualTo(0), "무효는 따른다");
+   var slow = F(); slow.Data.@base[5] = 50;
+   var t = Turn(slow, F(), M("카운터"), M("몸통박치기"));
+   int taken = Mechanics.MaxHP(t.Fighters[0], t.Fighters[1], new Rules()) - t.Fighters[0].HP;
+   Assert.That(Mechanics.MaxHP(t.Fighters[1], t.Fighters[0], new Rules()) - t.Fighters[1].HP, Is.EqualTo(taken * 2), Log(t));
+  }
+
+  // 벽 깨기 · 방호 특성 관통 · 능력 변화 초기화
+  [Test] public void ScreensAbilitiesAndStageReset() {
+   var r = new Rules(); r.Sides[1].Reflect = 5;
+   var t = Turn(F(), F(), M("깨트리기"), Idle(), .5, r);
+   Assert.That(t.Rules.Sides[1].Reflect, Is.EqualTo(0), Log(t));
+   Assert.That(MoveModules.PiercesAbility(M("대지진")), Is.True);
+   var boosted = F(); boosted.Stages[1] = 2;
+   var s = Turn(F(), boosted, M("클리어스모그"), Idle());
+   Assert.That(s.Fighters[1].Stages[1], Is.EqualTo(0), Log(s));
+  }
  }
 }

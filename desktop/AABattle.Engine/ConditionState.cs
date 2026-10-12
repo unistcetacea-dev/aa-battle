@@ -29,6 +29,8 @@ namespace AABattle {
   public string ChargeMove="",Hidden="";public bool HeldInSky;       // 모으기 중인 기술 / 숨은 곳(하늘 위·땅속…) / 프리폴로 붙잡힘
   public string ProtectMove="";public bool Enduring;public int SoloChain;  // 「방어」 상태를 만든 기술(막는 범위·반응) / 버티기 / 「별도 판정」 연속 사용 수
   public string Selected="";                                          // 이번 T에 고른 기술의 분류(물리·특수·변화, 교대면 "")
+  public bool PiercingAbility;                                        // 이번 기술이 〔방호 특성〕을 관통한다
+  public int TakenPhysical,TakenSpecial;                               // 이번 T에 상대 공격으로 받은 물리·특수 대미지(카운터·미러코트·메탈버스트)
   public int MeanLookTurns;                                            // 검은눈빛 남은 T(0 = 장소를 떠날 때까지)
   public int BindDivisor;                                              // 조이기 대미지 분모(0 = 8)
   public string RepeatMove="";public int RepeatCount;                  // 같은 기술 연속 사용(메트로놈)

@@ -39,6 +39,8 @@ namespace AABattle {
   const string RestoreDrops = "자신의 내려간 능력을 원래대로 되돌린다";
   const string GiveItem = "자신의 소지품을 상대에게 옮긴다";
   public const string ClearField = "전체 필드의 특수한 상태를 해제한다";
+  static readonly Regex Screens = new Regex(@"^(?<s>자진|적진)의 「벽」을 해제한다$");
+  static readonly Regex ResetStages = new Regex(@"^(?<s>상대|자신|전원)의 능력 변화를 초기화한다$");
 
   // 숨는 곳 → 닿는 기술(값은 위력 배율)
   static readonly Dictionary<string, Dictionary<string, double>> Reach = new Dictionary<string, Dictionary<string, double>> {
@@ -67,7 +69,9 @@ namespace AABattle {
    if (t.Length == 0) return null;
    Match m;
    if (DrainBoost.IsMatch(t) || BindTurns.IsMatch(t) || BindDamage.IsMatch(t) || Repeat.IsMatch(t) || NextPriority.IsMatch(t)) return t + ".";
-   if (t == SkipCharge || t == ContactGuard || t == RestoreDrops || t == GiveItem || t == ClearField) return t + ".";
+   if (t == SkipCharge || t == ContactGuard || t == RestoreDrops || t == GiveItem || t == ClearField || Screens.IsMatch(t) || ResetStages.IsMatch(t)) return t + ".";
+   m = Regex.Match(t, @"^(?<s>상대|자신|필드의 전원)의 「능력변화」를 「초기화」한다$");
+   if (m.Success) return (m.Groups["s"].Value == "필드의 전원" ? "전원" : m.Groups["s"].Value) + "의 능력 변화를 초기화한다.";
    // 수집 원문(아바돈 소지품)
    m = Regex.Match(t, @"^체력을\s*흡수하는\s*기술의\s*회복량이\s*(?<p>\d+)\s*%\s*증가한다$");
    if (m.Success) return "자신의 「드레인」 기술의 회복량을 " + (1 + int.Parse(m.Groups["p"].Value) / 100.0).ToString("0.##") + "배로 한다.";
@@ -96,6 +100,8 @@ namespace AABattle {
    if (s == RestoreDrops) return "능력 하락 복구";
    if (s == GiveItem) return "소지품 이동";
    if (s == ClearField) return "장 해제";
+   if (Screens.IsMatch(s)) return "벽 해제";
+   if (ResetStages.IsMatch(s)) return "능력 변화 초기화";
    return "";
   }
 
@@ -191,6 +197,19 @@ namespace AABattle {
     var x = Regex.Match(part, @"^상대가 「(?<s>[^」]+)」\s*(?:상태|도중|중)?일 때\s*,\s*위력이 강화\((?<n>\d+(?:\.\d+)?)배\)된다$");
     if (x.Success && InState(b, x.Groups["s"].Value)) v *= double.Parse(x.Groups["n"].Value);
    }
+   // 자신·이번 T 조건
+   foreach (string part in Parts(m)) {
+    var x = Regex.Match(part, @"^(?<c>.+?)\s*,\s*위력이 강화\((?<n>\d+(?:\.\d+)?)배\)된다$");
+    if (!x.Success) continue;
+    string c = x.Groups["c"].Value; bool holds = false;
+    var y = Regex.Match(c, @"^(?:자신이 )?「(?<s>[^」]+)」 상태일 때$");
+    if (c == "상대보다 먼저 내보낼 때") holds = b != null && b.Conditions.ActionOrder == 0;
+    else if (c == "기술을 내보내기 전에 상대의 공격을 받으면") holds = (a.Conditions.TurnFacts ?? new List<TriggerFact>()).Any(f => f.Kind == "명중" && f.Received && f.Move != null && f.Move.category != "변화");
+    else if (c == "자신의 HP가 「가득」일 때") holds = r != null && a.HP >= Mechanics.MaxHP(a, b ?? a, r);
+    else if (c == "상대가 「방어」 기술을 내보내고 있으면") holds = b != null && b.Conditions.Protect;
+    else if (y.Success) holds = InState(a, y.Groups["s"].Value);
+    if (holds) v *= double.Parse(x.Groups["n"].Value);
+   }
    // 「전체 필드가 「X」 상태일 때, 위력이 강화(N배)된다」
    foreach (string part in Parts(m)) {
     var x = Regex.Match(part, @"^전체 필드가 「(?<s>[^」]+)」 상태일 때\s*,\s*위력이 강화\((?<n>\d+(?:\.\d+)?)배\)된다$");
@@ -228,6 +247,37 @@ namespace AABattle {
   static bool InState(Fighter f, string name) {
    if (f == null) return false;
    return f.Status == name || name == "상태이상" && f.Status != "정상" || f.Conditions.Hidden == name || Mechanics.HasCondition(f, name);
+  }
+
+  // ===== 방호 특성 관통 · 벽 깨기 · 고정 대미지 =====
+  public static bool PiercesAbility(Move m) { return m != null && (Plain(m).Contains("〔방호 특성〕을 관통한다") || Tagged(m, "특성관통")); }
+  // 「적진의 「벽」을 해제한 후 기술을 내보낸다」: 첫 타 전에
+  public static void BreakScreens(Fighter a, Fighter b, Move m, Rules r, int side, List<string> log) {
+   if (m == null || !Plain(m).Contains("적진의 「벽」을 해제한 후 기술을 내보낸다")) return;
+   var target = r.Sides[1 - Math.Max(0, Math.Min(1, side))];
+   if (target.Reflect == 0 && target.LightScreen == 0) return;
+   target.Reflect = target.LightScreen = 0;
+   log.Add(m.name + ": 상대 진영의 벽을 깨뜨렸다");
+  }
+  // 고정 대미지(타입 상성은 무효만 따른다). 16개 난수 자리, 고정 대미지 기술이 아니면 null
+  public static int[] FixedRolls(Fighter a, Fighter b, Move m, Rules r) {
+   if (a == null || b == null || m == null || m.category == "변화") return null;
+   foreach (string part in Parts(m)) {
+    Match x;
+    int value = -1;
+    if ((x = Regex.Match(part, @"^상대에게 현재 HP의 1/(?<n>\d+)만큼 고정 대미지를 준다$")).Success) value = Math.Max(1, b.HP / int.Parse(x.Groups["n"].Value));
+    else if ((x = Regex.Match(part, @"^상대에게 HP의 1/(?<n>\d+)만큼 고정 대미지를 준다$")).Success) value = Math.Max(1, Mechanics.MaxHP(b, a, r) / int.Parse(x.Groups["n"].Value));
+    else if ((x = Regex.Match(part, @"^상대에게 (?<n>\d+)만큼 고정 대미지를 준다$")).Success) value = int.Parse(x.Groups["n"].Value);
+    else if (Regex.IsMatch(part, @"상대에게 자신의 남은 HP만큼 고정 대미지를 준다$")) value = a.HP;
+    else if ((x = Regex.Match(part, @"^상대로부터 받은 (?:「(?<c>물리|특수)」 )?대미지의 (?<n>\d+(?:\.\d+)?)배만큼 고정 대미지를 준다$")).Success) {
+     int taken = x.Groups["c"].Value == "물리" ? a.Conditions.TakenPhysical : x.Groups["c"].Value == "특수" ? a.Conditions.TakenSpecial : a.Conditions.TakenPhysical + a.Conditions.TakenSpecial;
+     value = (int)Math.Floor(taken * double.Parse(x.Groups["n"].Value));
+    }
+    else if (part == "자신의 레벨의 0.5~1.5배 사이의 고정 대미지를 준다" || part == "자신의 레벨의 0.5～1.5배 사이의 고정 대미지를 준다")
+     return Enumerable.Range(0, 16).Select(i => Math.Max(1, (int)Math.Floor(a.Data.level * (50 + i * 100 / 15.0) / 100))).ToArray();
+    if (value >= 0) return Enumerable.Repeat(value, 16).ToArray();
+   }
+   return null;
   }
 
   // ===== 대미지 계산 문장 =====
@@ -305,6 +355,7 @@ namespace AABattle {
   public static bool Reaches(Fighter a, Fighter b, Move m, int side) {
    if (b == null || string.IsNullOrEmpty(b.Conditions.Hidden)) return true;
    if (Mechanics.Ability(a, "노가드") || Mechanics.Ability(b, "노가드") || side >= 0 && b.Conditions.MindReaderSide == side) return true;
+   if (Plain(m).Contains("「" + b.Conditions.Hidden + "」 상태인 상대에게도 명중한다")) return true;
    Dictionary<string, double> reach;
    return Reach.TryGetValue(b.Conditions.Hidden, out reach) && reach.ContainsKey(m.name);
   }
@@ -372,6 +423,30 @@ namespace AABattle {
      }
      r.Terrain = "없음"; r.TerrainTurns = 0; r.Gravity = 0; r.TrickRoom = 0;
      c.Say(any ? "전체 필드의 특수한 상태가 사라졌다 (" + c.Source.Name + ")" : "해제할 특수한 상태가 없다");
+     return any ? EffectOutcome.Success : EffectOutcome.Failed;
+    });
+   PotentialExecutors.Register("벽 해제",
+    c => Screens.IsMatch(Clean(c.Line)),
+    c => {
+     var r = c.Rules ?? new Rules();
+     int own = Mechanics.PartySide(c.Owner, r); if (own < 0) own = 0;
+     int side = Screens.Match(Clean(c.Line)).Groups["s"].Value == "자진" ? own : 1 - own;
+     if (r.Sides[side].Reflect == 0 && r.Sides[side].LightScreen == 0) return EffectOutcome.Failed;
+     r.Sides[side].Reflect = r.Sides[side].LightScreen = 0;
+     c.Say((side + 1) + "팀 진영의 벽이 사라졌다 (" + c.Source.Name + ")");
+     return EffectOutcome.Success;
+    });
+   PotentialExecutors.Register("능력 변화 초기화",
+    c => ResetStages.IsMatch(Clean(c.Line)),
+    c => {
+     string who = ResetStages.Match(Clean(c.Line)).Groups["s"].Value;
+     var targets = who == "전원" ? new[] { c.Owner, c.Opponent } : new[] { who == "상대" ? c.Opponent : c.Owner };
+     bool any = false;
+     foreach (var f in targets.Where(x => x != null && x.HP > 0)) {
+      if (f.Stages.Skip(1).All(x => x == 0) && f.AccuracyStage == 0 && f.EvasionStage == 0) continue;
+      f.Stages = new int[f.Stages.Length]; f.AccuracyStage = f.EvasionStage = 0; any = true;
+      c.Say(f.Data.name + ": 능력 변화가 원래대로 돌아왔다 (" + c.Source.Name + ")");
+     }
      return any ? EffectOutcome.Success : EffectOutcome.Failed;
     });
    PotentialExecutors.Register("소지품 이동",

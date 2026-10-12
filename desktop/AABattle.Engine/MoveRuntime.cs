@@ -78,9 +78,14 @@ namespace AABattle {
    // 행동불능(반동): 「다음 T 종료 후까지 자신을 「행동불능」 상태로 한다」
    x = Regex.Match(s, @"^다음 T 종료 후까지\s*,?\s*(?<r>자신을 「행동불능」 상태로 한다)$");
    if (x.Success) { into.Add(x.Groups["r"].Value + "."); return; }
+   // 「서로의 「X」 상태를 치유한다」 → 자신·상대
+   x = Regex.Match(s, @"^서로의 (?<n>(?:「[^」]+」)+) 상태를 치유한다$");
+   if (x.Success) { Add(into, plan, s, "자신의 " + x.Groups["n"].Value + " 상태를 치유한다."); Add(into, plan, s, "상대의 " + x.Groups["n"].Value + " 상태를 치유한다."); return; }
+   x = Regex.Match(s, @"^자진의 「(?<v>설치물|벽)」을 해제한다$");
+   if (x.Success) { Add(into, plan, s, x.Groups["v"].Value == "설치물" ? "자진의 설치물을 제거한다." : "자진의 「벽」을 해제한다."); return; }
    // 회복
    x = Regex.Match(s, @"^상대에게 HP의 1/(?<n>\d+)만큼 고정 대미지를 준다$");
-   if (x.Success) { into.Add("상대에게 최대 HP의 1/" + x.Groups["n"].Value + " 대미지를 준다."); return; }
+   if (x.Success && m.category == "변화") { into.Add("상대에게 최대 HP의 1/" + x.Groups["n"].Value + " 대미지를 준다."); return; }
    x = Regex.Match(s, @"^HP를 1/(?<n>\d+)만큼 회복한다$");
    if (x.Success) { into.Add("자신의 체력을 최대 HP의 1/" + x.Groups["n"].Value + " 회복한다."); return; }
    // 날씨·필드·장
@@ -120,6 +125,9 @@ namespace AABattle {
    if (Regex.IsMatch(s, @"^「[^」]+」 기술$|^\d+(?:~\d+)?회 「[^」]+」 기술$|^(?:특수|추가)효과 없음$")) return true;
    if (Regex.IsMatch(s, @"급소에 맞기 쉽다|반드시 급소에 맞는다|유리한 타입 상성|능력치로 대미지를 계산한다|「방어」 기술을 관통한다")) return true;
    if (FailModules.IsModule(s)) return true;
+   if (m.category != "변화" && s.EndsWith("고정 대미지를 준다")) return true;
+   if (Regex.IsMatch(s, @"〔방호 특성〕을 관통한다$|^적진의 「벽」을 해제한 후 기술을 내보낸다$|상대에게도 명중한다$")) return true;
+   if (Regex.IsMatch(s, @"^(?:상대보다 먼저 내보낼 때|기술을 내보내기 전에 상대의 공격을 받으면|자신의 HP가 「가득」일 때|상대가 「방어」 기술을 내보내고 있으면|(?:자신이 )?「[^」]+」 상태일 때)\s*,\s*위력이 강화\(\d+(?:\.\d+)?배\)된다$")) return true;
    if (Regex.IsMatch(s, @"능력치를 반감해서 대미지를 계산한다$|능력치를 반전해 대미지를 계산한다$|의 상승\(강화\)을 관통한다$|타입일 때\s*,\s*「효과가 굉장」해진다$|^타입 상성에 의해 무효화되지 않는다$|^전체 필드가 「[^」]+」 상태일 때\s*,\s*위력이 강화")) return true;
    if (Regex.IsMatch(s, @"준 대미지의 \d+/\d+만큼 HP를 회복한다|「모으기」 기술|모습을 감추|^날씨가 「[^」]+」일 때")) return true;
    if (m.tags != null && m.tags.Contains("조이기") && s.Contains("「조이기」 상태로 한다")) return true;
