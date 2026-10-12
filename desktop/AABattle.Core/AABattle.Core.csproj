@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 엔진·UI·데이터 전체. 두 실행 파일과 테스트가 이 라이브러리를 공유한다 -->
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <AssemblyName>AABattle.Core</AssemblyName>
+    <RootNamespace>AABattle</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\*.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.IO.Compression" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\research\potentials\potential-catalog.json" LogicalName="potentials.json" />
+    <EmbeddedResource Include="..\..\research\abilities\ability-catalog.gz.b64" LogicalName="abilities.b64" />
+    <EmbeddedResource Include="..\..\research\moves\move-classification.tsv" LogicalName="move-classification.tsv" />
+    <EmbeddedResource Include="..\..\lib\reference-data.json" LogicalName="data.json" />
+    <EmbeddedResource Include="..\..\lib\reference-aa.json" LogicalName="aa.json" />
+    <EmbeddedResource Include="..\..\public\fonts\HeadKasen.ttf" LogicalName="HeadKasen.ttf" />
+    <EmbeddedResource Include="..\..\public\fonts\pokemon-bw.otf" LogicalName="pokemon-bw.otf" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="AABattle" />
+    <InternalsVisibleTo Include="AABattleDataEditor" />
+    <InternalsVisibleTo Include="AABattle.Tests" />
+  </ItemGroup>
+</Project>

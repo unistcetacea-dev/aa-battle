@@ -1,0 +1,15 @@
+<Project>
+  <!-- 모든 프로젝트 공통: .NET Framework 4.8(윈도우 기본 탑재) + 최신 C# 문법 -->
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Optimize>true</Optimize>
+    <Prefer32Bit>false</Prefer32Bit>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);CS0168;CS0219;CS0414;CS0649;CS0169;CS0162;CS1998;CS0618;CS0108;CS0114</NoWarn>
+  </PropertyGroup>
+</Project>

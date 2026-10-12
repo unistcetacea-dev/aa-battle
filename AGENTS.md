@@ -8,8 +8,8 @@ Windows C# WinForms 프로그램이다. 현재 상태는 `PROJECT_HANDOFF.md`, �
 - 완료 보고는 이 형식으로 짧게 쓴다: 브랜치/커밋 해시 · 바꾼 파일과 이유(파일당 한 줄) · verify 결과(PASS 줄 그대로) · 지시서와 다르게 한 점 · 범위 밖 발견 사항.
 
 ## 코드
-- 컴파일러는 .NET Framework 4의 `csc.exe`라서 C# 5 문법만 쓴다. 금지: `?.`, `$""` 보간 문자열, `=>` 식 본문 멤버, 자동 속성 초기화, `out var`, 튜플, `nameof`, 패턴 매칭, 로컬 함수, `using static`.
-- 기존 스타일(한 줄로 압축된 메서드, 짧은 한국어 주석)을 따른다. 새 `.cs` 파일은 `desktop/build.ps1`의 `$sources`에 추가한다.
+- 빌드는 .NET SDK 8 이상, 대상은 .NET Framework 4.8(`net48`), C#은 최신 문법(`LangVersion=latest`)이다. 단 런타임 기능이 필요한 것(기본 인터페이스 메서드, `Span` 기반 API, `System.Text.Json` 등)은 쓰지 않는다. JSON은 기존 `JavaScriptSerializer`를 쓴다.
+- 솔루션은 `desktop/AABattle.sln`이다. 새 `.cs` 파일은 `desktop/`에 두면 `AABattle.Core`에 자동 포함된다. 짧은 한국어 주석은 유지하되, 새 코드는 한 줄 압축을 피하고 읽을 수 있게 여러 줄로 쓴다.
 - UI: `BattleApp.cs`, `DataEditor.cs`, `RetroEditor.cs`, `CatalogUI.cs`, `StartUI.cs`. 계산: `BattleEngine.cs`, `Mechanics.cs`. 편성 규칙: `TeamRules.cs`. 포텐셜 부품: `PotentialParts.cs`.
 - 시스템과 도감은 내장 Pokemon BW 폰트, AA는 HeadKasen을 사용한다. 흑백 도트 UI를 유지한다. 도트 폰트는 16·24·32·48px로만 쓰고(`Theme.UI`, 편집기는 `Theme.Enlarge`), 입력·선택·표·대화창은 `PixelControls.cs`의 픽셀 컨트롤을 쓴다. Windows 기본 컨트롤(`Label`, `TextBox`, `NumericUpDown` 등)과 `MessageBox`는 글자를 깨뜨리므로 쓰지 않는다.
 
@@ -25,7 +25,7 @@ Windows C# WinForms 프로그램이다. 현재 상태는 `PROJECT_HANDOFF.md`, �
 - 출처와 원문은 내부 자료에 남긴다. 수집 JSON 전체를 컨텍스트로 읽지 말고 이름 검색이나 집계로 필요한 항목만 찾는다. 자연어 자동 분리를 검증된 엔진 규칙으로 취급하지 않는다.
 
 ## 검증과 보고
-- C# 변경 후 `./desktop/verify.ps1 -OutputPath outputs/candidate`로 빌드와 회귀 검사를 실행한다. UI 변경은 `-Visual`을 붙여 생성된 캡처 이미지를 확인한다.
+- C# 변경 후 `./desktop/verify.ps1 -OutputPath outputs/candidate`로 빌드와 회귀 검사(NUnit, `desktop/AABattle.Tests`)를 실행한다. UI 변경은 `-Visual`을 붙여 생성된 캡처 이미지를 확인한다.
 - EXE가 사용 중이면 `./desktop/build.ps1 -OutputPath outputs/candidate`로 별도 빌드하고 실제 실행 경로를 안내한다.
-- 동작 변경은 관련 회귀 검사와 `PROJECT_HANDOFF.md`를 갱신한다. 산출물·임시 파일·비밀은 Git에서 제외한다.
+- 동작 변경은 관련 회귀 검사와 `PROJECT_HANDOFF.md`를 갱신한다. 검사는 `AABattle.Tests`에 기능별 `[Test]`로 추가하고, 실행 코드 안에 새 검사를 넣지 않는다. 버그 수정이나 규칙이 갈리는 지점만 검사하고, 단순 존재 확인·데이터 개수 고정·문장 전체 비교는 넣지 않는다. 같은 모양의 검사는 `[TestCase]`로 묶는다. UI 리플렉션 검사는 `[Category("UI")]`를 붙인다. 산출물·임시 파일·비밀은 Git에서 제외한다.
 - 사용자 요청 범위와 연결된 수정만 한다. 변경 이유, 테스트 결과, 실행 파일 위치를 짧게 보고한다.

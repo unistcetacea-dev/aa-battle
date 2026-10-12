@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>AABattle</AssemblyName>
+    <RootNamespace>AABattle.Launch</RootNamespace>
+    <ApplicationManifest>..\app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AABattle.Core\AABattle.Core.csproj" />
+  </ItemGroup>
+</Project>

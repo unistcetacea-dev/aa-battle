@@ -36,6 +36,9 @@ next-env.d.ts
 /.wrangler/
 /outputs/
 /work/
+bin/
+obj/
+TestResults/
 /reference-page.html
 *.tsbuildinfo
 

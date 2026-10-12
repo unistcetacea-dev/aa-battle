@@ -7,7 +7,8 @@
 ## 현재 상태
 
 - 메인 실행 파일: `outputs/desktop/AABattle.exe`
-- 빌드: `desktop/build.ps1`
+- 빌드: `desktop/build.ps1` (.NET SDK 8 이상 필요, 대상은 .NET Framework 4.8)
+- 회귀 검사: `dotnet test desktop/AABattle.sln` 또는 `desktop/verify.ps1`
 - 팀 편집기는 메인 화면의 `팀 편집` 버튼으로 연다.
 - 트레이너와 포켓몬을 `.aabdata.json`에 저장한다.
 - 포켓몬 화면의 버튼으로 왼쪽 또는 오른쪽 배틀 슬롯에 적용한다.
@@ -113,7 +114,7 @@ cd aa-battle
 ./desktop/build.ps1
 ```
 
-저장소 루트에서 Codex 작업을 열고, 새 작업의 첫 메시지에서 `README.md`와 `PROJECT_HANDOFF.md`를 먼저 읽도록 요청한다. 빌드 후 두 self-test를 통과시킨 뒤 작업을 계속한다.
+저장소 루트에서 Codex 작업을 열고, 새 작업의 첫 메시지에서 `README.md`와 `PROJECT_HANDOFF.md`를 먼저 읽도록 요청한다. 빌드 후 `./desktop/verify.ps1`(NUnit 회귀 검사)를 통과시킨 뒤 작업을 계속한다. 빌드에는 .NET SDK 8 이상(`winget install Microsoft.DotNet.SDK.8`)이 필요하다.
 
 작업을 시작하기 전에는 `git pull`, 마친 뒤에는 커밋과 `git push`를 수행해 두 컴퓨터의 소스를 맞춘다. 같은 파일을 두 컴퓨터에서 동시에 편집하지 않는다.
 
@@ -357,3 +358,12 @@ Codex 공유 링크는 특정 시점의 읽기 전용 대화 스냅샷이다. �
 - 검증: `./desktop/verify.ps1 -Visual -OutputPath outputs/candidate` 통과(기계 회귀 338건). 초기/누적 위력 30→480·5회 종료·웅크리기 곱·빗나감·방어·잠듦·봉인·같은 T 사슬묶기·복제/퇴장·명령 무시·기술/지시 버튼 잠금·편집기·아이스볼 실제 자동 행동을 검사했다. `rollout-conditions.png`와 `rollout-moves.png`에서 입력·라벨·버튼 제한을 확인했다.
 - 근거: [gen5 기술 모드](https://github.com/smogon/pokemon-showdown/blob/master/data/mods/gen5/moves.ts)에 해당 기술 재정의가 없어 [기본 Rollout](https://github.com/smogon/pokemon-showdown/blob/master/data/moves.ts#L15333)와 [Ice Ball](https://github.com/smogon/pokemon-showdown/blob/master/data/moves.ts#L9216)의 누적/잠금/웅크리기 처리를 확인했다. 후기 세대 탈/아이스페이스 저장 특례는 넣지 않았으며 행동 불가·봉인 즉시 종료는 사용자 지시를 우선했다.
 - 범위 밖: 포텐셜 문장 자동 연결, 새 접촉 태그 추론·PP 실행기·후기 세대 위력 저장 특례는 추가하지 않았다. 병합 규칙의 AGENTS.md 반영은 사용자 지시대로 지시서 E에서 한다.
+
+## 2026-10-12 SDK 프로젝트 / NUnit 회귀 검사
+- 빌드를 .NET Framework 4 `csc.exe` 직접 호출에서 SDK 스타일 프로젝트로 바꿨다. 대상은 `net48`(윈도우 기본 탑재)이라 실행에 추가 설치가 필요 없고, 빌드에는 .NET SDK 8 이상이 필요하다. `LangVersion=latest`로 최신 C# 문법을 쓸 수 있다.
+- 구조: `desktop/AABattle.sln` → `AABattle.Core`(desktop/*.cs 전체와 내장 리소스를 담은 라이브러리), `AABattle`·`AABattleDataEditor`(진입점만 있는 실행 파일), `AABattle.Tests`(NUnit). 공통 설정은 `desktop/Directory.Build.props`. 새 `.cs` 파일은 `desktop/`에 두면 자동 포함된다.
+- 회귀 검사는 `AABattle.Tests`로 옮겼다. 한 덩어리였던 `MechanicsTests.Run`(338건)은 기능별 `[Test]` 20개와 UI 검사 15개(`[Category("UI")]`, `MechanicsUiTests`)로 나눴다. 실패하면 해당 테스트 이름과 검사 문구가 함께 표시된다. 전체 45개 테스트, 약 10초.
+- 두 EXE의 `--self-test` 인자는 없앴다. 편집기 자체 검사는 `EditorTests`로 옮겼다. `Engine.Test`가 `CatalogTests`를 중복 실행하던 것(약 12초)을 없앴다.
+- 깨지기 쉬운 고정 개수 검사(내장 정의 4151개, 역할 42개·범용 6개·선 4개·상대 타입 17개 등)는 존재·내용 검사로 완화했다. 64행과 같은 수면 상한 검사가 `ChargeAndTypeSwap`에 중복돼 있던 것을 지웠다.
+- 아직 실행 코드 안에 남은 작은 `Test()` 메서드(`EffectBuilder`, `EntryTriggers`, `CatalogUI` 등)는 `SuiteTests`에서 호출한다. 이후 작업에서 점진적으로 `AABattle.Tests`로 옮긴다.
+- `verify.ps1`: 빌드 → `dotnet test` → (`-Visual`) 화면 캡처. `-Fast`는 UI 검사를 건너뛴다.

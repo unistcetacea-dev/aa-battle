@@ -154,7 +154,7 @@ namespace AABattle {
    DefeatTriggers.Test();
    RuntimeTriggers.Test();
    AnsweredTriggers.Test();
-   TriggerBatchTests.Run();
+
   }
  }
 

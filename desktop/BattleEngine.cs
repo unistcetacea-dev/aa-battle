@@ -202,7 +202,7 @@ namespace AABattle {
   }
   static Fighter TriggerFighter(Fighter source,string name,string potential,string trigger){var p=source.Data;return new Fighter(new Pokemon{id="trigger-test",name=name,level=p.level,@base=(int[])p.@base.Clone(),iv=(int[])p.iv.Clone(),types=(string[])p.types.Clone(),moves=(string[])p.moves.Clone(),potentials=new[]{new Potential{name=potential,description="공격이 오른다.",triggers=new[]{trigger}}}});}
   public static string Test(Database db){
-    TrainerAccessRules.Test();CatalogTests.Run();SwitchRuntimeTests.Run(db);FieldEffectRuntime.Test(db);
+    TrainerAccessRules.Test();FieldEffectRuntime.Test(db);
    var a=new Fighter(db.pokemon.First(p=>p.name=="선데이"));var b=new Fighter(db.pokemon.First(p=>p.name=="잭 한마"));var m=db.moves.First(v=>v.name=="파괴광선");var r=new Rules();b.Stages[4]=1;
    BattleStateReport.Test(db);
    Check(Stats(a,b.Data.level,r)[0]==598,"HP");Check(Effective(a,b,1,r)==269,"level correction");var d=Calculate(db,a,b,m,r);Check(d.Min==290&&d.Max==342&&d.Rolls[2]==297,"spreadsheet damage");
