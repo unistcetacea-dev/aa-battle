@@ -184,7 +184,6 @@ namespace AABattle {
    if(grounded&&hazards.StickyWeb&&entering.HP>0)ChangeStage(entering,opponent,5,-1,r,"끈적끈적네트",log);
   }
   public static void EndTurn(Fighter[] f,Rules r,List<string> log,Func<double> rng=null){
-   foreach(var x in f)PotentialModifiers.Tick(x,log);
    string weather=Weather(f[0],f[1],r);int[] order=SpeedOrder(f,r,rng);
    foreach(int i in order){var a=f[i];var b=f[1-i];var c=a.Conditions;int max=Max(a,b,r);
     if(weather=="모래바람"&&!a.Data.types.Any(t=>new[]{"바위","땅","강철"}.Contains(t))&&!Ability(a,"방진","모래헤치기")&&a.Data.item!="방진고글")Hurt(a,b,r,max/16,"모래바람",log);if(weather=="싸라기눈"&&!Has(a,"얼음")&&!Ability(a,"방진")&&a.Data.item!="방진고글")Hurt(a,b,r,max/16,"싸라기눈",log);
@@ -193,7 +192,7 @@ namespace AABattle {
    foreach(int i in order){var a=f[i];var b=f[1-i];var c=a.Conditions;int max=Max(a,b,r);if(c.Seed&&a.HP>0&&!Ability(a,"매직가드")){int before=a.HP;Hurt(a,b,r,max/8,"씨뿌리기",log);int loss=before-a.HP;if(loss>0){int gain=Heal(b,a,r,loss,"씨뿌리기 흡수",log);AnsweredTriggers.Drained(b,a,loss,gain,log.Add);}}}
    foreach(int i in order){var a=f[i];var b=f[1-i];var c=a.Conditions;int max=Max(a,b,r);var turnHeal=TurnEndHeal(a,b,r,max);if(turnHeal.Value>0)Heal(a,b,r,turnHeal.Value,turnHeal.Key,log);}
    foreach(int i in order){var a=f[i];var c=a.Conditions;ClearFlag(ref c.HelpingHand,a,"도우미",log);ClearTypeSwap(a,log);Tick(ref c.EncoreTurns,"앙코르",a,log);if(c.EncoreTurns==0)c.EncoreMove="";Tick(ref c.Intercept,"요격",a,log);Tick(ref c.Rage,"분노",a,log);if(c.Bomb&&c.BombSetTurn<r.Turn)ClearFlag(ref c.Bomb,a,"폭탄",log);if(c.MindReaderSide>=0&&c.MindReaderSetTurn<r.Turn)ClearMindReader(a,log);Tick(ref c.Silenced,"침묵",a,log);Tick(ref c.Forgotten,"망각",a,log);Tick(ref c.HealBlock,"회복봉인",a,log);Tick(ref c.Disabled,"사슬묶기",a,log);if(c.Disabled==0)c.DisabledMove="";Tick(ref c.Bound,"조이기",a,log);c.Protect=false;c.Flinch=false;Tick(ref c.Taunt,"도발",a,log);Tick(ref r.Sides[i].Reflect,"리플렉터",a,log);Tick(ref r.Sides[i].LightScreen,"빛의장막",a,log);Tick(ref r.Sides[i].Tailwind,"순풍",a,log);}
-   if(r.Weather!="없음"&&r.WeatherTurns>0&&--r.WeatherTurns==0){log.Add(r.Weather+" 종료");r.Weather="없음";}
+   foreach(var x in f)PotentialModifiers.Tick(x,log);if(r.Weather!="없음"&&r.WeatherTurns>0&&--r.WeatherTurns==0){log.Add(r.Weather+" 종료");r.Weather="없음";}
    if(r.Terrain!="없음"&&r.TerrainTurns>0&&--r.TerrainTurns==0){log.Add(r.Terrain+" 종료");r.Terrain="없음";}
    if(r.TrickRoom>0&&--r.TrickRoom==0)log.Add("트릭룸 종료");if(r.Gravity>0&&--r.Gravity==0)log.Add("중력 종료");PriorityEffectRuntime.EndTurn(f[0],log.Add);PriorityEffectRuntime.EndTurn(f[1],log.Add);
    foreach(var a in f.Concat((r.Parties??new Fighter[2][]).Where(x=>x!=null).SelectMany(x=>x)).Distinct()){if(a.Conditions.Hibernate>0&&a.Conditions.Hibernate<=r.Turn){a.Conditions.Hibernate=0;ApplyStatus(a,f[0]==a?f[1]:f[0],"얼음",r,rng,log);}}

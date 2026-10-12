@@ -16,6 +16,13 @@ namespace AABattle {
    eligible.Sort((left,right)=>{int speedLeft=Engine.Effective(fighters[left],fighters[1-left],5,rules),speedRight=Engine.Effective(fighters[right],fighters[1-right],5,rules);if(speedLeft!=speedRight)return speedRight.CompareTo(speedLeft);return (rng??(()=>.5))()<.5?-1:1;});
    foreach(int side in eligible)TriggerStructures.Fire(fighters[side],TriggerStructures.TurnEndLabel,fighters[side].Data.name+" · "+TriggerStructures.TurnEndLabel,log);
   }
+  // 같은 타이밍의 포켓몬 효과는 「속도」 순(큐가 정렬), 트레이너 효과는 동시 처리
+  public static void Timing(Fighter[] fighters,TrainerBattleState[] states,string label,Action<string> log){
+   if(fighters==null)return;
+   var events=Enumerable.Range(0,2).Where(i=>fighters[i]!=null&&fighters[i].HP>0&&fighters[i].OnField&&TriggerStructures.Has(fighters[i],label)).Select(i=>TriggerStructures.LabelEvent(fighters[i],label,fighters[i].Data.name+" · "+label,log)).ToArray();
+   if(PotentialQueue.Active){if(events.Length>0)PotentialQueue.Raise(events);}else foreach(var e in events)TriggerStructures.Fire(e.Owner,label,e.Message,log);
+   for(int i=0;i<2&&states!=null&&i<states.Length;i++)if(states[i]!=null)TrainerTriggers.Fire(states[i].Trainer,label,label,log,fighters[i]);
+  }
   public static bool Voluntary(SwitchReason reason){return reason!=SwitchReason.Forced;}
   public static bool Normal(SwitchReason reason){return reason==SwitchReason.Normal||reason==SwitchReason.Return;}
   public static void Leave(Fighter outgoing,SwitchReason reason,Action<string> log){if(reason!=SwitchReason.Forced&&TriggerStructures.Has(outgoing,TriggerStructures.LeaveLabel))TriggerStructures.Fire(outgoing,TriggerStructures.LeaveLabel,outgoing.Data.name+" · "+TriggerStructures.LeaveLabel+" ["+reason+"]",log);}

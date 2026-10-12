@@ -494,15 +494,19 @@ namespace AABattle {
      });
     // G 사건으로 걸린 방호·회피·관통·해석 무효: 기간(NT동안·T종료시까지)·이번 행동·필드를 떠날 때까지
     PotentialExecutors.Register("방호 상태",
-     c => { int turns; string body = Duration(c.Line, out turns); bool e; MoveCondition m; double? rate; return PotentialProtection.TryGuard(body, out e, out m, out rate) || PotentialProtection.TryPierce(body, out m) || PotentialProtection.IsAnalysisImmunity(body); },
+     c => { int turns; string body = Duration(c.Line, out turns); string k; bool tr; MoveCondition m; double? rate; return PotentialProtection.TryGuard(body, out k, out m, out rate) || PotentialProtection.TryPierce(body, out m, out tr) || PotentialProtection.IsAnalysisImmunity(body); },
      c => {
       int turns; string body = Duration(c.Line, out turns);
       var owner = c.Owner; if (owner == null || owner.HP <= 0) return EffectOutcome.Failed;
       bool action = turns == 0 && ActionEvent(c.Event);
-      PotentialModifiers.Add(owner, new ActiveModifier { Key = c.Source.Key, Text = body, Source = c.Source.Label, Turns = turns == 0 ? -1 : turns, Action = action });
+      PotentialModifiers.Add(owner, new ActiveModifier { Key = c.Source.Key, Text = body, Source = c.Source.Label, Turns = turns == 0 ? -1 : turns, Action = action, Trainer = c.Source.IsTrainer });
       c.Say(owner.Data.name + ": " + body + (action ? " (이번 행동)" : turns > 0 ? " (" + turns + "T)" : " (필드를 떠날 때까지)"));
       return EffectOutcome.Success;
      });
+    // 먼저 행동(사용자 결정: 우선도와 관계없이 먼저). 사건으로 얻으면 다음 순서 결정에 한 번 쓴다
+    PotentialExecutors.Register("먼저 행동",
+     c => EffectModules.IsActFirst(c.Line),
+     c => { if (c.Owner == null || c.Owner.HP <= 0) return EffectOutcome.Failed; c.Owner.Conditions.ActFirst = Math.Max(c.Owner.Conditions.ActFirst, EffectModules.ActFirstTier(c.Line)); c.Say(c.Owner.Data.name + ": 다음 행동 순서에서 상대보다 먼저 행동한다"); return EffectOutcome.Success; });
     // F3 상태이상 치유
     PotentialExecutors.Register("상태이상 치유",
      c => { string t; return EffectModules.TryCure(c.Line, out t); },

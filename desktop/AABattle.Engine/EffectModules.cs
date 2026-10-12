@@ -356,6 +356,8 @@ namespace AABattle {
    if (m.Success) return "상대를 강제교대시" + (m.Groups["opt"].Success ? "킬 수 있다." : "킨다.");
    if (Regex.IsMatch(text, @"^(?:자신은\s*)?(?:상대(?:로부터의|에\s*의해서?)\s*)?(?:「강제교대」|강제교대)\s*(?:되지\s*않는다|를\s*받지\s*않는다|가\s*되지\s*않는다)$")) return "자신은 강제교대되지 않는다.";
    if (Regex.IsMatch(text, @"^(?:자신은\s*)?공중에\s*떠오른다$")) return "자신은 공중에 떠오른다.";
+   m = Regex.Match(text, @"^(?:자신은\s*)?(?<w>가장\s*먼저|상대보다\s*먼저|먼저)\s*행동(?<opt>한다|할\s*수\s*있다)$");
+   if (m.Success) return "자신은 " + (m.Groups["w"].Value.StartsWith("가장") ? "가장" : "상대보다") + " 먼저 행동" + (m.Groups["opt"].Value.Contains("있다") ? "할 수 있다." : "한다.");
    m = Regex.Match(text, @"^(?:자신은\s*)?「(?<s>[^」]+)」\s*상태(?:가|에)\s*(?:되지|걸리지)\s*않는다$");
    if (m.Success && m.Groups["s"].Value.Split('/').All(x => MajorStatuses.Contains(x.Trim()))) return "자신은 「" + m.Groups["s"].Value + "」상태가 되지 않는다.";
    return null;
@@ -372,12 +374,12 @@ namespace AABattle {
    var duration = Regex.Match(text, @"^(?:(?<n>\d+)\s*T\s*(?:간|동안)|(?<end>T\s*종료\s*시\s*까지))\s*,?\s*");
    if (duration.Success) { prefix = duration.Groups["end"].Success ? "T종료시까지 " : duration.Groups["n"].Value + "T동안 "; text = text.Substring(duration.Length).Trim(); }
    if (Regex.IsMatch(text, @"^(?:자신에\s*대한|상대로부터의|상대의)\s*(?:「데이터\s*해석」|데이터\s*해석)을\s*무효화한다$")) return prefix + "자신에 대한 데이터 해석을 무효화한다.";
-   var pierce = Regex.Match(text, @"^(?:자신의\s*(?<c>(?:「[^」]+」\s*)*)\s*기술이\s*)?상대의\s*(?:『방호\s*포텐셜』|방호\s*포텐셜)을\s*(?:무시|무효화|관통)한다$");
-   if (pierce.Success) { MoveCondition pc; if (!MoveCondition.TryParse(pierce.Groups["c"].Value, out pc)) return null; return prefix + "자신의 " + (pc.Empty ? "" : pc.Text + " ") + "기술이 상대의 방호 포텐셜을 무시한다."; }
+   var pierce = Regex.Match(text, @"^(?:자신의\s*(?<c>(?:「[^」]+」\s*)*)\s*기술이\s*)?상대(?:의)?\s*(?<tr>트레이너의?\s*)?(?:『방호\s*포텐셜』|방호\s*포텐셜)을\s*(?:무시|무효화|관통)한다$");
+   if (pierce.Success) { MoveCondition pc; if (!MoveCondition.TryParse(pierce.Groups["c"].Value, out pc)) return null; return prefix + "자신의 " + (pc.Empty ? "" : pc.Text + " ") + "기술이 상대의 " + (pierce.Groups["tr"].Success ? "트레이너 " : "") + "방호 포텐셜을 무시한다."; }
    string probability = "";
    string body; string label;
    if (EffectNormalizer.TryProbabilityPrefix(text, out label, out body)) { probability = label == "드물게" ? "드물게" : label + "로"; text = body.Trim(); }
-   var m = Regex.Match(text, @"^(?:상대(?:의)?\s*)?(?<c>.*?)\s*(?<o>기술|공격)?\s*(?:을|를)\s*(?<p>드물게|저확률로|중확률로)?\s*(?<v>무효화|회피)한다$");
+   var m = Regex.Match(text, @"^(?:상대(?:의)?\s*)?(?<c>.*?)\s*(?<o>기술|공격)?\s*(?:을|를)\s*(?<p>드물게|저확률로|중확률로)?\s*(?<v>무효화|회피|반사)한다$");
    if (!m.Success) return null;
    string raw = m.Groups["c"].Value.Trim();
    if (!m.Groups["o"].Success && !raw.Contains("기술") && !Regex.IsMatch(raw, "^(?:「[^」]*」)+$")) return null;
@@ -388,7 +390,7 @@ namespace AABattle {
    if (m.Groups["o"].Value == "공격" && c.Category.Length == 0) c.Category = "공격";
    if (c.Tags.Any(t => t.Contains("데이터") || t.Contains("해석") || t.Contains("추가행동") || t.Contains("포텐셜"))) return null;
    if (m.Groups["p"].Success) probability = m.Groups["p"].Value;
-   return prefix + PotentialProtection.Canonical(c, probability, m.Groups["v"].Value == "회피");
+   return prefix + PotentialProtection.Canonical(c, probability, m.Groups["v"].Value);
   }
 
   // 추가행동 변형 → 「「N」배수 T, 가장 먼저/마지막에 「조건」 기술에 의한 추가행동을 얻는다」. 지령에 의한 추가행동권은 다른 규칙이라 바꾸지 않는다
@@ -424,6 +426,8 @@ namespace AABattle {
   }
   public static bool IsForcedSwitch(string text) { return Regex.IsMatch(Clean(text), @"^상대를 강제교대시(?:킨다|킬 수 있다)$"); }
   public static bool IsForcedSwitchImmunity(string text) { return Clean(text) == "자신은 강제교대되지 않는다"; }
+  public static int ActFirstTier(string text) { var m = Regex.Match(Clean(text), @"^자신은 (?<w>가장|상대보다) 먼저 행동(?:한다|할 수 있다)$"); return !m.Success ? 0 : m.Groups["w"].Value == "가장" ? 2 : 1; }
+  public static bool IsActFirst(string text) { return ActFirstTier(text) > 0; }
   public static bool IsFloating(string text) { return Clean(text) == "자신은 공중에 떠오른다"; }
   public static bool TryStatusImmunity(string text, out string[] statuses) {
    var m = Regex.Match(Clean(text), @"^자신은 「(?<s>[^」]+)」상태가 되지 않는다$");
@@ -596,8 +600,10 @@ namespace AABattle {
    if (IsForcedSwitch(s)) return "강제교대";
    if (IsForcedSwitchImmunity(s)) return "강제교대 무효";
    if (IsFloating(s)) return "부유";
-   bool evade; MoveCondition guardCondition; double? guardRate;
-   if (PotentialProtection.TryGuard(s, out evade, out guardCondition, out guardRate)) return evade ? "회피" : "기술 무효화";
+   if (IsActFirst(s)) return "먼저 행동";
+   MoveCondition guardCondition; double? guardRate;
+   string guardKind;
+   if (PotentialProtection.TryGuard(s, out guardKind, out guardCondition, out guardRate)) return guardKind == "회피" ? "회피" : guardKind == "반사" ? "기술 반사" : "기술 무효화";
    if (PotentialProtection.TryPierce(s, out guardCondition)) return "방호 관통";
    if (PotentialProtection.IsAnalysisImmunity(s)) return "데이터 해석 무효";
    ExtraActionGrant extra; int every;

@@ -280,6 +280,67 @@ namespace AABattle {
    Assert.That(PotentialProtection.AnalysisBlocked(target, F(), new Rules()), Is.True);
   }
 
+  // ===== 타이밍 규칙(사용자) =====
+  [TestCase("턴 개시시", TriggerStructures.TurnStartLabel)]
+  [TestCase("T 개시 시", TriggerStructures.TurnStartLabel)]
+  [TestCase("턴의 최후에", TriggerStructures.TurnLastLabel)]
+  [TestCase("T의 최후에", TriggerStructures.TurnLastLabel)]
+  public void TimingLabelsNormalize(string raw, string label) { Assert.That(TriggerStructures.Normalize(raw), Is.EqualTo(label)); }
+
+  [Test] public void TurnStartBeforeActionsAndTurnLastAfter() {
+   var owner = F("노말", P("턴 개시시", "검사 시작", "종족 ①"), P("턴의 최후에", "검사 최후", "종족 ②"));
+   var turn = Engine.Resolve(TestData.Db, new[] { owner, F() }, new[] { Tackle(), Idle() }, new Rules(), () => .5);
+   int start = turn.Log.FindIndex(x => x.Contains(TriggerStructures.TurnStartLabel + " 트리거"));
+   int move = turn.Log.FindIndex(x => x.StartsWith(owner.Data.name + "의 몸통박치기!"));
+   int last = turn.Log.FindIndex(x => x.Contains(TriggerStructures.TurnLastLabel + " 트리거"));
+   Assert.That(start, Is.GreaterThanOrEqualTo(0).And.LessThan(move), string.Join("\n", turn.Log));
+   Assert.That(last, Is.GreaterThan(move));
+  }
+
+  [Test] public void FirstTiersBeatPriorityAndUseSpeedWithinTier() {
+   var quick = Tackle().Copy(); quick.priority = 3;
+   var slowFirst = F("노말", P(Field, "가장 먼저 행동한다")); slowFirst.Data.@base[5] = 10;
+   var fastOpp = F("노말", P(Field, "상대보다 먼저 행동한다"));
+   var turn = Engine.Resolve(TestData.Db, new[] { slowFirst, fastOpp }, new[] { Tackle(), quick }, new Rules(), () => .5);
+   Assert.That(turn.Log.FindIndex(x => x.StartsWith(slowFirst.Data.name + "의 몸통박치기!")), Is.LessThan(turn.Log.FindIndex(x => x.StartsWith(fastOpp.Data.name + "의 몸통박치기!"))), "가장 먼저 beats 상대보다 먼저 and priority");
+   var a = F("노말", P(Field, "가장 먼저 행동한다")); a.Data.@base[5] = 10;
+   var b = F("노말", P(Field, "가장 먼저 행동한다")); b.Data.@base[5] = 200;
+   var both = Engine.Resolve(TestData.Db, new[] { a, b }, new[] { Tackle(), Tackle() }, new Rules(), () => .5);
+   Assert.That(both.Log.FindIndex(x => x.StartsWith(b.Data.name + "의 몸통박치기!")), Is.LessThan(both.Log.FindIndex(x => x.StartsWith(a.Data.name + "의 몸통박치기!"))), "same tier: faster first");
+  }
+
+  // ===== 반사(방호 포텐셜 취급)·트레이너 방호 =====
+  [Test] public void ReflectSendsMoveBackAndPierceBreaksIt() {
+   var taunt = TestData.Db.moves.First(x => x.name == "도발");
+   var mirror = F("노말", P(Field, "상대의 「변화」 기술을 반사한다"));
+   var user = F();
+   var turn = Engine.Resolve(TestData.Db, new[] { user, mirror }, new[] { taunt, Idle() }, new Rules(), () => .5);
+   Assert.That(turn.Fighters[0].Conditions.Taunt, Is.GreaterThan(0), string.Join("\n", turn.Log));
+   Assert.That(turn.Fighters[1].Conditions.Taunt, Is.EqualTo(0));
+   var hit = Mv("노말"); hit.priority = 1;
+   var wall = F("노말", P(Field, "상대의 「물리」 기술을 반사한다"));
+   var back = Attack(F(), wall, hit, () => .5);
+   Assert.That(back.Fighters[1].HP, Is.EqualTo(wall.HP));
+   Assert.That(back.Fighters[0].HP, Is.LessThan(341));
+   var piercer = F("노말", P(Field, "자신의 기술이 상대의 방호 포텐셜을 무시한다."));
+   Assert.That(Attack(piercer, wall, hit, () => .5).Fighters[1].HP, Is.LessThan(wall.HP), "reflect is protection: pierced");
+  }
+
+  static TrainerBattleState TrainerWith(string effect) {
+   var trainer = new TrainerRecord { name = "검사 트레이너" };
+   trainer.potentials.Add(new PotentialRecord { enabled = true, slot = "고유", name = "철벽", trigger = TriggerStructures.AlwaysLabel, effect = effect });
+   return new TrainerBattleState { Trainer = trainer };
+  }
+
+  [Test] public void TrainerProtectionNeedsTrainerPierce() {
+   var hit = Mv("노말"); hit.priority = 1;
+   Func<Fighter, TrainerBattleState, TurnResult> run = (attacker, attackerTrainer) => Engine.Resolve(TestData.Db, new[] { attacker, F() }, new[] { new BattleCommand { Move = hit }, new BattleCommand { Move = Idle() } }, new Rules(), new[] { attackerTrainer ?? new TrainerBattleState(), TrainerWith("상대의 「물리」 기술을 무효화한다.") }, () => .5);
+   Assert.That(run(F(), null).Fighters[1].HP, Is.EqualTo(341), "trainer protection blocks");
+   Assert.That(run(F("노말", P(Field, "자신의 기술이 상대의 방호 포텐셜을 무시한다.")), null).Fighters[1].HP, Is.EqualTo(341), "pokemon pierce does not break trainer protection");
+   Assert.That(run(F("노말", P(Field, "자신의 기술이 상대의 트레이너 방호 포텐셜을 무시한다.")), null).Fighters[1].HP, Is.LessThan(341), "explicit trainer pierce");
+   Assert.That(run(F(), TrainerWith("자신의 기술이 상대의 방호 포텐셜을 무시한다.")).Fighters[1].HP, Is.LessThan(341), "pierce from a trainer potential");
+  }
+
   [Test] public void SpeciesRaiseToTrainerAptitude() {
    var owner = F("노말", P(TriggerStructures.TurnEndLabel, "자신의 「방어」의 종족치를 트레이너의 「육성」과 같은 랭크까지 올린다")); var other = F();
    var trainer = new TrainerRecord(); trainer.training.rank = "A";

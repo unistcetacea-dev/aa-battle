@@ -55,7 +55,8 @@ namespace AABattle {
      (grant.First ? first : last).Add(new ActionSlot { Side = side, Extra = grant });
     }
    }
-   return first.Concat(movers.Select(i => new ActionSlot { Side = i })).Concat(last).ToList();
+   Func<ActionSlot, int> speed = s => Engine.Effective(f[s.Side], f[1 - s.Side], 5, r);
+   return first.OrderByDescending(speed).Concat(movers.Select(i => new ActionSlot { Side = i })).Concat(last.OrderByDescending(speed)).ToList();
   }
 
   // 행동 사이: 사건으로 얻은 추가행동을 넣는다. 추가행동 중에 얻은 것은 버린다

@@ -9,6 +9,7 @@ namespace AABattle {
   public string Key = "", Text = "", Source = "";
   public int Turns = -1;
   public bool Action;   // 기술·피격 사건으로 걸린 배율: 그 행동(기술 한 번)이 끝나면 해제
+  public bool Trainer;  // 트레이너 포텐셜에서 걸린 것(트레이너 방호)
   public ActiveModifier Copy() { return (ActiveModifier)MemberwiseClone(); }
  }
 
@@ -159,6 +160,14 @@ namespace AABattle {
    }
   }
   public static IEnumerable<string> Sentences(Fighter owner, Fighter opponent, Rules rules, string keyword = null) { return ContinuousSentences(owner, opponent, rules, keyword); }
+  // 「자신은 상대보다 먼저 행동한다」(계속) 또는 사건으로 얻은 이번 순서 우선(ConditionState.ActFirst)
+  // 행동 순서 등급: 2 = 가장 먼저, 1 = 상대보다 먼저, 0 = 없음(사용자 타이밍 규칙)
+  public static int FirstTier(Fighter f, Fighter opponent, Rules rules) {
+   if (f == null || f.HP <= 0) return 0;
+   int tier = f.Conditions.ActFirst;
+   foreach (string s in ContinuousSentences(f, opponent, rules, "먼저")) tier = Math.Max(tier, EffectModules.ActFirstTier(s));
+   return tier;
+  }
   // 부유: 「자신은 공중에 떠오른다」(중력·철구·뿌리박기는 Grounded가 먼저 판정)
   public static bool Floating(Fighter f, Rules rules) { return f != null && f.HP > 0 && ContinuousSentences(f, null, rules, "떠오").Any(EffectModules.IsFloating); }
   // 상태이상 면역: 「자신은 「독」상태가 되지 않는다」

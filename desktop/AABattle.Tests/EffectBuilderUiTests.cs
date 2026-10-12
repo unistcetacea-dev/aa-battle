@@ -61,6 +61,10 @@ namespace AABattle {
     Assert.That(EffectModules.Classify(Build(form, "방호·회피", "상대의 기술 무효화", "항상", "물리 위력 40 이하")), Is.EqualTo("기술 무효화"));
     Assert.That(EffectModules.Classify(Build(form, "방호·회피", "자신의 기술 방호 관통", "항상", "격투")), Is.EqualTo("방호 관통"));
     Assert.That(EffectModules.Classify(Build(form, "방호·회피", "데이터 해석 무효", "항상")), Is.EqualTo("데이터 해석 무효"));
+    Assert.That(EffectModules.Classify(Build(form, "방호·회피", "상대의 기술 반사", "항상", "변화")), Is.EqualTo("기술 반사"));
+    Assert.That(Build(form, "방호·회피", "자신의 기술 트레이너 방호 관통", "항상", "격투"), Is.EqualTo("자신의 「격투」 기술이 상대의 트레이너 방호 포텐셜을 무시한다."));
+    Assert.That(EffectModules.ActFirstTier(Build(form, "행동 순서", "가장 먼저", "행동한다")), Is.EqualTo(2));
+    Assert.That(EffectModules.ActFirstTier(Build(form, "행동 순서", "상대보다 먼저", "행동할 수 있다")), Is.EqualTo(1));
    }
   }
  }

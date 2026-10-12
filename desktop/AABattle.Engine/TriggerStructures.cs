@@ -11,6 +11,8 @@ namespace AABattle {
   public const string DefeatLabel="상대를 쓰러뜨렸을 때";
   public const string ObserverLabel="PT에 참여하고 있을 때";
   public const string TurnEndLabel="T 종료 시";
+  public const string TurnStartLabel="T 개시 시";      // 서로 지시를 내린 뒤 가장 먼저(교대·기술보다 앞)
+  public const string TurnLastLabel="T의 최후";        // 기술·교대를 모두 처리한 뒤, T 종료 전
   public const string FieldLabel="장소에 있는 한";
   public const string SwitchLabel="아군과 임의교대할 때";
   public const string ReceivedLabel="상대의 공격을 받았을 때";
@@ -44,6 +46,8 @@ namespace AABattle {
    if(Regex.IsMatch(key,@"^(?:자동)?(?:자신이)?상대를쓰러(?:뜨|트)렸을때$"))return DefeatLabel;
    if(Regex.IsMatch(key,@"^(?:자동)?(?:자신이)?PT에(?:참여|참가)(?:하고있을때|하고있는한|중일때)$"))return ObserverLabel;
    if(Regex.IsMatch(key,@"^(?:매)?(?:T|턴)종료시(?:에)?$"))return TurnEndLabel;
+   if(Regex.IsMatch(key,@"^(?:매)?(?:T|턴)(?:개시|시작)시(?:에)?$"))return TurnStartLabel;
+   if(Regex.IsMatch(key,@"^(?:T|턴)의?(?:최후|마지막)(?:에)?$"))return TurnLastLabel;
    if(Regex.IsMatch(key,@"^(?:자신이)?(?:필드|장소)에(?:있는한|있을때)$"))return FieldLabel;
    if(Regex.IsMatch(key,@"^(?:자동)?아군과(?:임의)?교대할때$"))return SwitchLabel;
    if(Regex.IsMatch(key,@"^(?:자동)?상대의공격을(?:받았을때|받으면)$"))return ReceivedLabel;
