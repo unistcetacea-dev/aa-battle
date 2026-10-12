@@ -437,3 +437,4 @@ Codex 공유 링크는 특정 시점의 읽기 전용 대화 스냅샷이다. �
 - 버그 수정: `ProjectStore`의 내용 비교가 리플렉션 필드 순서(첫 호출과 이후가 다름)에 영향을 받아, 같은 이름 사본을 원본에 잘못 연결할 수 있었다. 키를 정렬해 비교한다.
 - 검증: `verify.ps1 -Visual` 통과(207개). 편집기 효과 입력기 캡처 `outputs/candidate/effect-builder*.png`.
 - (추가) 사용자 결정 반영: 기술·피격 사건으로 걸린 배율은 그 행동(기술 한 번)만 유지한다(`ActiveModifier.Action`, `Mechanics.AfterMove`에서 공격·방어 측 모두 해제). 「임의의 능력」과 등급 범위 종족치 값은 `Rules.ChooseStat`·`Rules.ChooseSpeciesValue`로 사용자가 고른다(배틀 화면 `ChoiceDialog`, 자동 검사·캡처에서는 판정 대기·최솟값). 종족치 등급 지정은 현재 값의 표시를 이어받는다(`SpeciesStatRanks.GradeRange`: B-→A-, B+→A+, 무표기 B→A 범위에서 선택). 편집기의 설정 종족치 범위도 같은 규칙을 따른다.
+- (버그 수정) `Engine.Resolve`가 매 턴 선발 등장(`EntryReason.Lead`)과 상대 등장 트리거를 다시 처리하고 있었다. 효과 실행기가 붙은 뒤로 「등장 시」 포텐셜이 매 턴 반복 적용되므로, `ConditionState.EntryTriggered`로 실제로 나왔을 때 한 번만 처리한다(효과 실행 범위 안의 등장에서 표시, `LeaveField`에서 해제). 사건 배율은 행동이 끝나면 풀리지만 포텐셜은 남아 다음 조건에서 다시 발동한다(사용 제한이 있으면 그 횟수까지).

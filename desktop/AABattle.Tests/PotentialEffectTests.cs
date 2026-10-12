@@ -134,6 +134,29 @@ namespace AABattle {
    int plainLoss = plainTurn.Fighters[1].HP, loss = turn.Fighters[1].HP;
    Assert.That(341 - loss, Is.InRange(2 * (341 - plainLoss) - 2, 2 * (341 - plainLoss) + 2), string.Join("\n", turn.Log));
    Assert.That(turn.Fighters[0].Conditions.Modifiers, Is.Empty, "cleared after the action");
+   // 포텐셜은 남아 있어 다음 턴 공격에서 다시 발동한다
+   turn.Fighters[1].HP = 341;
+   var next = Engine.Resolve(TestData.Db, turn.Fighters, new[] { new BattleCommand { Move = hit }, new BattleCommand { Move = idle } }, turn.Rules, turn.Trainers, () => .5);
+   Assert.That(341 - next.Fighters[1].HP, Is.InRange(2 * (341 - plainLoss) - 2, 2 * (341 - plainLoss) + 2), "fires again next turn");
+   // 1/시면 다음 턴에는 발동하지 않는다
+   var limited = F("노말", new Potential { id = "종족 ①", name = "한 번", description = "자신이 주는 대미지를 강화(2배)한다.", uses = "1/시", triggers = new[] { TriggerStructures.AttackMoveUseLabel } });
+   var first = Engine.Resolve(TestData.Db, new[] { limited, F() }, new[] { hit, idle }, new Rules(), () => .5);
+   var second = Engine.Resolve(TestData.Db, first.Fighters, new[] { new BattleCommand { Move = hit }, new BattleCommand { Move = idle } }, first.Rules, first.Trainers, () => .5);
+   Assert.That(first.Fighters[1].HP - second.Fighters[1].HP, Is.InRange(341 - plainLoss - 2, 341 - plainLoss + 2), "1/시 used up");
+  }
+
+  // 등장 포텐셜은 실제로 나왔을 때 한 번만(매 턴 선발 등장을 다시 처리하지 않는다)
+  [Test] public void EntryPotentialFiresOncePerEntry() {
+   var idle = new Move { name = "미등록", category = "변화", types = new[] { "노말" }, tags = new string[0], accuracy = 100, target = "자신" };
+   var lead = F("노말", P(TriggerStructures.EntryLabel, "자신의 「공격」이 오른다."));
+   var t1 = Engine.Resolve(TestData.Db, new[] { lead, F() }, new[] { idle, idle }, new Rules(), () => .5);
+   var t2 = Engine.Resolve(TestData.Db, t1.Fighters, new[] { new BattleCommand { Move = idle }, new BattleCommand { Move = idle } }, t1.Rules, t1.Trainers, () => .5);
+   Assert.That(t2.Fighters[0].Stages[1], Is.EqualTo(1), string.Join("\n", t2.Log));
+   var reserve = F("노말", P(TriggerStructures.EntryLabel, "자신의 「공격」이 오른다.")); reserve.OnField = false;
+   var t3 = Engine.Resolve(TestData.Db, t2.Fighters, new[] { new BattleCommand { SwitchIn = reserve }, new BattleCommand { Move = idle } }, t2.Rules, t2.Trainers, () => .5);
+   var t4 = Engine.Resolve(TestData.Db, t3.Fighters, new[] { new BattleCommand { Move = idle }, new BattleCommand { Move = idle } }, t3.Rules, t3.Trainers, () => .5);
+   Assert.That(t3.Fighters[0].Stages[1], Is.EqualTo(1));
+   Assert.That(t4.Fighters[0].Stages[1], Is.EqualTo(1), "switched-in pokemon does not refire next turn");
   }
 
   [Test] public void SpeciesRaiseToTrainerAptitude() {

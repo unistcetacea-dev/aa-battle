@@ -27,6 +27,8 @@ namespace AABattle {
   }
   public static void Enter(Fighter fighter,Fighter opponent,Rules rules,Func<double> rng,EntryReason reason,Action<string> log){
    if(!IsEntry(reason))return;
+   // 등장은 실제로 나왔을 때 한 번만(턴마다 선발 등장을 다시 처리하지 않도록 효과 실행 범위 안에서 표시)
+   if(PotentialQueue.Active&&fighter!=null)fighter.Conditions.EntryTriggered=true;
    TriggerStructures.Fire(fighter,Label,fighter.Data.name+" · "+Label+" ["+reason+"]",log);PriorityEffectRuntime.ActivateEvent(fighter,null,Label,fighter.Data.name+" · "+Label+" ["+reason+"]",log);OptionalEffectRuntime.Activate(fighter,opponent,Label,rules,log);
    string method=MethodLabel(reason);if(method.Length>0&&TriggerStructures.Has(fighter,method)){TriggerStructures.Fire(fighter,method,fighter.Data.name+" · "+method,log);PriorityEffectRuntime.ActivateEvent(fighter,null,method,fighter.Data.name+" · "+method,log);}if((reason==EntryReason.Lead||reason==EntryReason.Replacement)&&TriggerStructures.Has(fighter,TriggerStructures.LeadOrReplacementEntryLabel)){TriggerStructures.Fire(fighter,TriggerStructures.LeadOrReplacementEntryLabel,fighter.Data.name+" · "+TriggerStructures.LeadOrReplacementEntryLabel,log);PriorityEffectRuntime.ActivateEvent(fighter,null,TriggerStructures.LeadOrReplacementEntryLabel,fighter.Data.name+" · "+TriggerStructures.LeadOrReplacementEntryLabel,log);}
    RoleEntryRuntime.Enter(fighter,opponent,rules,rng,log);
