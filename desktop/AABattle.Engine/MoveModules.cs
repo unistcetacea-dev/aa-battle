@@ -8,7 +8,11 @@ namespace AABattle {
  //  드레인   「준 대미지의 N/M만큼 HP를 회복한다」(타격마다, 대타에 준 대미지 포함)
  //  조이기   「N～M T 동안 상대를 「조이기」 상태로 한다」(기간이 없으면 4～5T)
  //  모으기   태그 「모으기」: 1T째 준비(「X」로 모습을 감춘다 / 1T째 능력 상승), 2T째 자동으로 공격
- //  숨기     「하늘 위」「땅속」「물속」「불꽃속」「어둠속」: 닿는 기술만 맞는다(일부는 위력 2배)
+ //  숨기     「하늘 위」「땅속」「물속」「불꽃속」「어둠속」: 닿는 기술만 맞는다(위력 2배는 기술 문장 「상대가 「X」 상태일 때」)
+ //  급소     「급소에 맞기 쉽다(C+N)」 · 「반드시 급소에 맞는다」(태그 「확정급소」)
+ //  방어 관통 「상대의 「방어」 기술을 관통한다」(태그 「방어관통」)
+ //  필중     「날씨가 「비」일 때, 「필중」 효과가 부여된다」 · 「「독」 타입이 내보내면 「필중」 효과가 부여된다」
+ //  조건 위력 「상대가 「X」 상태(도중·중)일 때, 위력이 강화(N배)된다」
  //  실패     꿈먹기(잠듦이 아니면) · 수상한촉수(장소에 나온 첫 T가 아니면)
  // 소지품·포텐셜용 계속 효과(표준 문장)
  //  드레인 강화      자신의 「드레인」 기술의 회복량을 N배로 한다.
@@ -34,9 +38,9 @@ namespace AABattle {
 
   // 숨는 곳 → 닿는 기술(값은 위력 배율)
   static readonly Dictionary<string, Dictionary<string, double>> Reach = new Dictionary<string, Dictionary<string, double>> {
-   { "하늘 위", new Dictionary<string, double> { { "번개", 1 }, { "폭풍", 1 }, { "회오리", 2 }, { "용오름", 2 }, { "스카이업퍼", 1 }, { "사우전드애로우", 1 }, { "떨어뜨리기", 1 }, { "프리폴", 1 } } },
-   { "땅속", new Dictionary<string, double> { { "지진", 2 }, { "매그니튜드", 2 }, { "땅가르기", 1 } } },
-   { "물속", new Dictionary<string, double> { { "파도타기", 2 }, { "바다회오리", 2 } } },
+   { "하늘 위", new Dictionary<string, double> { { "번개", 1 }, { "폭풍", 1 }, { "회오리", 1 }, { "용오름", 1 }, { "스카이업퍼", 1 }, { "사우전드애로우", 1 }, { "떨어뜨리기", 1 }, { "프리폴", 1 } } },
+   { "땅속", new Dictionary<string, double> { { "지진", 1 }, { "매그니튜드", 1 }, { "땅가르기", 1 } } },
+   { "물속", new Dictionary<string, double> { { "파도타기", 1 }, { "바다회오리", 1 } } },
    { "불꽃속", new Dictionary<string, double>() },
    { "어둠속", new Dictionary<string, double>() },
    { "숨음", new Dictionary<string, double>() }
@@ -174,6 +178,11 @@ namespace AABattle {
    // 숨은 상대에게 닿는 기술
    Dictionary<string, double> reach; double factor;
    if (b != null && !string.IsNullOrEmpty(b.Conditions.Hidden) && Reach.TryGetValue(b.Conditions.Hidden, out reach) && reach.TryGetValue(m.name, out factor)) v *= factor;
+   // 「상대가 「X」 상태일 때, 위력이 강화(N배)된다」
+   foreach (string part in Parts(m)) {
+    var x = Regex.Match(part, @"^상대가 「(?<s>[^」]+)」\s*(?:상태|도중|중)?일 때\s*,\s*위력이 강화\((?<n>\d+(?:\.\d+)?)배\)된다$");
+    if (x.Success && InState(b, x.Groups["s"].Value)) v *= double.Parse(x.Groups["n"].Value);
+   }
    // 날씨 위력(솔라빔 등)
    string w = ActiveWeather(a, b, r);
    foreach (var part in WeatherParts(m)) {
@@ -189,6 +198,25 @@ namespace AABattle {
     }
    return v;
   }
+  // ===== 급소·방어 관통·필중 =====
+  public static int CritBonus(Move m) { var x = Regex.Match(Plain(m), @"급소에 맞기 쉽다\s*\(\s*C\s*\+\s*(\d)\s*\)"); return x.Success ? int.Parse(x.Groups[1].Value) : 0; }
+  public static bool AlwaysCrit(Move m) { return m != null && (Plain(m).Contains("반드시 급소에 맞는다") || Tagged(m, "확정급소")); }
+  public static bool PiercesProtect(Move m) { return m != null && (Plain(m).Contains("「방어」 기술을 관통한다") || Tagged(m, "방어관통")); }
+  public static bool SureHit(Fighter a, Fighter b, Move m, Rules r) {
+   if (a == null || m == null) return false;
+   string w = ActiveWeather(a, b, r);
+   if (WeatherParts(m).Any(x => x.Key == w && x.Value.Contains("「필중」"))) return true;
+   foreach (string part in Parts(m)) {
+    var x = Regex.Match(part, @"^「(?<t>[^」]+)」 타입이 내보내면 「필중」 효과가 부여된다$");
+    if (x.Success && Mechanics.Has(a, x.Groups["t"].Value)) return true;
+   }
+   return false;
+  }
+  static bool InState(Fighter f, string name) {
+   if (f == null) return false;
+   return f.Status == name || name == "상태이상" && f.Status != "정상" || f.Conditions.Hidden == name || Mechanics.HasCondition(f, name);
+  }
+
   // 이 기술 행동이 모으기 T인가(true면 행동은 여기서 끝난다). 2T째는 모으기 상태를 풀고 false
   public static bool Charge(Fighter a, Fighter b, Move m, Rules r, List<string> log) {
    if (a == null || !Charges(m)) return false;

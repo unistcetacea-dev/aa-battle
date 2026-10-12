@@ -57,14 +57,15 @@ namespace AABattle {
    var rule = StateEffects.Find(state);
    string sentence = rule.SelfByDefault ? "자신을 「" + state + "」상태로 한다" : "상대를 「" + state + "」상태로 한다";
    var target = rule.SelfByDefault ? self : opponent;
-   var before = string.Join("|", target.Conditions.Labels(target)) + target.Status + target.Conditions.Hibernate;
+   var before = string.Join("|", target.Conditions.Labels(target)) + target.Status + target.Conditions.Hibernate + target.HP;
    Assert.That(StateEffects.TryApply(sentence, self, opponent, rules, () => .5, log, "검사"), Is.True, state);
-   var after = string.Join("|", target.Conditions.Labels(target)) + target.Status + target.Conditions.Hibernate;
+   var after = string.Join("|", target.Conditions.Labels(target)) + target.Status + target.Conditions.Hibernate + target.HP;
    Assert.That(after, Is.Not.EqualTo(before), state + " / " + string.Join(" / ", log));
   }
 
   static readonly string[] MajorStatuses = { "독", "맹독", "마비", "화상", "얼음", "잠듦", "동상" };
-  static IEnumerable<string> VolatileStates() { return StateEffects.Table.Where(x => x.Category == "상태변화").Select(x => x.Name); }
+  // 빈사는 다시 걸 대상이 없으므로 재적용 검사에서 뺀다
+  static IEnumerable<string> VolatileStates() { return StateEffects.Table.Where(x => x.Category == "상태변화" && x.Name != "빈사").Select(x => x.Name); }
 
   [Test] public void TableSeparatesMajorStatusFromConditions() {
    Assert.That(StateEffects.Table.Where(x => x.Category == "상태이상").Select(x => x.Name), Is.EquivalentTo(MajorStatuses));

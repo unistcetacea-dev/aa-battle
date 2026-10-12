@@ -182,6 +182,10 @@ namespace AABattle {
     string name = swap;
     rules.Add(Rule(name, c => { Mechanics.SetTypeSwap(c.Target, name, c.Log); return true; }, true));
    }
+   // 행동불능(반동): 다음 행동을 쉰다(파괴광선 등 「다음 T 종료 후까지」)
+   // 빈사(자폭 등): 자신이 쓰러진다
+   rules.Add(Rule("빈사", c => { if (c.Target.HP <= 0) return false; c.Target.HP = 0; c.Say(c.Target.Data.name + "은 쓰러졌다!"); return true; }, true));
+   rules.Add(Rule("행동불능", c => { c.Target.Conditions.Recharge = true; return true; }, true, "반동대기"));
    rules.Add(Rule("가열", c => Flag(c, "가열", c.Target.Conditions.Heated, () => c.Target.Conditions.Heated = true), true));
    rules.Add(Rule("냉각", c => Flag(c, "냉각", c.Target.Conditions.Chilled, () => c.Target.Conditions.Chilled = true), true));
    rules.Add(Rule("충전", c => Flag(c, "충전", c.Target.Conditions.Charged, () => c.Target.Conditions.Charged = true), true));

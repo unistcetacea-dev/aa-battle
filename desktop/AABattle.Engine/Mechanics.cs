@@ -39,7 +39,7 @@ namespace AABattle {
   public static int Priority(Fighter a,Move m,Fighter opponent){return Priority(a,m)+PriorityEffectRuntime.ForMove(a,opponent,null,null,null);}
   public static int Priority(Fighter a,Move m,Fighter opponent,TrainerRecord ownTrainer,TrainerRecord opponentTrainer){return Priority(a,m)+PriorityEffectRuntime.ForMove(a,opponent,ownTrainer,opponentTrainer,null);}
   public static string Block(Database db,Fighter a,Fighter b,Move m,Rules r){
-   if(b.Conditions.Protect&&m.name!="페인트")return "방어가 기술을 막았다";if(Ohko(m)){if(a.Data.level<b.Data.level)return "일격필살 실패: 대상 레벨이 더 높다";if(!BypassAbility(a)&&Ability(b,"옹골참"))return "옹골참: 일격필살 무효";}
+   if(b.Conditions.Protect&&m.name!="페인트"&&!MoveModules.PiercesProtect(m))return "방어가 기술을 막았다";if(Ohko(m)){if(a.Data.level<b.Data.level)return "일격필살 실패: 대상 레벨이 더 높다";if(!BypassAbility(a)&&Ability(b,"옹골참"))return "옹골참: 일격필살 무효";}
    if(Powder(m)&&(Has(b,"풀")||!BypassAbility(a)&&Ability(b,"방진")||b.Data.item=="방진고글"))return "풀 타입 / 방진 / 방진고글: 가루 기술 무효";
    if(m.category=="변화"&&Ability(a,"짓궂은마음")&&Has(b,"악"))return "악 타입: 짓궂은마음 변화기 무효";
    if(r.Terrain=="사이코필드"&&Grounded(b,r)&&Priority(a,m,b)>0)return "사이코필드: 접지 대상에게 우선도 기술 무효";
@@ -119,13 +119,13 @@ namespace AABattle {
    if(c.Confusion>0){c.Confusion--;if(rng()<1.0/3){var plain=new Rules{LevelCorrection=r.LevelCorrection,HPCorrection=r.HPCorrection};int attack=Engine.Effective(a,b,1,plain),defense=Engine.Effective(a,b,2,plain);int damage=(int)Math.Floor(((2*a.Data.level+10)/250.0*attack/defense*40+2)*(.85+(int)(rng()*16)/100.0));Hurt(a,b,r,damage,"혼란 자해 (위력40)",log,false);return false;}log.Add(a.Data.name+": 혼란을 버티고 행동했다.");}
    if(a.Status=="마비"&&rng()<.25){log.Add(a.Data.name+": 몸이 저려 움직일 수 없다.");return false;}return true;
   }
-  public static double Accuracy(Fighter a,Fighter b,Move m,Rules r,int attackerSide=-1){if(SureHit(b,m,attackerSide))return double.PositiveInfinity;if(Ohko(m))return a.Data.level<b.Data.level?0:Math.Min(100,m.accuracy+a.Data.level-b.Data.level);if(m.name=="발버둥")return double.PositiveInfinity;string w=Weather(a,b,r);if((m.name=="번개"||m.name=="폭풍")&&Rain(w)||m.name=="눈보라"&&(w=="눈"||w=="싸라기눈"))return 100;if((m.name=="번개"||m.name=="폭풍")&&Sunny(w))return 50;double stage=Engine.Stage(a.AccuracyStage-b.EvasionStage);return Math.Min(100,m.accuracy*(r.Gravity>0?5.0/3:1)*stage*a.AccuracyMultiplier*PotentialModifiers.Stat(a,b,6,r)*PotentialModifiers.Accuracy(a,b,m,r)/(b.EvasionMultiplier*PotentialModifiers.Stat(b,a,7,r)*AbilityRuntime.Evasion(a,b)));}
+  public static double Accuracy(Fighter a,Fighter b,Move m,Rules r,int attackerSide=-1){if(SureHit(b,m,attackerSide))return double.PositiveInfinity;if(Ohko(m))return a.Data.level<b.Data.level?0:Math.Min(100,m.accuracy+a.Data.level-b.Data.level);if(m.name=="발버둥")return double.PositiveInfinity;string w=Weather(a,b,r);if(MoveModules.SureHit(a,b,m,r))return double.PositiveInfinity;double stage=Engine.Stage(a.AccuracyStage-b.EvasionStage);return Math.Min(100,m.accuracy*(r.Gravity>0?5.0/3:1)*stage*a.AccuracyMultiplier*PotentialModifiers.Stat(a,b,6,r)*PotentialModifiers.Accuracy(a,b,m,r)/(b.EvasionMultiplier*PotentialModifiers.Stat(b,a,7,r)*AbilityRuntime.Evasion(a,b)));}
   public static readonly Dictionary<string,string> StatusMoves=new Dictionary<string,string>{{"도깨비불","화상"},{"맹독","맹독"},{"독가루","독"},{"독가스","독"},{"전기자석파","마비"},{"저리가루","마비"},{"뱀눈초리","마비"},{"버섯포자","잠듦"},{"수면가루","잠듦"},{"최면술","잠듦"},{"악마의키스","잠듦"}};
   public static readonly Dictionary<string,string> WeatherMoves=new Dictionary<string,string>{{"쾌청","쾌청"},{"비바라기","비"},{"모래바람","모래바람"},{"설경","눈"},{"싸라기눈","싸라기눈"}};
   public static readonly string[] HazardMoves={"스텔스록","압정뿌리기","독압정","끈적끈적네트"};
   public static readonly string[] SelfMoves={"방어","판별","대타출동","자기재생","태만함","날개쉬기","아쿠아링","뿌리박기","리플렉터","빛의장막","순풍","칼춤","고속이동","나쁜음모","명상","충전","분노","도우미","멸망의노래","웅크리기","잠자기"};
   public static bool TargetsOpponent(Move m){if(m==null)return false;if(!string.IsNullOrWhiteSpace(m.target))return !new[]{"자신","자진","필드","아군"}.Contains(m.target);return m.category!="변화"||!(SelfMoves.Contains(m.name)||WeatherMoves.ContainsKey(m.name)||Terrains.Contains(m.name)||m.name=="트릭룸"||m.name=="중력");}
-  public static bool KnownMove(Move m){return m.category!="변화"||StatusMoves.ContainsKey(m.name)||SelfMoves.Contains(m.name)||WeatherMoves.ContainsKey(m.name)||Terrains.Contains(m.name)||HazardMoves.Contains(m.name)||new[]{"이상한빛","초음파","씨뿌리기","도발","트릭룸","중력","안개제거","트집","사슬묶기","회복봉인","검은눈빛","록온","마음의눈","헤롱헤롱","앙코르"}.Contains(m.name);}
+  public static bool KnownMove(Move m){return m.category!="변화"||MoveRuntime.TextDriven(m)||StatusMoves.ContainsKey(m.name)||SelfMoves.Contains(m.name)||WeatherMoves.ContainsKey(m.name)||Terrains.Contains(m.name)||HazardMoves.Contains(m.name)||new[]{"이상한빛","초음파","씨뿌리기","도발","트릭룸","중력","안개제거","트집","사슬묶기","회복봉인","검은눈빛","록온","마음의눈","헤롱헤롱","앙코르"}.Contains(m.name);}
   // 장소 전개(기술·포텐셜 공용, 확정 24): 특수 날씨는 덮어쓸 수 없고 같은 날씨·지형이면 실패
   public static bool SetWeather(Fighter a,Fighter b,string next,int turns,Rules r,List<string> log,string source){if(r.Weather=="큰가뭄"||r.Weather=="강한 비"||r.Weather=="난기류"){log.Add("특수 날씨는 일반 날씨 효과로 덮어쓸 수 없다.");return false;}if(r.Weather==next){log.Add(source+" 실패: 이미 "+next+" 날씨다.");return false;}turns=MiscModules.ExtendTurns(a,next,turns);string before=r.Weather;r.Weather=next;r.WeatherTurns=turns;log.Add("날씨: "+r.Weather+" ("+turns+"턴)");AnsweredTriggers.WeatherChanged(a,b,before,r.Weather,log.Add);return true;}
   public static bool SetTerrain(Fighter a,Fighter b,string next,int turns,Rules r,List<string> log,string source){if(r.Terrain==next){log.Add(source+" 실패: 이미 "+next+"다.");return false;}turns=MiscModules.ExtendTurns(a,next,turns);string before=r.Terrain;r.Terrain=next;r.TerrainTurns=turns;log.Add("필드: "+next+" ("+turns+"턴)");AnsweredTriggers.TerrainChanged(a,b,before,r.Terrain,log.Add);return true;}
@@ -138,7 +138,7 @@ namespace AABattle {
    if(WeatherMoves.ContainsKey(m.name))return SetWeather(a,b,WeatherMoves[m.name],5,r,log,m.name);
    if(Terrains.Contains(m.name)&&m.name!="없음")return SetTerrain(a,b,m.name,5,r,log,m.name);
    if(HazardNames.Contains(m.name))return InstallHazard(targetSide,m.name,r,log);
-   if(m.name=="안개제거"){r.Sides[0].ClearHazards();r.Sides[1].ClearHazards();log.Add("안개제거: 양쪽 진영의 설치물을 제거했다.");return true;}
+   if(m.name=="안개제거"){r.Sides[0].ClearHazards();r.Sides[1].ClearHazards();log.Add("안개제거: 양쪽 진영의 설치물을 제거했다.");SecondaryEffects.Roll(a,b,"「10할:회피-1」",m.name,r,rng,log,null);return true;}
    if(new[]{"트집","사슬묶기","회복봉인","검은눈빛"}.Contains(m.name))return ApplyActionState(b,m.name,0,log);
    if(m.name=="록온"||m.name=="마음의눈"){if(AlreadyHas(b,"마음의눈",log))return false;ApplyMindReader(b,attackerSide,r);log.Add(b.Data.name+": 마음의눈 ("+(attackerSide+1)+"팀)");return true;}
    if(m.name=="헤롱헤롱"){if(AlreadyHas(b,"헤롱헤롱",log))return false;b.Conditions.AttractSide=attackerSide;log.Add(b.Data.name+": 헤롱헤롱");return true;}
@@ -147,7 +147,7 @@ namespace AABattle {
    switch(m.name){
     case "도우미":c.HelpingHand=true;log.Add(a.Data.name+": 도우미");return true;
     case "웅크리기":c.Curled=true;ChangeStage(a,a,2,1,r,m.name,log);ChangeStage(a,a,4,1,r,m.name,log);return true;
-    case "분노":if(AlreadyHas(a,"분노",log))return false;c.Rage=4+Math.Min(1,(int)(rng()*2));log.Add(a.Data.name+": 분노 "+c.Rage+"T");return true;
+    case "분노":if(AlreadyHas(a,"분노",log))return false;c.Rage=5;log.Add(a.Data.name+": 분노 "+c.Rage+"T");return true;
     case "방어":case "판별":if(rng()<Math.Pow(1.0/3,c.ProtectChain)){c.Protect=true;c.ProtectChain++;log.Add(a.Data.name+": 방어 태세!");}else{c.ProtectChain=0;log.Add(a.Data.name+": 연속 방어 실패.");return false;}break;
     case "대타출동":int cost=Math.Max(1,max/4);if(c.Substitute>0||a.HP<=cost){log.Add("대타출동 실패: HP 부족 또는 이미 대타 존재.");return false;}a.HP-=cost;c.Substitute=cost;log.Add(a.Data.name+": 대타 HP "+cost);break;
     case "자기재생":case "태만함":return Heal(a,b,r,max/2,m.name,log)>0;
@@ -171,19 +171,9 @@ namespace AABattle {
    }return true;
   }
   public static void AfterHit(Fighter a,Fighter b,Move m,Rules r,Func<double> rng,List<string> log,bool substitute,int attackerSide=0,int bodyDamage=0){
-   if(m.name=="파괴광선"||m.name=="기가임팩트")a.Conditions.Recharge=true;
-   if(m.name=="고속스핀"){ClearTurns(ref a.Conditions.Bound,a,"조이기",log);bool removed=r.Sides[attackerSide].HasHazards();r.Sides[attackerSide].ClearHazards();ChangeStage(a,b,5,1,r,m.name,log);if(removed)log.Add(a.Data.name+"의 고속스핀: 아군 진영의 설치물 제거");}
+   if(m.name=="고속스핀"){ClearTurns(ref a.Conditions.Bound,a,"조이기",log);bool removed=r.Sides[attackerSide].HasHazards();r.Sides[attackerSide].ClearHazards();ChangeStage(a,a,5,1,r,m.name,log);if(removed)log.Add(a.Data.name+"의 고속스핀: 아군 진영의 설치물 제거");}
    if(substitute)return;if(bodyDamage>0&&m.category!="변화"){if(b.Conditions.Rage>0)ChangeStage(b,b,1,1,r,"분노",log);if(b.Conditions.Bomb&&Contact(m)&&!MoveModules.IgnoresContact(a)){Hurt(b,a,r,Math.Max(1,Max(b,a,r)/4),"폭탄",log);ClearFlag(ref b.Conditions.Bomb,b,"폭탄",log);}}if(b.Data.item=="풍선"&&!b.Conditions.BalloonPopped){b.Conditions.BalloonPopped=true;log.Add(b.Data.name+": 풍선이 터졌다.");}
    if(b.Status=="얼음"&&m.types.Contains("불꽃")){b.Status="정상";log.Add(b.Data.name+": 불꽃 공격으로 얼음이 녹았다.");}
-   string status="";double chance=0;
-   if(m.name=="화염방사"||m.name=="불대문자"){status="화상";chance=.1;}
-   if(m.name=="10만볼트"){status="마비";chance=.1;}
-   if(m.name=="번개"){status="마비";chance=.3;}
-   if(m.name=="냉동빔"||m.name=="눈보라"){status="얼음";chance=.1;}
-   if(m.name=="독찌르기"||m.name=="오물폭탄"){status="독";chance=.3;}
-   if(m.name=="더블니들"){status="독";chance=.2;}if(m.name=="더블펀처"&&b.HP>0&&rng()<.3){b.Conditions.Flinch=true;log.Add(b.Data.name+": 풀죽음");}if(m.name=="스케일샷")ChangeStage(a,b,5,1,r,m.name,log);
-   if(status.Length>0&&rng()<chance)ApplyStatus(b,a,status,r,rng,log);
-   if(b.HP>0&&((m.name=="에어슬래시"||m.name=="스톤샤워")&&rng()<.3||m.name=="악의파동"&&rng()<.2)){b.Conditions.Flinch=true;log.Add(b.Data.name+": 풀죽음");}
   }
   public static void EnterField(Database db,Fighter entering,Fighter opponent,int side,Rules r,Func<double> rng,List<string> log){
    var hazards=r.Sides[side];if(hazards==null||!hazards.Any()||entering.HP<=0)return;if(entering.Data.item=="통굽부츠"){log.Add(entering.Data.name+": 통굽부츠로 설치물의 영향을 받지 않는다.");return;}int max=Max(entering,opponent,r);
@@ -200,7 +190,7 @@ namespace AABattle {
    }
    foreach(int i in order){var a=f[i];var b=f[1-i];var c=a.Conditions;int max=Max(a,b,r);if(c.Seed&&a.HP>0&&!Ability(a,"매직가드")){int before=a.HP;Hurt(a,b,r,max/8,"씨뿌리기",log);int loss=before-a.HP;if(loss>0){int gain=Heal(b,a,r,loss,"씨뿌리기 흡수",log);AnsweredTriggers.Drained(b,a,loss,gain,log.Add);}}}
    foreach(int i in order){var a=f[i];var b=f[1-i];var c=a.Conditions;int max=Max(a,b,r);var turnHeal=TurnEndHeal(a,b,r,max);if(turnHeal.Value>0)Heal(a,b,r,turnHeal.Value,turnHeal.Key,log);}
-   foreach(int i in order){var a=f[i];var c=a.Conditions;ClearFlag(ref c.HelpingHand,a,"도우미",log);ClearTypeSwap(a,log);Tick(ref c.EncoreTurns,"앙코르",a,log);if(c.EncoreTurns==0)c.EncoreMove="";Tick(ref c.Intercept,"요격",a,log);Tick(ref c.Rage,"분노",a,log);if(c.Bomb&&c.BombSetTurn<r.Turn)ClearFlag(ref c.Bomb,a,"폭탄",log);if(c.MindReaderSide>=0&&c.MindReaderSetTurn<r.Turn)ClearMindReader(a,log);Tick(ref c.Silenced,"침묵",a,log);Tick(ref c.Forgotten,"망각",a,log);Tick(ref c.HealBlock,"회복봉인",a,log);Tick(ref c.Disabled,"사슬묶기",a,log);if(c.Disabled==0)c.DisabledMove="";Tick(ref c.Bound,"조이기",a,log);c.Protect=false;c.Flinch=false;Tick(ref c.Taunt,"도발",a,log);Tick(ref r.Sides[i].Reflect,"리플렉터",a,log);Tick(ref r.Sides[i].LightScreen,"빛의장막",a,log);Tick(ref r.Sides[i].Tailwind,"순풍",a,log);}
+   foreach(int i in order){var a=f[i];var c=a.Conditions;ClearFlag(ref c.HelpingHand,a,"도우미",log);ClearTypeSwap(a,log);Tick(ref c.EncoreTurns,"앙코르",a,log);if(c.EncoreTurns==0)c.EncoreMove="";Tick(ref c.Intercept,"요격",a,log);Tick(ref c.Rage,"분노",a,log);if(c.Bomb&&c.BombSetTurn<r.Turn)ClearFlag(ref c.Bomb,a,"폭탄",log);if(c.MindReaderSide>=0&&c.MindReaderSetTurn<r.Turn)ClearMindReader(a,log);Tick(ref c.Silenced,"침묵",a,log);Tick(ref c.Forgotten,"망각",a,log);Tick(ref c.HealBlock,"회복봉인",a,log);Tick(ref c.Disabled,"사슬묶기",a,log);if(c.Disabled==0)c.DisabledMove="";Tick(ref c.Bound,"조이기",a,log);if(c.MeanLook&&c.MeanLookTurns>0&&--c.MeanLookTurns==0)ClearFlag(ref c.MeanLook,a,"검은눈빛",log);c.Protect=false;c.Flinch=false;Tick(ref c.Taunt,"도발",a,log);Tick(ref r.Sides[i].Reflect,"리플렉터",a,log);Tick(ref r.Sides[i].LightScreen,"빛의장막",a,log);Tick(ref r.Sides[i].Tailwind,"순풍",a,log);}
    foreach(var x in f)PotentialModifiers.Tick(x,log);if(r.Weather!="없음"&&r.WeatherTurns>0&&--r.WeatherTurns==0){log.Add(r.Weather+" 종료");r.Weather="없음";}
    if(r.Terrain!="없음"&&r.TerrainTurns>0&&--r.TerrainTurns==0){log.Add(r.Terrain+" 종료");r.Terrain="없음";}
    if(r.TrickRoom>0&&--r.TrickRoom==0)log.Add("트릭룸 종료");if(r.Gravity>0&&--r.Gravity==0)log.Add("중력 종료");PriorityEffectRuntime.EndTurn(f[0],log.Add);PriorityEffectRuntime.EndTurn(f[1],log.Add);

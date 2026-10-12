@@ -27,6 +27,7 @@ namespace AABattle {
   public string AbilityBefore;public int AbilityTurns;                    // 특성 변경 전 특성 / 남은 T(0 = 장소를 떠날 때까지)
   public int ActionOrder;public bool PendingAction;                      // 이번 T에 몇 번째로 행동했나(0 = 아직, 교대는 행동이 아니다) / 아직 기술 행동이 남았나(행동권)
   public string ChargeMove="",Hidden="";public bool HeldInSky;       // 모으기 중인 기술 / 숨은 곳(하늘 위·땅속…) / 프리폴로 붙잡힘
+  public int MeanLookTurns;                                            // 검은눈빛 남은 T(0 = 장소를 떠날 때까지)
   public int BindDivisor;                                              // 조이기 대미지 분모(0 = 8)
   public string RepeatMove="";public int RepeatCount;                  // 같은 기술 연속 사용(메트로놈)
   public int NextPriority;                                             // 다음 T 기술 우선도(애슈열매)
