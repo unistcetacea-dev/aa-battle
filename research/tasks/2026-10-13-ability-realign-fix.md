@@ -2,7 +2,7 @@
 
 작성: Claude (2026-10-13) · 구현: ChatGPT(Codex) · 대상 커밋: `eeab5cf` · 브랜치: `task/ability-realign-fix`
 
-리뷰 결과 전체 방향(53개 모듈 이전, 10개 전용 유지, 동작 변경 목록)은 승인한다. 아래 3건만 고친다.
+리뷰 결과 전체 방향(53개 모듈 이전, 동작 변경 목록)은 승인한다. 아래 4건을 고친다. 전용 유지 10개는 다음 지시서(`2026-10-13-ability-dedicated-modules.md`)에서 모듈로 옮긴다.
 
 ## 1. 재생력이 강제교대에서 회복하지 않는다 (규칙 위반)
 - 원인: 재생력을 `필드를 떠날 때, …`(트리거 모듈 「퇴장」)로 옮겼는데, `TriggerModules.Matches`의 「퇴장」은 `f.Method != "강제"`로 강제교대를 뺀다(포텐셜용 1단계 규칙).
@@ -20,7 +20,11 @@
 - 할 일: 이번에 모듈로 옮긴 53개 이름을 엔진 전체에서 검색(`"이름"`)해서, `AbilityModules.Rewrites`·`AbilityCatalog`·테스트 외에 남은 판정은 모듈 판정 함수(`AbilityPhrases`의 판정 함수, `PotentialModifiers` 등)로 바꾸거나 지운다. 옹골참은 모듈이 일격필살 기술 전부(이름 목록 `가위자르기·뿔드릴·땅가르기·절대영도`와 태그 「일격필살」)를 막는지 먼저 확인한다. 막지 못하면 모듈을 고치고 이름 판정을 지운다.
 - 정말 남겨야 하는 이름 판정이 있으면 지우지 말고 이유와 함께 보고한다.
 
+## 4. 짓궂은마음의 「악 타입에게 변화기술 무효」 삭제 (사용자 결정)
+- 도감 문장에 없으므로 지운다(`Mechanics.Block`의 `짓궂은마음 … Has(b,"악")` 분기와 관련 검사·문구). 짓궂은마음은 모듈 `자신의 「변화」 기술의 우선도를 +1한다.`만 남는다.
+- 검사: 짓궂은마음의 변화기술이 악 타입에게도 통한다.
+
 ## 범위·검사·보고
 - 수정해도 되는 파일: `AbilityModules.cs`, `AbilityPhrases.cs`, `TriggerModules.cs`, `TriggerConditions.cs`(트리거 변형이 거기 있으면), `Mechanics.cs`, `BattleStateReport.cs`, `AbilityRuntime.cs`, 테스트, `PROJECT_HANDOFF.md`.
 - `./desktop/verify.ps1 -OutputPath outputs/candidate` 통과 후 AGENTS.md 절차대로 rebase·병합·push.
-- 보고는 AGENTS.md 형식: 브랜치/커밋 · 파일당 한 줄 이유 · verify PASS 줄 · 3건 각각 결과 · 남긴 이름 판정 목록과 이유 · 범위 밖 발견.
+- 보고는 AGENTS.md 형식: 브랜치/커밋 · 파일당 한 줄 이유 · verify PASS 줄 · 4건 각각 결과 · 남긴 이름 판정 목록과 이유 · 범위 밖 발견.
