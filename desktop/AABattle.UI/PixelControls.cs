@@ -280,7 +280,9 @@ namespace AABattle {
   void Sync(){if(content==null||syncing)return;syncing=true;try{int view=Math.Max(1,ClientSize.Height);bar.Maximum=Math.Max(0,content.Height-view);bar.Page=view;bar.Visible=bar.Maximum>0;Place();}finally{syncing=false;}}
   void Place(){if(content==null)return;int width=Math.Max(1,ClientSize.Width-(bar.Visible?bar.Width:0));content.SetBounds(0,-bar.Value,width,content.Height);bar.Invalidate();}
   protected override void OnResize(EventArgs e){base.OnResize(e);Sync();}
-  protected override void OnMouseWheel(MouseEventArgs e){base.OnMouseWheel(e);bar.Value-=Math.Sign(e.Delta)*72;}
+  // 휠은 커서 아래의 가장 안쪽 스크롤 영역만 움직인다(바깥 패널로 넘기지 않음)
+  protected override void OnMouseWheel(MouseEventArgs e){base.OnMouseWheel(e);if(!bar.Visible)return;bar.Value-=Math.Sign(e.Delta)*72;WheelHandled(e);}
+  public static void WheelHandled(MouseEventArgs e){var handled=e as HandledMouseEventArgs;if(handled!=null)handled.Handled=true;}
   // Keyboard focus moving to a hidden field scrolls it into view, as AutoScroll did.
   void HookFocus(Control root){foreach(Control c in root.Controls){c.GotFocus+=(s,e)=>Reveal((Control)s);HookFocus(c);}root.ControlAdded+=(s,e)=>HookFocus(e.Control);}
   void Reveal(Control c){if(content==null||!content.Contains(c))return;int top=content.PointToClient(c.PointToScreen(Point.Empty)).Y,view=ClientSize.Height;if(top<bar.Value)bar.Value=Math.Max(0,top-12);else if(top+c.Height>bar.Value+view)bar.Value=top+Math.Min(c.Height,view)-view+12;}

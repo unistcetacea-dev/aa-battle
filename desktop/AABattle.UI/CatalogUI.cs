@@ -22,7 +22,7 @@ namespace AABattle {
   protected override void OnMouseDown(MouseEventArgs e){base.OnMouseDown(e);Focus();int p=Horizontal?e.X:e.Y;if(p<22)Value--;else if(p>Length-22)Value++;else if(Thumb.Contains(e.Location)){drag=p-(Horizontal?Thumb.X:Thumb.Y);Capture=true;}else Value+=p<(Horizontal?Thumb.X:Thumb.Y)?-Page:Page;}
   protected override void OnMouseMove(MouseEventArgs e){base.OnMouseMove(e);if(drag>=0)Value=(int)Math.Round(((Horizontal?e.X:e.Y)-22-drag)*(double)Maximum/Travel);}
   protected override void OnMouseUp(MouseEventArgs e){drag=-1;Capture=false;base.OnMouseUp(e);}
-  protected override void OnMouseWheel(MouseEventArgs e){Value-=Math.Sign(e.Delta)*3;base.OnMouseWheel(e);}
+  protected override void OnMouseWheel(MouseEventArgs e){Value-=Math.Sign(e.Delta)*3;base.OnMouseWheel(e);PixelScrollPanel.WheelHandled(e);}
   protected override bool IsInputKey(Keys keyData){return true;}
   protected override void OnKeyDown(KeyEventArgs e){if(e.KeyCode==Keys.Home)Value=0;else if(e.KeyCode==Keys.End)Value=Maximum;else if(e.KeyCode==Keys.PageDown)Value+=Page;else if(e.KeyCode==Keys.PageUp)Value-=Page;else if(e.KeyCode==Keys.Down||e.KeyCode==Keys.Right)Value++;else if(e.KeyCode==Keys.Up||e.KeyCode==Keys.Left)Value--;base.OnKeyDown(e);}
  }
@@ -80,7 +80,7 @@ namespace AABattle {
   void Measure(){if(Width<30)return;int h;using(var g=CreateGraphics())h=(int)Math.Ceiling(g.MeasureString(content,Font,Math.Max(1,Width-44)).Height);bar.Maximum=Math.Max(0,h-Height+24);bar.Page=Math.Max(1,Height-24);bar.Value=bar.Value;bar.Invalidate();}
   protected override void OnResize(EventArgs e){base.OnResize(e);Measure();}
   protected override void OnPaint(PaintEventArgs e){base.OnPaint(e);e.Graphics.DrawRectangle(Pens.Black,0,0,Width-1,Height-1);var state=e.Graphics.Save();e.Graphics.SetClip(new Rectangle(8,8,Math.Max(1,Width-40),Math.Max(1,Height-16)));e.Graphics.TextRenderingHint=System.Drawing.Text.TextRenderingHint.SingleBitPerPixelGridFit;e.Graphics.DrawString(content,Font,Brushes.Black,new RectangleF(10,10-offset,Math.Max(1,Width-44),Math.Max(Height,bar.Maximum+Height)));e.Graphics.Restore(state);}
-  protected override void OnMouseWheel(MouseEventArgs e){bar.Value-=Math.Sign(e.Delta)*48;base.OnMouseWheel(e);}
+  protected override void OnMouseWheel(MouseEventArgs e){base.OnMouseWheel(e);if(bar.Maximum<=0)return;bar.Value-=Math.Sign(e.Delta)*48;PixelScrollPanel.WheelHandled(e);}
  }
 
  partial class DataEditorForm {

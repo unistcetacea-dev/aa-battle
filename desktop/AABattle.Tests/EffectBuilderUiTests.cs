@@ -19,6 +19,24 @@ namespace AABattle {
    return Field<PixelText>(form, "effectPreview").Text;
   }
 
+  [System.Runtime.InteropServices.DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr h, int msg, IntPtr w, IntPtr l);
+
+  // 안쪽 스크롤 영역의 휠은 바깥 패널을 같이 움직이지 않는다(편집기 오른쪽·가운데 동시 스크롤 버그)
+  [Test] public void WheelScrollsOnlyInnermostPanel() {
+   using (var form = new System.Windows.Forms.Form { Width = 400, Height = 400 }) {
+    var outer = new PixelScrollPanel { Dock = System.Windows.Forms.DockStyle.Fill };
+    var tall = new System.Windows.Forms.Panel { Height = 2000 };
+    var inner = new PixelScrollPanel { Bounds = new System.Drawing.Rectangle(0, 0, 300, 200) };
+    var leaf = new System.Windows.Forms.Panel { Height = 2000 };
+    form.Controls.Add(outer); outer.Content = tall; tall.Controls.Add(inner); inner.Content = leaf;
+    form.Show(); System.Windows.Forms.Application.DoEvents();
+    var point = leaf.PointToScreen(new System.Drawing.Point(10, 10));
+    SendMessage(leaf.Handle, 0x20A, new IntPtr(-120 << 16), new IntPtr((point.Y << 16) | (point.X & 0xFFFF)));
+    Assert.That(inner.ScrollTop, Is.GreaterThan(0));
+    Assert.That(outer.ScrollTop, Is.EqualTo(0));
+   }
+  }
+
   [Test] public void EditorModuleSentencesAreEngineModules() {
    using (var form = new DataEditorForm()) {
     string power = Build(form, "수치 배율", "상대가 받는 대미지", "강화", "불꽃/얼음 물리 효과가 매우 굉장");
