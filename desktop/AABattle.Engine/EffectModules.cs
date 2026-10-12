@@ -113,7 +113,8 @@ namespace AABattle {
    if (PowerMax >= 0 && !(move.power > 0 && move.power <= PowerMax)) return false;
    if (PowerMin >= 0 && move.power < PowerMin) return false;
    if (PriorityPositive && move.priority <= 0) return false;
-   foreach (string tag in Tags) if (!(move.tags ?? new string[0]).Contains(tag) && !(move.effect ?? "").Contains(tag) && move.name != tag) return false;
+   // 「물기」「엄니」처럼 계통·이름 괄호가 여럿이면 하나라도 맞으면 된다. 「접촉」은 최종 접촉 판정
+   if (Tags.Count > 0 && !Tags.Any(tag => tag == "접촉" ? Mechanics.Contact(move) : (move.tags ?? new string[0]).Contains(tag) || (move.effect ?? "").Contains(tag) || move.name == tag)) return false;
    if (Names.Count > 0 && !Names.Contains(move.name)) return false;
    return true;
   }

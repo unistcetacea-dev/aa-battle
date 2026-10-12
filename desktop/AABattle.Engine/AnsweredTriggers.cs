@@ -62,14 +62,6 @@ namespace AABattle {
   public static void Healed(Fighter target,int amount,string reason,Action<string> log){if(amount>0)Fire(target,IsRecover,target.Data.name+"의 HP가 "+amount+" 회복 ("+reason+")",log);}
   public static void Drained(Fighter source,Fighter target,int damage,int heal,Action<string> log){if(damage>0&&heal>0)Fire(source,IsDrain,target.Data.name+"에게 "+damage+" 대미지 · "+heal+" 회복",log);}
   public static void IndirectDamage(Fighter target,Fighter other,int amount,string reason,Action<string> log){if(amount>0)Fire(other,IsIndirectDamage,target.Data.name+"이 공격 이외의 대미지 "+amount+" ("+reason+")",log);}
-  public static void AttackHit(Fighter user,Fighter target,Move move,bool substitute,bool critical,Action<string> log){
-   if(user==null||target==null||move==null)return;
-   if(critical)Fire(user,IsCritical,user.Data.name+"의 "+move.name+"이 급소에 명중",log);
-   Fire(user,x=>IsContact(x,false)&&Mechanics.Contact(move),user.Data.name+"의 접촉 기술 "+move.name+"이 명중",log);
-   if(PotentialQueue.Active)PotentialQueue.Raise(new PotentialEvent{Owner=user,Clause=x=>IsMoveTag(x,move),Move=move,Message=move.name,Log=log,PendingText=(source,extra)=>"『"+source.Name+"』 기술 태그 트리거 충족 — "+move.name+" · 효과 판정 대기: "+source.Description});
-   else foreach(var potential in Potentials(user).Where(p=>Matches(p,x=>IsMoveTag(x,move))))log("『"+potential.name+"』 기술 태그 트리거 충족 — "+move.name+" · 효과 판정 대기: "+potential.description);
-   if(!substitute)Fire(target,x=>IsContact(x,true)&&Mechanics.Contact(move),target.Data.name+"이 대타 없이 접촉을 받음: "+move.name,log);
-  }
   public static void DefensiveBlocked(Fighter defender,Fighter attacker,Move move,string reason,Action<string> log){if(reason.StartsWith("방어"))Fire(defender,IsDefendBlock,defender.Data.name+"의 방어가 "+move.name+"을 막음",log);}
   public static void Selected(Fighter[] fighters,BattleCommand[] commands,Action<string> log){
    if(fighters==null||commands==null||fighters.Length!=2||commands.Length!=2)return;

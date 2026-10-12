@@ -25,12 +25,21 @@ namespace AABattle {
   public static void Enter(Fighter fighter,EntryReason reason,Action<string> log){
    Enter(fighter,null,null,null,reason,log);
   }
-  public static void Enter(Fighter fighter,Fighter opponent,Rules rules,Func<double> rng,EntryReason reason,Action<string> log){
-   if(!IsEntry(reason))return;
+  // partner: 교대해 들어간 아군(「「X」 타입 아군과 교대해 장소에 나올 때」)
+  public static void Enter(Fighter fighter,Fighter opponent,Rules rules,Func<double> rng,EntryReason reason,Action<string> log,Fighter partner=null){
+   if(fighter==null)return;
+   // 등장한 T가 1T째(선발·죽어내밀기는 인터벌 등장이라 다음 T가 1T째)
+   fighter.Conditions.FieldTurn=reason==EntryReason.Lead||reason==EntryReason.Replacement?0:1;
+   // 효과 실행 범위 밖(죽어내밀기 화면)에서 나오면 다음 T 처음에 그 방식으로 처리한다(인터벌은 다음 T, 타이밍 규칙 5-1)
+   if(!PotentialQueue.Active&&rules!=null&&reason==EntryReason.Replacement){fighter.Conditions.PendingEntry=reason;fighter.Conditions.EntryTriggered=false;return;}
    // 등장은 실제로 나왔을 때 한 번만(턴마다 선발 등장을 다시 처리하지 않도록 효과 실행 범위 안에서 표시)
-   if(PotentialQueue.Active&&fighter!=null)fighter.Conditions.EntryTriggered=true;
-   TriggerStructures.Fire(fighter,Label,fighter.Data.name+" · "+Label+" ["+reason+"]",log);PriorityEffectRuntime.ActivateEvent(fighter,null,Label,fighter.Data.name+" · "+Label+" ["+reason+"]",log);OptionalEffectRuntime.Activate(fighter,opponent,Label,rules,log);
-   string method=MethodLabel(reason);if(method.Length>0&&TriggerStructures.Has(fighter,method)){TriggerStructures.Fire(fighter,method,fighter.Data.name+" · "+method,log);PriorityEffectRuntime.ActivateEvent(fighter,null,method,fighter.Data.name+" · "+method,log);}if((reason==EntryReason.Lead||reason==EntryReason.Replacement)&&TriggerStructures.Has(fighter,TriggerStructures.LeadOrReplacementEntryLabel)){TriggerStructures.Fire(fighter,TriggerStructures.LeadOrReplacementEntryLabel,fighter.Data.name+" · "+TriggerStructures.LeadOrReplacementEntryLabel,log);PriorityEffectRuntime.ActivateEvent(fighter,null,TriggerStructures.LeadOrReplacementEntryLabel,fighter.Data.name+" · "+TriggerStructures.LeadOrReplacementEntryLabel,log);}
+   if(PotentialQueue.Active)fighter.Conditions.EntryTriggered=true;
+   fighter.Conditions.PendingEntry=EntryReason.Lead;
+   string method=TriggerModules.EntryMethodName(reason);
+   TriggerModules.Raise(new TriggerFact{Kind="등장",Method=method,PartnerTypes=partner==null?new string[0]:(partner.Data.types??new string[0]).ToArray()},fighter,opponent,fighter.Data.name+" · "+Label+" ["+method+"]",log);
+   if(!IsEntry(reason))return;
+   PriorityEffectRuntime.ActivateEvent(fighter,null,Label,fighter.Data.name+" · "+Label+" ["+reason+"]",log);OptionalEffectRuntime.Activate(fighter,opponent,Label,rules,log);
+   string label=MethodLabel(reason);if(label.Length>0)PriorityEffectRuntime.ActivateEvent(fighter,null,label,fighter.Data.name+" · "+label,log);if(reason==EntryReason.Lead||reason==EntryReason.Replacement)PriorityEffectRuntime.ActivateEvent(fighter,null,TriggerStructures.LeadOrReplacementEntryLabel,fighter.Data.name+" · "+TriggerStructures.LeadOrReplacementEntryLabel,log);
    RoleEntryRuntime.Enter(fighter,opponent,rules,rng,log);
   }
   public static void Test(){
@@ -60,7 +69,7 @@ namespace AABattle {
   public const string Label=TriggerStructures.DefeatLabel;
   public static void ByMove(Fighter attacker,Fighter target,Move move,int hpBefore,int damage,Action<string> log){
    if(hpBefore<=0||damage<=0||target.HP>0)return;
-   TriggerStructures.Fire(attacker,Label,attacker.Data.name+"의 "+move.name+" 직접 대미지로 "+target.Data.name+"을 쓰러뜨렸다.",log);
+   TriggerModules.Raise(new TriggerFact{Kind="쓰러뜨림",Move=move,User=attacker,OtherTypes=(target.Data.types??new string[0]).ToArray(),OtherAin=TriggerModules.IsAin(target)},attacker,null,attacker.Data.name+"의 "+move.name+" 직접 대미지로 "+target.Data.name+"을 쓰러뜨렸다.",log);
    PriorityEffectRuntime.ActivateEvent(attacker,target,Label,attacker.Data.name+"의 "+move.name+" 직접 대미지로 "+target.Data.name+"을 쓰러뜨렸다.",log);
   }
   public static void Test(){
@@ -80,7 +89,16 @@ namespace AABattle {
   // 「자신/아군의 (능력)이 (크게) 오른다」. 맞지 않으면 null
   public static Match AllyRise(string line){var match=Regex.Match(PotentialParts.Clean(line??"").Trim().TrimEnd('.','．','。'),@"^(?:자신|아군)의\s*「?(?<stat>공격|방어|특공|특방|속도)」?(?:이|가|을|를)\s*(?<degree>매우 크게|크게)?\s*오른다$");return match.Success?match:null;}
   public static bool ApplyAllyRise(string line,Fighter ally,Fighter other,Action<string> log){var match=AllyRise(line);if(match==null||ally==null||ally.HP<=0)return false;int index=Array.IndexOf(Engine.Names,match.Groups["stat"].Value),amount=match.Groups["degree"].Value=="매우 크게"?3:match.Groups["degree"].Value=="크게"?2:1;if(index<=0)return false;int before=ally.Stages[index];ally.Stages[index]=Math.Min(6,ally.Stages[index]+amount);log(ally.Data.name+": "+Engine.Names[index]+" +"+amount+" (고유 포텐셜)");if(other!=null)AnsweredTriggers.StageChanged(ally,other,index,before,ally.Stages[index],log);return ally.Stages[index]!=before;}
-  public static void BeforeMove(TrainerRecord trainer,Move move,Action<string> log){Fire(trainer,TriggerStructures.MoveUseLabel,move.name,log);Fire(trainer,move.category=="변화"?TriggerStructures.StatusMoveUseLabel:TriggerStructures.AttackMoveUseLabel,move.name,log);foreach(var p in Unique(trainer))if(TriggerStructures.NormalizeLines(p.trigger).Replace("\r","").Split(new[]{'\n'},StringSplitOptions.RemoveEmptyEntries).Any(c=>{string value;return TriggerStructures.TryMoveType(c,out value)&&(move.types??new string[0]).Contains(value)||TriggerStructures.TryMoveName(c,out value)&&move.name==value;}))log("TRAINER 『"+p.name+"』 기술 조건 트리거 충족 · "+move.name+" · 효과 판정 대기: "+p.effect);}
+  public static void BeforeMove(TrainerRecord trainer,Move move,Action<string> log,Fighter ally=null){Raise(trainer,new TriggerFact{Kind="기술 사용",Move=move,User=ally,Self=true},ally,move.name,log);}
+  // 트레이너 포텐셜의 모듈 트리거: 장소의 자기 포켓몬 관점의 사건(자기 포켓몬이 주체면 Self)
+  public static void Raise(TrainerRecord trainer,TriggerFact fact,Fighter ally,string context,Action<string> log){
+   if(trainer==null||fact==null)return;
+   Func<string,bool> spec=clause=>TriggerModules.Matches(TriggerModules.Parse(TriggerStructures.Normalize(clause)),fact,ally);
+   var matching=Unique(trainer).Where(p=>TriggerStructures.NormalizeLines(p.trigger).Replace("\r","").Split(new[]{'\n'},StringSplitOptions.RemoveEmptyEntries).Any(spec)).ToList();
+   if(matching.Count==0)return;
+   if(PotentialQueue.Active){PotentialQueue.Raise(new PotentialEvent{Trainer=trainer,Owner=ally,Spec=spec,Label=context??"",Move=fact.Move,Message=context??"",Log=log,PendingText=(source,extra)=>"TRAINER 『"+source.Name+"』 트리거 충족 · "+context+" · 효과 판정: "+source.Effect});return;}
+   foreach(var p in matching)log("TRAINER 『"+p.name+"』 트리거 충족 · "+context+" · 효과 판정 대기: "+p.effect);
+  }
   public static IEnumerable<string> Active(TrainerRecord trainer,bool here){var labels=new List<string>{TriggerStructures.AlwaysLabel,TriggerStructures.FieldLabel};if(here)labels.Add(TriggerStructures.HereLabel);return Unique(trainer).Where(p=>labels.Any(label=>TriggerStructures.NormalizeLines(p.trigger).Contains(label))).Select(p=>"『"+p.name+"』");}
  }
 }

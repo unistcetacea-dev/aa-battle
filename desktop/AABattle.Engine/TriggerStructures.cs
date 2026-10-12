@@ -31,17 +31,21 @@ namespace AABattle {
   public const string OpponentEntryLabel="상대가 장소에 나왔을 때";
   public const string SelfAndOpponentEntryLabel=EntryLabel+"\r\n"+OpponentEntryLabel;
   public const string MoveUseLabel="기술을 내보낼 때";
-  public const string AttackMoveUseLabel="공격기술을 내보낼 때";
-  public const string StatusMoveUseLabel="변화기술을 내보낼 때";
-  public const string AttackSuccessLabel="공격이 성공했을 때";
+  public const string AttackMoveUseLabel="「공격」 기술을 내보낼 때";
+  public const string StatusMoveUseLabel="「변화」 기술을 내보낼 때";
+  public const string AttackSuccessLabel="자신의 공격이 명중했을 때";   // 사용자 결정: 명중 = 공격 성공
   public const string DamagedLabel="대미지를 받았을 때";
 
   public static string NormalizeLines(string text){return string.Join("\r\n",(text??"").Split(new[]{(char)13,(char)10},StringSplitOptions.RemoveEmptyEntries).SelectMany(x=>Normalize(x).Split(new[]{(char)13,(char)10},StringSplitOptions.RemoveEmptyEntries)).Where(x=>x.Length>0).Distinct());}
-  public static string Normalize(string text){
+  static readonly System.Collections.Concurrent.ConcurrentDictionary<string,string> normalized=new System.Collections.Concurrent.ConcurrentDictionary<string,string>();
+  public static string Normalize(string text){return normalized.GetOrAdd(text??"",NormalizeUncached);}
+  static string NormalizeUncached(string text){
    string value=PotentialParts.Clean(text);string key=Regex.Replace(value,@"\s+","");
    if(key=="X"||key=="x"||key=="×")return AlwaysLabel;
    if(key=="턴중선언시")return "";
    if(Regex.IsMatch(key,@"^자신\(상대\)이?(?:필드|장소)에(?:나와|나오면|나왔을때|나왔을때에|나올때|나온때)$"))return SelfAndOpponentEntryLabel;
+   // 트리거 모듈(등장·교대·퇴장·타이밍·피격·명중·급소·쓰러뜨림·기술 사용)의 표준 문장
+   string module=TriggerModules.Normalize(value);if(module!=null)return module;
    if(Regex.IsMatch(key,@"^(?:자신이?|자신의포켓몬이)?(?:필드|장소)에(?:나와|나오면|나왔을때|나왔을때에|나올때|나온때)$"))return EntryLabel;
    if(Regex.IsMatch(key,@"^(?:자동)?(?:자신이)?상대를쓰러(?:뜨|트)렸을때$"))return DefeatLabel;
    if(Regex.IsMatch(key,@"^(?:자동)?(?:자신이)?PT에(?:참여|참가)(?:하고있을때|하고있는한|중일때)$"))return ObserverLabel;
@@ -70,8 +74,6 @@ namespace AABattle {
    if(Regex.IsMatch(key,@"^(?:자신의)?공격이(?:성공|명중)했을때$"))return AttackSuccessLabel;
    if(Regex.IsMatch(key,@"^(?:자신이)?(?:데미지|대미지)를받았을때$"))return DamagedLabel;
    string granted;if(TryGranted(value,out granted))return Granted(granted);
-   string moveType;if(TryMoveType(value,out moveType))return MoveType(moveType);
-   string moveName;if(TryMoveName(value,out moveName))return MoveName(moveName);
    string statusSubject,statusName;bool statusBecame,statusChange;if(TryStatusCondition(value,out statusSubject,out statusName,out statusBecame,out statusChange))return StatusCondition(statusSubject,statusName,statusBecame,statusChange);
    string parsed;if(TryOpponentType(value,out parsed))return OpponentType(parsed);string aptitude,rank;if(TryTrainerAptitude(value,out aptitude,out rank))return TrainerAptitude(aptitude,rank);
    value=Regex.Replace(value,@"(?:필드|장소)에\s*(?:나왔을\s*때(?:에)?|나오면|나온\s*때|나올\s*때|나와)$",EntryLabel);
@@ -82,12 +84,12 @@ namespace AABattle {
   public static string OpponentType(string type){return "적진에 「"+PotentialParts.Clean(type)+"」 포켓몬이 있을 때";}
   public static string Granted(string name){name=PotentialParts.Clean(name).Trim('『','』');char last=name.Length>0?name[name.Length-1]:' ';bool batchim=last>='가'&&last<='힣'&&(last-'가')%28!=0;return "『"+name+"』"+(batchim?"이":"가")+" 부여되어 있을 때";}
   public static bool TryGranted(string text,out string name){var m=Regex.Match(PotentialParts.Clean(text),@"^[『「](?<name>[^』」]+)[』」](?:이|가)\s*부여되어\s*있을\s*때$");name=m.Success?m.Groups["name"].Value.Trim():"";return m.Success&&name.Length>0;}
-  public static string MoveType(string type){return "「"+PotentialParts.Clean(type)+"」 타입 기술을 내보낼 때";}
-  public static bool TryMoveType(string text,out string type){var m=Regex.Match(PotentialParts.Clean(text),@"^「(?<value>[^」]+)」\s*(?:타입\s*)?기술을\s*내보낼\s*때$");type=m.Success?m.Groups["value"].Value.Trim():"";return m.Success&&type.Length>0;}
-  public static string MoveName(string name){return "「"+PotentialParts.Clean(name)+"」을 내보낼 때";}
+  public static string MoveType(string type){return "「"+PotentialParts.Clean(type)+"」 기술을 내보낼 때";}
+  public static bool TryMoveType(string text,out string type){var s=TriggerModules.Parse(Normalize(text));type=s.Module=="기술 사용"&&!s.Opponent&&!s.After&&s.Condition.Types.Count==1&&s.Condition.Tags.Count==0&&s.Condition.Category==""?s.Condition.Types[0]:"";return type.Length>0;}
+  public static string MoveName(string name){return "「"+PotentialParts.Clean(name)+"」 기술을 내보낼 때";}
   public static string StatusCondition(string subject,string name,bool became,bool change){string suffix=became?(change?"상태변화가 되었을 때":"상태이상이 되었을 때"):(change?"상태변화일 때":"상태이상일 때");string owner=subject=="자신"?"자신이":subject=="아군"?"아군이":"상대가";return owner+" 「"+PotentialParts.Clean(name)+"」 "+suffix;}
   public static bool TryStatusCondition(string text,out string subject,out string name,out bool became,out bool change){var m=Regex.Match(PotentialParts.Clean(text),@"^(?<subject>자신|아군|상대)(?:이|가)\s*「(?<name>[^」]+)」\s*(?<kind>상태이상|상태변화)(?<became>가\s*되었을\s*때|이\s*되었을\s*때|일\s*때)$");subject=m.Success?m.Groups["subject"].Value:"";name=m.Success?m.Groups["name"].Value.Trim():"";change=m.Success&&m.Groups["kind"].Value=="상태변화";became=m.Success&&m.Groups["became"].Value.Replace(" ","")!="일때";return m.Success&&name.Length>0;}
-  public static bool TryMoveName(string text,out string name){var m=Regex.Match(PotentialParts.Clean(text),@"^「(?<value>[^」]+)」(?:을|를)\s*내보낼\s*때$");name=m.Success?m.Groups["value"].Value.Trim():"";return m.Success&&name.Length>0;}
+  public static bool TryMoveName(string text,out string name){var s=TriggerModules.Parse(Normalize(text));name=s.Module=="기술 사용"&&!s.Opponent&&!s.After&&s.Condition.Tags.Count==1&&s.Condition.Types.Count==0&&s.Condition.Category==""?s.Condition.Tags[0]:"";return name.Length>0;}
   public static bool TryOpponentType(string text,out string type){var match=Regex.Match(PotentialParts.Clean(text),@"^적진에\s*「(?<type>[^」]+)」\s*(?:타입\s*)?포켓몬이\s*있을\s*때$");type=match.Success?match.Groups["type"].Value.Trim():"";return match.Success&&type.Length>0;}
   public static string TrainerAptitude(string aptitude,string rank){return "트레이너가 「"+PotentialParts.Clean(aptitude)+":"+PotentialParts.Clean(rank).TrimEnd('-','+')+"」 이상일 때";}
   public static bool TryTrainerAptitude(string text,out string aptitude,out string rank){var match=Regex.Match(PotentialParts.Clean(text),@"^트레이너가\s*「(?<aptitude>지시|육성|통솔|능력)\s*:\s*(?<rank>[A-Za-z]+)[-+]?」\s*이상일\s*때$");aptitude=match.Success?match.Groups["aptitude"].Value:"";rank=match.Success?match.Groups["rank"].Value.ToUpperInvariant():"";return match.Success;}
@@ -129,7 +131,7 @@ namespace AABattle {
    string statusSubject,statusName;bool statusBecame,statusChange;if(!TryStatusCondition(StatusCondition("아군","화상",true,false),out statusSubject,out statusName,out statusBecame,out statusChange)||statusSubject!="아군"||statusName!="화상"||!statusBecame||statusChange)throw new Exception("Structured status trigger");
    string named;if(!TryGranted("『계약의 특권』이 부여되어 있을 때",out named)||named!="계약의 특권"||!TryMoveType("「불꽃」기술을 내보낼 때",out named)||named!="불꽃"||!TryMoveName("「파괴광선」을 내보낼 때",out named)||named!="파괴광선")throw new Exception("Parameterized granted or move trigger");
    string type,aptitude,rank;if(!TryOpponentType("적진에 「불꽃」 포켓몬이 있을 때",out type)||type!="불꽃"||!TryTrainerAptitude("트레이너가 「통솔:A+」 이상일 때",out aptitude,out rank)||aptitude!="통솔"||rank!="A"||!RankBand("A-","A")||RankBand("AA","A"))throw new Exception("Parameterized trigger parsing");
-   if(Normalize("「강철」포켓몬을 쓰러트렸을 때")!="「강철」포켓몬을 쓰러뜨렸을 때")throw new Exception("Typed defeat spelling");
+   if(Normalize("「강철」포켓몬을 쓰러트렸을 때")!="「강철」 타입 포켓몬을 쓰러뜨렸을 때")throw new Exception("Typed defeat spelling");
    if(Normalize("×")!=AlwaysLabel||!IsAlways("x"))throw new Exception("Always trigger alias");
    if(Normalize("선발로 필드에 나오면")==EntryLabel||Normalize("상대가 필드에 나오면")==EntryLabel)throw new Exception("Entry specificity lost");
   }

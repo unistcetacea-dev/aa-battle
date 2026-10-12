@@ -23,6 +23,7 @@ namespace AABattle {
  public sealed class PotentialEvent {
   public string Label = "";                 // 정규화 트리거 라벨(라벨 사건). 조건식 사건이면 설명용
   public Func<string, bool> Clause;         // 조건식 사건: 정규화 전 절 문자열(공백 제거)을 받아 성립 여부
+  public Func<string, bool> Spec;           // 트리거 모듈 사건: 절 문자열을 그대로 받아 성립 여부(TriggerModules)
   public Fighter Owner;                     // 발동 관점의 포켓몬(「자신」). 트레이너 사건이면 장소의 자기 포켓몬
   public TrainerRecord Trainer;             // 트레이너 포텐셜 사건이면 트레이너
   public Fighter Other;                     // 상대(없으면 장소의 상대)
@@ -34,6 +35,7 @@ namespace AABattle {
   public Func<PotentialInstance, bool, string> PendingText;  // 실행하지 않을 때의 로그(호출 경로별 예전 문구). bool = 추가 조건 있음
   internal int Id, ChainId, Depth;
   public bool Matches(string clause) {
+   if (Spec != null) return Spec(clause ?? "");
    if (Clause != null) return Clause(Regex.Replace(PotentialParts.Clean(clause ?? ""), @"\s+", ""));
    return TriggerStructures.Normalize(clause) == Label;
   }
@@ -202,9 +204,20 @@ namespace AABattle {
     PotentialLibrary.Split(p.description ?? "", out condition, out effect);
     if (effect.Length == 0) effect = p.description ?? "";
     result.Add(new PotentialInstance { Owner = e.Owner, Pokemon = p, Key = PotentialKeys.For(e.Owner.Data, p), Name = p.name, Slot = p.id ?? "", Uses = p.uses, Activation = p.activation, Effect = effect, Description = p.description ?? "", Clauses = clauses });
-    extra.Add(clauses.Any(x => !e.Matches(x)));
+    extra.Add(Extra(e, clauses));
    }
    return result;
+  }
+
+  // 확정 48: 여러 절은 AND. 사건과 맞지 않는 절은 지금 성립하는 상태 조건이어야 한다(등장 계열 두 사건은 OR)
+  static bool Extra(PotentialEvent e, string[] clauses) {
+   var scope = EffectScope.Current;
+   var matched = clauses.FirstOrDefault(e.Matches);
+   foreach (var clause in clauses.Where(x => !e.Matches(x))) {
+    if (matched != null && TriggerModules.Alternative(matched, clause)) continue;
+    if (!TriggerModules.Holds(clause, e.Owner, e.Other ?? (scope == null ? null : scope.Opponent(e.Owner)), scope == null ? null : scope.Rules)) return true;
+   }
+   return false;
   }
 
   static void Process(EffectScope scope, PotentialEvent e) {

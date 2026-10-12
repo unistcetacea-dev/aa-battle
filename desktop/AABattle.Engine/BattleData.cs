@@ -10,6 +10,7 @@ namespace AABattle {
  public class Potential { public string id, name, description, activation, uses; public string[] triggers,unlocks; }
  public class Pokemon {
   public string id, team, name, ability, item;
+  public bool ain;   // 아인종(「아인」을 쓰러뜨렸을 때 등)
   public int level; public string[] types, moves; public int[] @base, iv;
   public Potential[] potentials;
  }
@@ -34,6 +35,6 @@ namespace AABattle {
   public string[] Moves; public int Selected; public ConditionState Conditions=new ConditionState();
   public Fighter(Pokemon p){Data=ClonePokemon(p);Moves=(p.moves??new string[0]).Take(4).ToArray();OriginalAbility=CurrentAbility=p.ability??"";HP=Engine.Stats(this,p.level,new Rules())[0];}
   public Fighter Copy(){var f=new Fighter(Data);f.FieldSide=FieldSide;f.AA=AA;f.Status=Status;f.OriginalAbility=OriginalAbility;f.CurrentAbility=CurrentAbility;f.AbilityChanged=AbilityChanged;f.AbilitySuppressed=AbilitySuppressed;f.OnField=OnField;f.HP=HP;f.Stages=(int[])Stages.Clone();f.AccuracyStage=AccuracyStage;f.EvasionStage=EvasionStage;f.CriticalStage=CriticalStage;f.TrainerAccuracyStage=TrainerAccuracyStage;f.TrainerCriticalStage=TrainerCriticalStage;f.AccuracyMultiplier=AccuracyMultiplier;f.EvasionMultiplier=EvasionMultiplier;f.Multipliers=(double[])Multipliers.Clone();f.Moves=(string[])Moves.Clone();f.Selected=Selected;f.Conditions=Conditions.Copy();return f;}
-  static Pokemon ClonePokemon(Pokemon p){return new Pokemon{id=p.id,name=p.name,team=p.team,ability=p.ability,item=p.item,level=p.level,types=(string[])p.types.Clone(),@base=(int[])p.@base.Clone(),iv=(int[])p.iv.Clone(),moves=(string[])p.moves.Clone(),potentials=p.potentials};}
+  static Pokemon ClonePokemon(Pokemon p){return new Pokemon{id=p.id,ain=p.ain,name=p.name,team=p.team,ability=p.ability,item=p.item,level=p.level,types=(string[])p.types.Clone(),@base=(int[])p.@base.Clone(),iv=(int[])p.iv.Clone(),moves=(string[])p.moves.Clone(),potentials=p.potentials};}
  }
 }
