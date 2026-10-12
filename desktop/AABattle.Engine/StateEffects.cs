@@ -11,11 +11,13 @@ namespace AABattle {
   public int Turns;             // "NT간" (0이면 상태의 기본 지속)
   public bool UntilTurnEnd;     // "T종료시까지"
   public double? Rate;          // 확률 접두어(드물게 10% · 저확률 20% · 중확률 50%)
+  public bool IgnoreImmunity;   // 「…을 무시하고」(상태이상 면역 관통, 확정 22)
  }
 
  // 상태 하나를 거는 규칙. 표(StateEffects.Table)에 줄을 추가하면 포텐셜·필드효과 문장이 그 상태를 자동으로 건다
  public class StateEffectRule {
   public string Name;
+  public string Category = "상태변화";   // "상태이상"(Fighter.Status 한 칸) / "상태변화"(ConditionState, 겹칠 수 있음)
   public string[] Aliases = new string[0];
   public bool SelfByDefault;    // 대상이 생략된 "「X」상태로 한다"를 자신에게 거는 상태
   public Func<StateEffectContext, bool> Apply;
@@ -27,6 +29,7 @@ namespace AABattle {
   public Rules Rules;
   public Func<double> Rng;
   public int Turns;             // 0이면 기본 지속
+  public bool IgnoreImmunity;
   public List<string> Log;
   public double Roll() { return Rng == null ? .5 : Rng(); }
   public void Say(string text) { if (Log != null) Log.Add(text); }
@@ -56,7 +59,8 @@ namespace AABattle {
 
  public static class StateEffects {
   static readonly Regex Sentence = new Regex(
-   @"^(?<until>T\s*종료\s*시\s*까지\s*,?\s*)?" +
+   @"^(?:(?<ignore>[^「]*무시하고)\s*,?\s*)?" +
+   @"(?<until>T\s*종료\s*시\s*까지\s*,?\s*)?" +
    @"(?:(?<n1>\d+)\s*T\s*(?:간|동안)\s*,?\s*)?" +
    @"(?:(?<target>자신|자진|상대|상대\s*포켓몬)\s*(?:을|를)\s*)?" +
    @"(?:(?<n2>\d+)\s*T\s*(?:간|동안)\s*)?" +
@@ -83,6 +87,7 @@ namespace AABattle {
    string turns = match.Groups["n1"].Success ? match.Groups["n1"].Value : match.Groups["n2"].Value;
    if (turns.Length > 0) sentence.Turns = int.Parse(turns);
    sentence.UntilTurnEnd = match.Groups["until"].Success;
+   sentence.IgnoreImmunity = match.Groups["ignore"].Success;
    return sentence;
   }
 
@@ -110,9 +115,10 @@ namespace AABattle {
     if (log != null) log.Add(source + ": 「" + rule.Name + "」 확률 판정 실패");
     return true;
    }
+   if (rule.Category == "상태변화" && Mechanics.AlreadyHas(target, rule.Name, log)) return true;
    var context = new StateEffectContext {
     Target = target, Source = self, Rules = rules ?? new Rules(), Rng = rng, Log = log,
-    Turns = sentence.UntilTurnEnd ? 1 : sentence.Turns
+    Turns = sentence.UntilTurnEnd ? 1 : sentence.Turns, IgnoreImmunity = sentence.IgnoreImmunity
    };
    if (rule.Apply(context) && log != null) log.Add(source + " → " + target.Data.name + ": 「" + rule.Name + "」");
    return true;
@@ -125,7 +131,8 @@ namespace AABattle {
    if (rule == null) return EffectOutcome.Pending;
    var target = sentence.Target == "자신" || sentence.Target.Length == 0 && rule.SelfByDefault ? self : opponent;
    if (target == null || target.HP <= 0) { if (log != null) log.Add(source + ": 「" + rule.Name + "」 대상이 없다."); return EffectOutcome.Failed; }
-   var context = new StateEffectContext { Target = target, Source = self, Rules = rules ?? new Rules(), Rng = rng, Log = log, Turns = sentence.UntilTurnEnd ? 1 : sentence.Turns };
+   if (rule.Category == "상태변화" && Mechanics.AlreadyHas(target, rule.Name, log)) return EffectOutcome.Failed;
+   var context = new StateEffectContext { Target = target, Source = self, Rules = rules ?? new Rules(), Rng = rng, Log = log, Turns = sentence.UntilTurnEnd ? 1 : sentence.Turns, IgnoreImmunity = sentence.IgnoreImmunity };
    if (!rule.Apply(context)) return EffectOutcome.Failed;
    if (log != null) log.Add(source + " → " + target.Data.name + ": 「" + rule.Name + "」");
    return EffectOutcome.Success;
@@ -146,12 +153,13 @@ namespace AABattle {
    // 주요 상태이상: 면역·중복·파티 수면 제한은 ApplyStatus가 판정한다
    foreach (string status in new[] { "독", "맹독", "마비", "화상", "얼음", "잠듦", "동상" }) {
     string name = status;
-    rules.Add(Rule(name, c => Mechanics.ApplyStatus(c.Target, c.Source, name, c.Rules, c.Rng, c.Log), false, name == "잠듦" ? new[] { "잠듦", "수면", "잠" } : name == "얼음" ? new[] { "얼음", "빙결" } : new string[0]));
+    var major = Rule(name, c => Mechanics.ApplyStatus(c.Target, c.Source, name, c.Rules, c.Rng, c.Log, false, c.IgnoreImmunity), false, name == "잠듦" ? new[] { "잠듦", "수면", "잠" } : name == "얼음" ? new[] { "얼음", "빙결" } : new string[0]);
+    major.Category = "상태이상";
+    rules.Add(major);
    }
    rules.Add(Rule("혼란", c => {
     var t = c.Target;
     if (c.Source != null && !Mechanics.BypassAbility(c.Source) && Mechanics.Ability(t, "마이페이스") || c.Rules.Terrain == "미스트필드" && Mechanics.Grounded(t, c.Rules)) { c.Say("혼란 무효: 마이페이스 / 미스트필드"); return false; }
-    if (t.Conditions.Confusion > 0) { c.Say(t.Data.name + ": 이미 혼란 상태다."); return false; }
     t.Conditions.Confusion = c.Turns > 0 ? c.Turns : 1 + (int)(c.Roll() * 4);
     return true;
    }));
@@ -198,7 +206,6 @@ namespace AABattle {
    }));
    rules.Add(Rule("동면", c => { Mechanics.ApplyHibernate(c.Target, c.Rules); return true; }));
    rules.Add(Rule("죽음의 카운트", c => {
-    if (c.Target.Conditions.DeathCount > 0) { c.Say(c.Target.Data.name + ": 이미 죽음의 카운트가 있다."); return false; }
     c.Target.Conditions.DeathCount = c.Turns > 0 ? c.Turns : 4;
     return true;
    }, false, "멸망의노래", "멸망의 노래"));

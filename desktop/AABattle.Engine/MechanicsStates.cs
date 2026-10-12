@@ -28,8 +28,50 @@ namespace AABattle {
   public static bool ApplyEncore(Fighter target,List<string> log,int turns=3,string selected=null){string reason=EncoreGrantBlock(target,selected);if(reason.Length>0){if(log!=null)log.Add(target.Data.name+": 앙코르 실패: "+reason);return false;}target.Conditions.EncoreMove=target.Conditions.LastMove;target.Conditions.EncoreTurns=Math.Max(1,turns);if(log!=null)log.Add(target.Data.name+": 앙코르 "+target.Conditions.EncoreMove+" "+target.Conditions.EncoreTurns+"T");return true;}
   public static void ClearEncore(Fighter target,List<string> log){ClearTurns(ref target.Conditions.EncoreTurns,target,"앙코르",log);target.Conditions.EncoreMove="";}
   public static void RefreshEncore(Database db,Fighter target,List<string> log=null){var c=target.Conditions;if(c.EncoreTurns<=0){c.EncoreMove="";return;}var move=db.moves.FirstOrDefault(x=>x.name==c.EncoreMove);if(move==null||EncoreExcluded(c.EncoreMove)||!(target.Moves??new string[0]).Contains(c.EncoreMove)||MoveBlock(target,move,false,true).Length>0)ClearEncore(target,log);}
+  // 상태변화가 이미 걸려 있는가(확정 23: 다시 걸면 실패하고 남은 턴은 유지). 상태 편집 창은 이 판정을 쓰지 않고 직접 값을 정한다
+  public static bool HasCondition(Fighter f,string name){
+   var c=f.Conditions;
+   switch(name){
+    case "혼란":return c.Confusion>0;
+    case "도발":return c.Taunt>0;
+    case "풀죽음":return c.Flinch;
+    case "씨뿌리기":return c.Seed;
+    case "침묵":return c.Silenced>0;
+    case "망각":return c.Forgotten>0;
+    case "트집":return c.Tormented;
+    case "회복봉인":return c.HealBlock>0;
+    case "사슬묶기":return c.Disabled>0;
+    case "검은눈빛":return c.MeanLook;
+    case "조이기":return c.Bound>0;
+    case "앙코르":return c.EncoreTurns>0;
+    case "악인":return c.Dark;
+    case "침수":return c.Soaked;
+    case "송전":return c.Electrified;
+    case "가열":return c.Heated;
+    case "냉각":return c.Chilled;
+    case "충전":return c.Charged;
+    case "폭탄":return c.Bomb;
+    case "요격":return c.Intercept>0;
+    case "분노":return c.Rage>0;
+    case "마음의눈":return c.MindReaderSide>=0;
+    case "도우미":return c.HelpingHand;
+    case "웅크리기":return c.Curled;
+    case "아쿠아링":return c.AquaRing;
+    case "뿌리박기":return c.Ingrain;
+    case "헤롱헤롱":return c.AttractSide>=0;
+    case "동면":return c.Hibernate>0;
+    case "죽음의 카운트":return c.DeathCount>0;
+    default:return false;
+   }
+  }
+  // 이미 걸려 있으면 실패 로그를 남기고 true
+  public static bool AlreadyHas(Fighter f,string name,List<string> log){
+   if(f==null||!HasCondition(f,name))return false;
+   if(log!=null)log.Add(f.Data.name+": 이미 「"+name+"」 상태라 실패했다(남은 턴 유지).");
+   return true;
+  }
   public static void RecordMove(Fighter a,Move m){if(m.name!="발버둥")a.Conditions.LastMove=m.name;}
-  public static bool ApplyActionState(Fighter target,string name,int turns,List<string> log){if(name=="앙코르")return ApplyEncore(target,log,turns>0?turns:3);var c=target.Conditions;if(name=="사슬묶기"&&string.IsNullOrEmpty(c.LastMove)){if(log!=null)log.Add(target.Data.name+": 사슬묶기 실패: 마지막으로 사용한 기술이 없다.");return false;}switch(name){case "침묵":c.Silenced=Math.Max(1,turns);break;case "망각":c.Forgotten=Math.Max(1,turns);break;case "트집":c.Tormented=true;break;case "회복봉인":c.HealBlock=turns>0?turns:5;break;case "사슬묶기":c.Disabled=turns>0?turns:4;c.DisabledMove=c.LastMove;break;case "검은눈빛":c.MeanLook=true;break;case "조이기":c.Bound=turns>0?turns:4;break;default:return false;}if(log!=null)log.Add(target.Data.name+": "+name);return true;}
+  public static bool ApplyActionState(Fighter target,string name,int turns,List<string> log){if(name=="앙코르")return ApplyEncore(target,log,turns>0?turns:3);if(AlreadyHas(target,name,log))return false;var c=target.Conditions;if(name=="사슬묶기"&&string.IsNullOrEmpty(c.LastMove)){if(log!=null)log.Add(target.Data.name+": 사슬묶기 실패: 마지막으로 사용한 기술이 없다.");return false;}switch(name){case "침묵":c.Silenced=Math.Max(1,turns);break;case "망각":c.Forgotten=Math.Max(1,turns);break;case "트집":c.Tormented=true;break;case "회복봉인":c.HealBlock=turns>0?turns:5;break;case "사슬묶기":c.Disabled=turns>0?turns:4;c.DisabledMove=c.LastMove;break;case "검은눈빛":c.MeanLook=true;break;case "조이기":c.Bound=turns>0?turns:4;break;default:return false;}if(log!=null)log.Add(target.Data.name+": "+name);return true;}
   static void ClearTurns(ref int turns,Fighter a,string name,List<string> log){if(turns<=0)return;turns=0;if(log!=null)log.Add(a.Data.name+"의 "+name+"이 풀렸다");}
   public static void LeaveField(Fighter a,List<string> log=null,Func<double> rng=null){var c=a.Conditions;bool wasOnField=a.OnField;ClearRollout(a,log);ClearEncore(a,log);if(wasOnField&&a.FieldOpponent!=null&&a.FieldOpponent.Conditions.AttractSide==a.FieldSide)ClearAttract(a.FieldOpponent,log);if(wasOnField&&a.Status=="잠듦")c.SleepTurns=c.SleepStart;ClearFlag(ref c.HelpingHand,a,"도우미",log);ClearFlag(ref c.Curled,a,"웅크리기",log);ClearAttract(a,log);ClearTurns(ref c.DeathCount,a,"죽음의 카운트",log);ClearTurns(ref c.RampageTurns,a,"난동부리기",log);c.RampageMove="";ClearMoveStates(a,log);ClearTurns(ref c.Silenced,a,"침묵",log);ClearTurns(ref c.Forgotten,a,"망각",log);ClearTurns(ref c.HealBlock,a,"회복봉인",log);ClearTurns(ref c.Disabled,a,"사슬묶기",log);ClearTurns(ref c.Bound,a,"조이기",log);ClearFlag(ref c.Tormented,a,"트집",log);ClearFlag(ref c.MeanLook,a,"검은눈빛",log);ClearFlag(ref c.Bomb,a,"폭탄",log);ClearTurns(ref c.Intercept,a,"요격",log);ClearTurns(ref c.Rage,a,"분노",log);ClearMindReader(a,log);c.BombSetTurn=c.MindReaderSetTurn=0;ClearFlag(ref c.AquaRing,a,"아쿠아링",log);ClearFlag(ref c.Recharge,a,"반동대기",log);c.DisabledMove=c.LastMove="";c.Confusion=c.Taunt=c.Substitute=c.ProtectChain=c.PriorityModifier=c.PriorityModifierTurns=0;c.Protect=c.Flinch=c.Seed=c.Curse=c.Ingrain=c.FlashFire=c.AbilityEntryApplied=false;a.Stages=new int[6];a.AccuracyStage=a.EvasionStage=a.CriticalStage=a.TrainerAccuracyStage=a.TrainerCriticalStage=0;a.AccuracyMultiplier=a.EvasionMultiplier=1;a.Multipliers=new[]{1d,1d,1d,1d,1d,1d};a.AbilitySuppressed=false;a.OnField=false;}
   public static void StruggleRecoil(Fighter a,Fighter b,Rules r,List<string> log){Hurt(a,b,r,Math.Max(1,Max(a,b,r)/4),"발버둥 반동",log,false);}

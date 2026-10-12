@@ -67,7 +67,7 @@ namespace AABattle {
    if(status=="얼음"&&Sunny(Weather(target,source,r)))return "쾌청·큰가뭄: 새로운 얼음 상태 방지";
    if(status=="잠듦"&&!BypassAbility(source)&&Ability(target,"불면","의기양양"))return "불면 / 의기양양: 잠듦 무효";return "";
   }
-  public static bool ApplyStatus(Fighter target,Fighter source,string status,Rules r,Func<double> rng,List<string> log,bool fromRest=false){string reason=StatusBlock(target,source,status,r,fromRest);if(reason.Length>0){log.Add(target.Data.name+" — "+reason);return false;}target.Status=status;target.Conditions.ToxicStage=1;if(status=="잠듦"){target.Conditions.SleepTurns=fromRest?2:SleepDuration(rng);target.Conditions.SleepStart=target.Conditions.SleepTurns;target.Conditions.SleepFromRest=fromRest;}log.Add(target.Data.name+": "+status);return true;}
+  public static bool ApplyStatus(Fighter target,Fighter source,string status,Rules r,Func<double> rng,List<string> log,bool fromRest=false,bool ignoreImmunity=false){string reason=!ignoreImmunity?StatusBlock(target,source,status,r,fromRest):target.Status!="정상"?"이미 상태이상이 있다.":status=="잠듦"?SleepBlock(target,r):"";if(reason.Length>0){log.Add(target.Data.name+" — "+reason);return false;}target.Status=status;target.Conditions.ToxicStage=1;if(status=="잠듦"){target.Conditions.SleepTurns=fromRest?2:SleepDuration(rng);target.Conditions.SleepStart=target.Conditions.SleepTurns;target.Conditions.SleepFromRest=fromRest;}log.Add(target.Data.name+": "+status);return true;}
   public static double StatFactor(Fighter a,Fighter b,int index,Rules r,int side=-1){double v=1;string w=Weather(a,b,r);if(index==5){if(a.Status=="마비")v*=.5;if(side>=0&&side<2&&r.Sides[side].Tailwind>0)v*=2;if(Rain(w)&&Ability(a,"쓱쓱")||Sunny(w)&&Ability(a,"엽록소")||w=="모래바람"&&Ability(a,"모래헤치기")||(w=="눈"||w=="싸라기눈")&&Ability(a,"눈치우기"))v*=2;}if(index==1&&a.Status!="정상"&&Ability(a,"근성"))v*=1.5;if(index==4&&w=="모래바람"&&Has(a,"바위"))v*=1.5;if(index==2&&w=="눈"&&Has(a,"얼음"))v*=1.5;return v;}
   public static double PowerFactor(Fighter a,Fighter b,Move m,Rules r){double v=1;string w=Weather(a,b,r);if(a.Status=="화상"&&m.category=="물리"&&!Ability(a,"근성")&&m.name!="객기")v*=.5;if(a.Status=="동상"&&m.category=="특수")v*=.5;if(Sunny(w))v*=m.types.Contains("불꽃")?1.5:m.types.Contains("물")?.5:1;if(Rain(w))v*=m.types.Contains("물")?1.5:m.types.Contains("불꽃")?.5:1;
    if(IsRollout(m)&&a.Conditions.RolloutMove==m.name)v*=Math.Pow(2,Math.Max(0,Math.Min(4,a.Conditions.RolloutCount)));v*=ChargePower(a,m);if(a.Conditions.HelpingHand)v*=1.5;if(a.Conditions.Curled&&new[]{"구르기","아이스볼"}.Contains(m.name))v*=2;
@@ -128,21 +128,21 @@ namespace AABattle {
    if(m.name=="끈적끈적네트"){if(hazards.StickyWeb){log.Add("끈적끈적네트 실패: 이미 설치되어 있다.");return false;}else{hazards.StickyWeb=true;log.Add((targetSide+1)+"팀 진영: 끈적끈적네트");}return true;}
    if(m.name=="안개제거"){r.Sides[0].ClearHazards();r.Sides[1].ClearHazards();log.Add("안개제거: 양쪽 진영의 설치물을 제거했다.");return true;}
    if(new[]{"트집","사슬묶기","회복봉인","검은눈빛"}.Contains(m.name))return ApplyActionState(b,m.name,0,log);
-   if(m.name=="록온"||m.name=="마음의눈"){ApplyMindReader(b,attackerSide,r);log.Add(b.Data.name+": 마음의눈 ("+(attackerSide+1)+"팀)");return true;}
-   if(m.name=="헤롱헤롱"){b.Conditions.AttractSide=attackerSide;log.Add(b.Data.name+": 헤롱헤롱");return true;}
+   if(m.name=="록온"||m.name=="마음의눈"){if(AlreadyHas(b,"마음의눈",log))return false;ApplyMindReader(b,attackerSide,r);log.Add(b.Data.name+": 마음의눈 ("+(attackerSide+1)+"팀)");return true;}
+   if(m.name=="헤롱헤롱"){if(AlreadyHas(b,"헤롱헤롱",log))return false;b.Conditions.AttractSide=attackerSide;log.Add(b.Data.name+": 헤롱헤롱");return true;}
    if(m.name=="멸망의노래"){foreach(var target in new[]{a,b})if(target.OnField&&target.HP>0&&target.Conditions.DeathCount==0){target.Conditions.DeathCount=4;log.Add(target.Data.name+": 죽음의 카운트 4");}return true;}
    if(m.name=="잠자기"){if(c.HealBlock>0){Heal(a,b,r,max,m.name,log);return false;}string previous=a.Status;a.Status="정상";if(!ApplyStatus(a,a,"잠듦",r,rng,log,true)){a.Status=previous;return false;}Heal(a,b,r,max,m.name,log);return true;}
    switch(m.name){
     case "도우미":c.HelpingHand=true;log.Add(a.Data.name+": 도우미");return true;
     case "웅크리기":c.Curled=true;ChangeStage(a,a,2,1,r,m.name,log);ChangeStage(a,a,4,1,r,m.name,log);return true;
-    case "분노":c.Rage=4+Math.Min(1,(int)(rng()*2));log.Add(a.Data.name+": 분노 "+c.Rage+"T");return true;
+    case "분노":if(AlreadyHas(a,"분노",log))return false;c.Rage=4+Math.Min(1,(int)(rng()*2));log.Add(a.Data.name+": 분노 "+c.Rage+"T");return true;
     case "방어":case "판별":if(rng()<Math.Pow(1.0/3,c.ProtectChain)){c.Protect=true;c.ProtectChain++;log.Add(a.Data.name+": 방어 태세!");}else{c.ProtectChain=0;log.Add(a.Data.name+": 연속 방어 실패.");return false;}break;
     case "대타출동":int cost=Math.Max(1,max/4);if(c.Substitute>0||a.HP<=cost){log.Add("대타출동 실패: HP 부족 또는 이미 대타 존재.");return false;}a.HP-=cost;c.Substitute=cost;log.Add(a.Data.name+": 대타 HP "+cost);break;
     case "자기재생":case "태만함":return Heal(a,b,r,max/2,m.name,log)>0;
     case "날개쉬기":log.Add("날개쉬기: 비행 타입 일시 제거까지 포함하므로 현재 수동 판정.");return false;
     case "충전":if(c.Charged){log.Add(a.Data.name+": 충전 실패: 이미 상태변화가 있다.");return false;}else{c.Charged=true;log.Add(a.Data.name+": 충전");}break;
     case "아쿠아링":if(c.AquaRing){log.Add(a.Data.name+": 아쿠아링 실패: 이미 상태변화가 있다.");return false;}else{c.AquaRing=true;log.Add(a.Data.name+": 아쿠아링");}break;
-    case "뿌리박기":c.Ingrain=true;log.Add(a.Data.name+": 뿌리박기 (접지)");break;
+    case "뿌리박기":if(AlreadyHas(a,"뿌리박기",log))return false;c.Ingrain=true;log.Add(a.Data.name+": 뿌리박기 (접지)");break;
     case "리플렉터":r.Sides[targetSide].Reflect=5;log.Add((targetSide+1)+"팀 진영: 리플렉터 5턴");break;
     case "빛의장막":r.Sides[targetSide].LightScreen=5;log.Add((targetSide+1)+"팀 진영: 빛의장막 5턴");break;
     case "순풍":r.Sides[attackerSide].Tailwind=4;log.Add((attackerSide+1)+"팀 진영: 순풍 4턴");break;
@@ -151,8 +151,8 @@ namespace AABattle {
     case "나쁜음모":return ChangeStage(a,b,3,2,r,m.name,log);
     case "명상":bool raised=ChangeStage(a,b,3,1,r,m.name,log);return ChangeStage(a,b,4,1,r,m.name,log)||raised;
     case "이상한빛":case "초음파":if(!BypassAbility(a)&&Ability(b,"마이페이스")||r.Terrain=="미스트필드"&&Grounded(b,r))log.Add("혼란 무효: 마이페이스 / 미스트필드");else if(b.Conditions.Confusion==0){b.Conditions.Confusion=1+(int)(rng()*4);log.Add(b.Data.name+": 혼란");}break;
-    case "씨뿌리기":if(Has(b,"풀"))log.Add("풀 타입: 씨뿌리기 무효");else{b.Conditions.Seed=true;log.Add(b.Data.name+": 씨뿌리기");}break;
-    case "도발":b.Conditions.Taunt=3;log.Add(b.Data.name+": 도발 3턴");break;
+    case "씨뿌리기":if(AlreadyHas(b,"씨뿌리기",log))return false;if(Has(b,"풀"))log.Add("풀 타입: 씨뿌리기 무효");else{b.Conditions.Seed=true;log.Add(b.Data.name+": 씨뿌리기");}break;
+    case "도발":if(AlreadyHas(b,"도발",log))return false;b.Conditions.Taunt=3;log.Add(b.Data.name+": 도발 3턴");break;
     case "트릭룸":r.TrickRoom=r.TrickRoom>0?0:5;log.Add("트릭룸 "+(r.TrickRoom>0?"5턴":"해제"));break;
     case "중력":r.Gravity=5;log.Add("중력 5턴");break;
     default:log.Add(m.name+": 자동 처리 미등록 — 기술 효과를 수동 판정하세요.");return false;

@@ -63,6 +63,63 @@ namespace AABattle {
    Assert.That(after, Is.Not.EqualTo(before), state + " / " + string.Join(" / ", log));
   }
 
+  static readonly string[] MajorStatuses = { "독", "맹독", "마비", "화상", "얼음", "잠듦", "동상" };
+  static IEnumerable<string> VolatileStates() { return StateEffects.Table.Where(x => x.Category == "상태변화").Select(x => x.Name); }
+
+  [Test] public void TableSeparatesMajorStatusFromConditions() {
+   Assert.That(StateEffects.Table.Where(x => x.Category == "상태이상").Select(x => x.Name), Is.EquivalentTo(MajorStatuses));
+   Assert.That(StateEffects.Table.All(x => x.Category == "상태이상" || x.Category == "상태변화"), Is.True);
+  }
+
+  // 확정 23: 이미 걸린 상태변화를 다시 걸면 실패하고 남은 턴은 그대로다(포텐셜 문장)
+  [TestCaseSource(nameof(VolatileStates))]
+  public void ReapplyingConditionFailsAndKeepsTurns(string state) {
+   var self = F(); var opponent = F(); var rules = new Rules(); var log = new List<string>();
+   Mechanics.SetParties(rules, new[] { self, opponent });
+   foreach (var f in new[] { self, opponent }) f.Conditions.LastMove = "몸통박치기";
+   var rule = StateEffects.Find(state);
+   var target = rule.SelfByDefault ? self : opponent;
+   string who = rule.SelfByDefault ? "자신을" : "상대를";
+   Assert.That(StateEffects.Apply(who + " 2T간 「" + state + "」상태로 한다", self, opponent, rules, () => .5, log, "검사"), Is.EqualTo(EffectOutcome.Success), state);
+   var before = string.Join("|", target.Conditions.Labels(target)) + target.Conditions.Hibernate;
+   Assert.That(StateEffects.Apply(who + " 5T간 「" + state + "」상태로 한다", self, opponent, rules, () => .5, log, "검사"), Is.EqualTo(EffectOutcome.Failed), state);
+   Assert.That(string.Join("|", target.Conditions.Labels(target)) + target.Conditions.Hibernate, Is.EqualTo(before), state);
+   Assert.That(log.Last(), Does.Contain("이미"));
+  }
+
+  // 확정 22: 「무시하고」는 면역만 관통한다. 이미 상태이상이 있으면 실패
+  [Test] public void IgnoreImmunityPiercesOnlyImmunity() {
+   var self = F(); var fire = F("불꽃"); var log = new List<string>();
+   Assert.That(StateEffects.Parse("타입 면역을 무시하고 상대를 「화상」상태로 한다").IgnoreImmunity, Is.True);
+   Assert.That(StateEffects.Apply("상대를 「화상」상태로 한다", self, fire, new Rules(), () => .5, log, "검사"), Is.EqualTo(EffectOutcome.Failed));
+   Assert.That(StateEffects.Apply("타입 면역을 무시하고 상대를 「화상」상태로 한다", self, fire, new Rules(), () => .5, log, "검사"), Is.EqualTo(EffectOutcome.Success));
+   Assert.That(fire.Status, Is.EqualTo("화상"));
+   Assert.That(StateEffects.Apply("면역을 무시하고 상대를 「독」상태로 한다", self, fire, new Rules(), () => .5, log, "검사"), Is.EqualTo(EffectOutcome.Failed));
+   Assert.That(fire.Status, Is.EqualTo("화상"));
+  }
+
+  // 기술로 걸 때도 같은 규칙
+  [TestCase("도발")]
+  [TestCase("분노")]
+  [TestCase("헤롱헤롱")]
+  [TestCase("씨뿌리기")]
+  [TestCase("트집")]
+  [TestCase("회복봉인")]
+  [TestCase("검은눈빛")]
+  [TestCase("마음의눈")]
+  public void ReusingStateMoveFailsAndKeepsTurns(string name) {
+   var db = TestData.Db;
+   var a = F(); var b = F(); var rules = new Rules(); var log = new List<string>();
+   Mechanics.SetParties(rules, new[] { a, b });
+   var move = db.moves.FirstOrDefault(x => x.name == name) ?? new Move { name = name, category = "변화", types = new[] { "노말" }, tags = new string[0], accuracy = 100 };
+   var holder = name == "분노" ? a : b;
+   Assert.That(Mechanics.StatusMove(a, b, move, rules, () => .5, log, 0), Is.True, name + " / " + string.Join(" / ", log));
+   Mechanics.EndTurn(new[] { a, b }, rules, log);
+   var before = string.Join("|", holder.Conditions.Labels(holder));
+   Assert.That(Mechanics.StatusMove(a, b, move, rules, () => .5, log, 0), Is.False, name);
+   Assert.That(string.Join("|", holder.Conditions.Labels(holder)), Is.EqualTo(before), name);
+  }
+
   [Test] public void ProbabilityAndImmunity() {
    var self = F(); var opponent = F(); var log = new List<string>();
    StateEffects.TryApply("중확률로 상대를 「혼란」상태로 한다", self, opponent, new Rules(), () => .9, log, "검사");

@@ -415,3 +415,11 @@ Codex 공유 링크는 특정 시점의 읽기 전용 대화 스냅샷이다. �
 - 바뀐 동작: 범위 안에서 우선도·해석 허가 포텐셜도 사용 제한·확률을 지킨다(이전에는 무시). `PriorityEffectRuntime.ActivateEvent`·`OptionalEffectRuntime.Activate`는 범위 안에서 아무것도 하지 않고 큐가 처리한다.
 - 검증: `verify.ps1 -Visual` 통과(127개). 실제 턴 로그 예시는 `outputs/candidate/queue-sample.txt`(속도순, 효과 적용/판정 대기 표시).
 
+## 2026-10-12 상태이상/상태변화 구분과 재부여 실패 (확정 22·23, 기술 포함)
+- `StateEffectRule.Category`: `상태이상`(7종, `Fighter.Status`) / `상태변화`(`ConditionState`).
+- `Mechanics.HasCondition(f, 이름)`이 상태변화 29종의 "이미 걸려 있음"을 한 곳에서 판정하고, `AlreadyHas`가 실패 로그를 남긴다. 사용자 결정: 기술로 걸 때도 같은 규칙이다. 그래서 `ApplyActionState`(침묵·망각·트집·회복봉인·사슬묶기·검은눈빛·조이기)와 기술 도발·분노·록온/마음의눈·헤롱헤롱·씨뿌리기·뿌리박기가 재사용 시 실패하고 남은 턴을 유지한다. 이전에는 덮어쓰거나 성공으로 처리했다.
+- 포텐셜 상태 부여(`StateEffects.Apply`·`TryApply`)도 상태변화가 이미 있으면 실패(`Failed`, 사용 횟수는 소비 유지)한다.
+- 상태이상: `Mechanics.ApplyStatus(..., ignoreImmunity)`. 효과 문장에 "…무시하고"가 있으면 타입·특성·필드 면역만 관통하고, 이미 상태이상이 있으면 실패, 파티 수면 2체 제한은 유지한다.
+- 상태 편집 창(`ConditionsForm`)은 직접 값을 정하는 곳이라 이 규칙을 적용하지 않는다.
+- 미정: 악인·침수·송전은 "같은 상태 재부여는 실패, 다른 타입 변경은 마지막 것이 이긴다"로 처리했다.
+- 검증: 상태변화 전체 재부여 실패(`ReapplyingConditionFailsAndKeepsTurns`), 기술 8종 재사용 실패, 무시하고 관통, 분류 검사 포함 166개 통과.
