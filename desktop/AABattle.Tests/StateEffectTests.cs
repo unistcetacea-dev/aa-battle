@@ -46,9 +46,9 @@ namespace AABattle {
    Assert.That(StateEffects.Parse(text), Is.Null);
   }
 
-  // 날따름·순서미루기는 싱글 배틀에서 효과가 없고, 악몽은 잠듦일 때만 걸린다
-  static IEnumerable<string> TableStates() { return StateEffects.Table.Select(x => x.Name).Where(x => x != "날따름" && x != "순서미루기" && x != "악몽"); }
-  static string Sides(Rules r) { return string.Join(",", r.Sides.Select(x => x.Safeguard + "/" + x.Mist + "/" + x.LuckyChant + "/" + x.WishTurns + "/" + x.QuickGuard)); }
+  // 악몽은 잠듦일 때만 걸린다
+  static IEnumerable<string> TableStates() { return StateEffects.Table.Select(x => x.Name).Where(x => x != "악몽"); }
+  static string Sides(Rules r) { return string.Join(",", r.Sides.Select(x => x.Safeguard + "/" + x.Mist + "/" + x.LuckyChant + "/" + x.WishTurns + "/" + x.QuickGuard + "/" + x.SeaOfFire + "/" + x.Swamp + "/" + x.Rainbow)); }
 
   // 표의 모든 상태가 실제로 걸리는지 확인한다. 표에 상태를 추가하면 이 검사도 자동으로 늘어난다
   [TestCaseSource(nameof(TableStates))]
@@ -69,7 +69,7 @@ namespace AABattle {
   // 빈사는 다시 걸 대상이 없으므로 재적용 검사에서 뺀다
   static IEnumerable<string> VolatileStates() { return StateEffects.Table.Where(x => x.Category == "상태변화" && !NotReapplied.Contains(x.Name)).Select(x => x.Name); }
   // 다시 걸 대상이 없거나(빈사), 진영·싱글 무효·쌓이는 상태는 재적용 검사에서 뺀다
-  static readonly string[] NotReapplied = { "빈사", "날따름", "순서미루기", "희망사항", "신비의부적", "흰안개", "주술", "패스트가드", "비축하기", "길동무", "원념", "봉인", "하품", "악몽" };
+  static readonly string[] NotReapplied = { "빈사", "희망사항", "불바다", "습원", "무지개", "신비의부적", "흰안개", "주술", "패스트가드", "비축하기", "길동무", "원념", "봉인", "하품", "악몽" };
 
   [Test] public void TableSeparatesMajorStatusFromConditions() {
    Assert.That(StateEffects.Table.Where(x => x.Category == "상태이상").Select(x => x.Name), Is.EquivalentTo(MajorStatuses));

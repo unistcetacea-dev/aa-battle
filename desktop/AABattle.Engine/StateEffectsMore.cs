@@ -26,8 +26,24 @@ namespace AABattle {
    }, true));
    rules.Add(Rule("저주", c => Flag(c, "저주", c.Target.Conditions.Curse, () => c.Target.Conditions.Curse = true)));
    rules.Add(Rule("기충전", c => Flag(c, "기충전", c.Target.Conditions.FocusEnergy, () => c.Target.Conditions.FocusEnergy = true), true));
-   rules.Add(Rule("날따름", c => { c.Say("싱글 배틀에서는 효과가 없다"); return true; }, true));
-   rules.Add(Rule("순서미루기", c => { c.Say("싱글 배틀에서는 효과가 없다"); return true; }));
+   // 날따름·순서미루기(사용자 결정): 상태변화로 걸리지만 싱글에서는 효과가 없다(트리거는 될 수 있다)
+   rules.Add(Rule("날따름", c => Flag(c, "날따름", c.Target.Conditions.FollowMe, () => { c.Target.Conditions.FollowMe = true; c.Say("싱글 배틀에서는 효과가 없다"); }), true));
+   rules.Add(Rule("순서미루기", c => Flag(c, "순서미루기", c.Target.Conditions.Quash, () => { c.Target.Conditions.Quash = true; c.Say("싱글 배틀에서는 효과가 없다"); })));
+   // 예민해지기(사용자 결정: 실기의 레이저포커스) — 다음 T까지 다음 공격이 반드시 급소
+   rules.Add(Rule("예민해지기", c => Flag(c, "예민해지기", c.Target.Conditions.LaserFocus > 0, () => c.Target.Conditions.LaserFocus = 2), true));
+   // 맹세 합체 필드(실기, 4T): 불바다 — 상대 진영 불꽃 타입 외 매 T 1/8 / 습원 — 상대 진영 속도 1/4 / 무지개 — 자기 진영 추가효과 확률 2배
+   foreach (string pledge in new[] { "불바다", "습원", "무지개" }) {
+    string name = pledge;
+    rules.Add(Rule(name, c => {
+     var s = StateTicks.Side(c.Target, c.Rules);
+     if (s == null) return false;
+     int turns = c.Turns > 0 ? c.Turns : 4;
+     if (name == "불바다") { if (s.SeaOfFire > 0) return Fail(c, name); s.SeaOfFire = turns; }
+     else if (name == "습원") { if (s.Swamp > 0) return Fail(c, name); s.Swamp = turns; }
+     else { if (s.Rainbow > 0) return Fail(c, name); s.Rainbow = turns; }
+     return true;
+    }, name == "무지개"));
+   }
    foreach (var side in new[] { new { n = "신비의부적", t = 5 }, new { n = "흰안개", t = 5 }, new { n = "주술", t = 5 } }) {
     string name = side.n; int basic = side.t;
     rules.Add(Rule(name, c => {
@@ -68,9 +84,12 @@ namespace AABattle {
    // 봉인(오레마스): 상대 기술 1개를 골라 봉인한다(고르는 창이 없으면 마지막으로 낸 기술, 없으면 첫 기술)
    rules.Add(Rule("봉인", c => {
     var t = c.Target;
-    string move = !string.IsNullOrEmpty(t.Conditions.LastMove) ? t.Conditions.LastMove : (t.Data.moves ?? new string[0]).FirstOrDefault() ?? "";
+    var moves = (t.Data.moves ?? new string[0]).Where(x => !string.IsNullOrEmpty(x)).ToArray();
+    c.Say(t.Data.name + "의 기술: " + string.Join(" · ", moves));
+    string fallback = !string.IsNullOrEmpty(t.Conditions.LastMove) ? t.Conditions.LastMove : moves.FirstOrDefault() ?? "";
+    string move = c.Rules.ChooseSealMove == null ? fallback : c.Rules.ChooseSealMove(t, moves) ?? fallback;
     if (move.Length == 0 || t.Conditions.Sealed == move) return false;
-    t.Conditions.Sealed = move;
+    StateTicks.Seal(t, move, c.Rules);
     c.Say(t.Data.name + ": 「" + move + "」 봉인");
     return true;
    }));
@@ -98,6 +117,18 @@ namespace AABattle {
    var s = Side(b, r);
    return s != null && s.QuickGuard && m != null && Mechanics.Priority(a, m, b) > 0;
   }
+  // 봉인(오레마스): 걸리면 교대해도 계속된다. 진영 기록(Rules.SealedMoves)에 남기고 장소에 나올 때 되살린다
+  public static void Seal(Fighter f, string move, Rules r) {
+   f.Conditions.Sealed = move;
+   if (r != null) r.SealedMoves[Mechanics.MemberKey(f.Data)] = move;
+  }
+  public static void Restore(Fighter f, Rules r) {
+   string move;
+   if (f != null && r != null && r.SealedMoves.TryGetValue(Mechanics.MemberKey(f.Data), out move)) f.Conditions.Sealed = move;
+  }
+  // 습원: 진영의 속도 1/4
+  public static double StatFactor(Fighter f, int stat, Rules r) { if (stat != 5) return 1; var s = Side(f, r); return s != null && s.Swamp > 0 ? .25 : 1; }
+  public static bool Rainbow(Fighter f, Rules r) { var s = Side(f, r); return s != null && s.Rainbow > 0; }
   public static bool Floating(Fighter f) { return f != null && (f.Conditions.MagnetRise > 0 || f.Conditions.Telekinesis > 0); }
   // 분진: 「불꽃」 기술을 내면 실패하고 최대 HP 1/4
   public static string Powder(Fighter a, Fighter b, Move m, Rules r, List<string> log) {
@@ -109,15 +140,16 @@ namespace AABattle {
   public static void Fainted(Fighter attacker, Fighter fainted, Move m, List<string> log) {
    if (attacker == null || fainted == null || fainted.HP > 0) return;
    if (fainted.Conditions.DestinyBond && attacker.HP > 0) { attacker.HP = 0; log.Add(attacker.Data.name + "은 길동무로 함께 쓰러졌다!"); }
-   if (fainted.Conditions.Grudge && m != null) { attacker.Conditions.Sealed = m.name; log.Add(attacker.Data.name + ": 원념으로 「" + m.name + "」을 낼 수 없게 되었다"); }
+   if (fainted.Conditions.Grudge && m != null) { Seal(attacker, m.name, EffectScope.Current == null ? null : EffectScope.Current.Rules); log.Add(attacker.Data.name + ": 원념으로 「" + m.name + "」을 낼 수 없게 되었다"); }
   }
 
   public static void EndTurn(Fighter[] f, Rules r, List<string> log, Func<double> rng) {
    foreach (var x in f) {
     if (x == null) continue;
     var c = x.Conditions;
-    c.MagicCoat = c.Powder = false;
+    c.MagicCoat = c.Powder = c.FollowMe = c.Quash = false;
     if (x.HP <= 0) continue;
+    if (c.LaserFocus > 0) c.LaserFocus--;
     if (c.Yawn > 0 && --c.Yawn == 0) { log.Add(x.Data.name + ": 하품으로 잠이 들었다"); Mechanics.ApplyStatus(x, x, "잠듦", r, rng, log); }
     if (c.Nightmare) { if (x.Status == "잠듦") Mechanics.Hurt(x, x, r, Math.Max(1, Mechanics.MaxHP(x, x, r) / 4), "악몽", log); else c.Nightmare = false; }
     if (c.MagnetRise > 0 && --c.MagnetRise == 0) log.Add(x.Data.name + ": 전자부유가 풀렸다");
@@ -127,6 +159,10 @@ namespace AABattle {
    for (int i = 0; i < r.Sides.Length && i < f.Length; i++) {
     var s = r.Sides[i];
     s.QuickGuard = false;
+    if (s.SeaOfFire > 0 && f[i] != null && f[i].HP > 0 && !Mechanics.Has(f[i], "불꽃")) Mechanics.Hurt(f[i], f[1 - i], r, Math.Max(1, Mechanics.MaxHP(f[i], f[1 - i], r) / 8), "불바다", log);
+    if (s.SeaOfFire > 0 && --s.SeaOfFire == 0) log.Add((i + 1) + "팀 진영: 불바다가 사라졌다");
+    if (s.Swamp > 0 && --s.Swamp == 0) log.Add((i + 1) + "팀 진영: 습원이 사라졌다");
+    if (s.Rainbow > 0 && --s.Rainbow == 0) log.Add((i + 1) + "팀 진영: 무지개가 사라졌다");
     if (s.Safeguard > 0 && --s.Safeguard == 0) log.Add((i + 1) + "팀 진영: 신비의부적이 사라졌다");
     if (s.Mist > 0 && --s.Mist == 0) log.Add((i + 1) + "팀 진영: 흰안개가 사라졌다");
     if (s.LuckyChant > 0 && --s.LuckyChant == 0) log.Add((i + 1) + "팀 진영: 주술이 풀렸다");

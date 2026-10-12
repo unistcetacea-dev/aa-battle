@@ -107,9 +107,10 @@ namespace AABattle {
    }
    x = Regex.Match(s, @"^적진에 「(?<h>[^」]+)」(?:을|를) 설치한다$");
    if (x.Success) { string h = x.Groups["h"].Value == "압정" ? "압정뿌리기" : x.Groups["h"].Value; Add(into, plan, s, "적진에 「" + h + "」을 설치한다."); return; }
-   // 상태 부여(자진 = 자신)
-   var state = StateEffects.Parse(s.Replace("자진을", "자신을"));
-   if (state != null && StateEffects.Find(state.State) != null) { into.Add(s.Replace("자진을", "자신을") + "."); return; }
+   // 상태 부여(자진 = 자신, 적진 = 상대)
+   string own = s.Replace("자진을", "자신을").Replace("적진을", "상대를");
+   var state = StateEffects.Parse(own);
+   if (state != null && StateEffects.Find(state.State) != null) { into.Add(own + "."); return; }
    // 그 밖: 효과 모듈 정규화로 읽히면 그대로
    string normalized = EffectModules.Normalize(s);
    if (normalized != null && EffectModules.Classify(normalized).Length > 0) { into.Add(normalized); return; }
@@ -133,6 +134,7 @@ namespace AABattle {
    if (Regex.IsMatch(s, @"^「[^」]+」 기술$|^\d+(?:~\d+)?회 「[^」]+」 기술$|^(?:특수|추가)효과 없음$")) return true;
    if (Regex.IsMatch(s, @"급소에 맞기 쉽다|반드시 급소에 맞는다|유리한 타입 상성|능력치로 대미지를 계산한다|「방어」 기술을 관통한다")) return true;
    if (FailModules.IsModule(s)) return true;
+   if (VariablePower.Handles(s)) return true;
    if (Mechanics.IsDelayedMove(m) && Regex.IsMatch(s, @"^상대를 「[^」]+」 상태로 한다$|^「미래예지」 기술$")) return true;
    if (Regex.IsMatch(s, @"^상대가 「[^」]+」 상태일 때\s*,\s*위력이 강화\([^)]*\)되고 「필중」 효과가 부여된다$")) return true;
    if (m.category != "변화" && s.EndsWith("고정 대미지를 준다")) return true;

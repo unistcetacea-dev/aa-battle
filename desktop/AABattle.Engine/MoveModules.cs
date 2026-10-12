@@ -400,7 +400,7 @@ namespace AABattle {
    c.RepeatMove = ""; c.RepeatCount = 0; c.NextPriority = 0; c.BindDivisor = 0;
    c.ProtectMove = ""; c.Enduring = false; c.SoloChain = 0;
    c.Minimized = c.FocusEnergy = c.MagicCoat = c.DestinyBond = c.Nightmare = c.Grudge = c.Powder = false; c.Foresight = "";
-   c.Yawn = c.MagnetRise = c.Telekinesis = c.Embargo = c.Stockpile = 0;
+   c.Yawn = c.MagnetRise = c.Telekinesis = c.Embargo = c.Stockpile = c.LaserFocus = c.RolledPower = 0; c.FollowMe = c.Quash = false;
   }
 
   // ===== 사건 효과 실행기 =====

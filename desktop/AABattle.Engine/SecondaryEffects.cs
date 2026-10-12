@@ -53,6 +53,7 @@ namespace AABattle {
    if (a == null || target == null || target.HP <= 0) return false;
    rng = rng ?? (() => .5);
    int tenths = int.Parse(m.Groups["n"].Value);
+   if (StateTicks.Rainbow(a, rules ?? new Rules())) tenths = Math.Min(10, tenths * 2);   // 무지개: 추가효과 확률 2배
    if (tenths < 10 && rng() >= tenths / 10.0) return false;
    log.Add(a.Data.name + "의 " + label + " 「" + tenths + "할:" + body + "」");
    if (rank) return MoveRuntime.Run(a, b, null, MoveRuntime.Rank(toSelf ? "자신" : "상대", stats, sign, amount), rules ?? new Rules(), rng, log) == EffectOutcome.Success;
