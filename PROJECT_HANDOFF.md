@@ -337,3 +337,14 @@ Codex 공유 링크는 특정 시점의 읽기 전용 대화 스냅샷이다. �
 - 검증: `./desktop/verify.ps1 -Visual -OutputPath outputs/candidate` 통과(기계 회귀 292건). 부여 실패·복제·기술 제한·같은 T 행동 변경·3T 만료·퇴장·봉인/기억 상실 해제·난동 우선·공용 직접 부여·대타 관통·편집기 실제 적용·기술 버튼/지시 버튼·통상교대를 검사했다. `encore-conditions.png`와 `encore-moves.png`에서 상태 입력과 제한 사유를 확인했다.
 - 기준: [Showdown gen5 moves](https://github.com/smogon/pokemon-showdown/blob/master/data/mods/gen5/moves.ts)와 [상속되는 Encore 구현](https://github.com/smogon/pokemon-showdown/blob/master/data/moves.ts#L4725). gen5/gen6에는 encore 재정의가 없어 기본 구현의 부여·행동 대체·제한을 확인했다. 지속은 사용자 지시대로 부여한 T종료부터 매번 감소하는 3T로 처리하며 행동 후 부여에 1T를 더하지 않는다. PP가 없는 현재 엔진에는 PP 소진 판정을 추가하지 않았다.
 - 범위 밖: 포텐셜 효과 문장 자동 연결과 더블배틀 대상 처리, 기존 같은 종족 이름 중복 문제는 변경하지 않았다.
+
+## 2026-10-12 지시서 C / 연속 타격·일격필살
+- 최신 main의 4fd4beb에서 `task/move-multihit-ohko`를 만들었다. 연속 태그 49개를 확인했으며 설명의 고정 2/3회, 2~5회(35/35/15/15%)를 읽고 알 수 없는 횟수는 1회와 횟수 수동 판정 로그를 남긴다. 집단구타의 파티 수 표현은 이 마지막 경우다.
+- 명중은 기술당 한 번, 트리플킥/트리플악셀은 매 타격 판정한다. 매 타격의 급소(gen5 C0~4: 1/16·1/8·1/4·1/3·1/2, 기존 강제 급소 옵션 유지), 난수·현재 능력/대타 상태로 대미지를 다시 계산하고 본체·대타 및 빈사를 처리한다. 대타가 깨져도 다음 타격부터 본체에 들어간다. 타격별 복사 기술의 위력이 앙코르 등 행동 선택으로 원본으로 돌아가지 않도록 Calculate의 행동 선택 생략 경로를 실행기에서 사용한다.
+- 기존 AfterHit/피격 이벤트를 매 타격 호출하며 폭탄·분노와 추가효과를 처리한다. DB 연속기 더블니들 독·더블펀처 풀죽음·스케일샷 속도 상승도 타격마다 판정하고 스케일샷의 명중 후 방어 하락은 기술 종료 후 한 번 적용한다. 기존 AfterDamage 총합 API(요격)는 본체에 준 실제 대미지 합으로 한 번 호출한다. 폭탄 추가 손실·대타 대미지는 요격 총합에 넣지 않는다.
+- DB 트리플킥/트리플악셀의 （1회）/（2회）/（3회） 항목은 동일한 3회 연속 설명에 각 타격의 10/20/30 또는 20/40/60 위력을 가진 시트용 분리 항목이다. 목록·이름·DB 원본은 바꾸지 않았다. 선택한 분리 항목에서도 실행기는 1타부터 전체 3타를 실행한다.
+- 일격필살은 기본 명중+사용자-대상 레벨이며 랭크·중력·배율·맞춰라 보정을 무시한다. 높은 레벨 대상은 마음의눈이 있어도 실패하고, 일치하는 마음의눈 필중은 기존 경로를 유지한다. 명중 대미지는 사용자 지시대로 대상 현재 HP이며 타입 무효·대타·옹골참을 검사한다. 옹골참은 HP가 줄었어도 일격필살 면역, 틀깨기는 면역을 무시한다.
+- 판단: 『버텨라！』는 일격필살에 Showdown Endure처럼 HP 1을 남기며 일반 기술의 기존 반감은 유지한다. 기합의띠는 최대 HP에서 소모하여 HP 1을 남기고 FocusSashUsed로 복제·교대에도 소모를 유지한다(원본 Pokemon 소지품 데이터는 바꾸지 않음). 이번 실행기의 연속기/일격필살에만 이 생존 검사를 연결했다.
+- 근거: [gen5 기술 모드](https://github.com/smogon/pokemon-showdown/blob/master/data/mods/gen5/moves.ts), [battle-actions 실행기](https://github.com/smogon/pokemon-showdown/blob/master/sim/battle-actions.ts) (횟수 분포·명중·급소·타격 루프), [기본 기술](https://github.com/smogon/pokemon-showdown/blob/master/data/moves.ts) (트리플킥/악셀·Endure), [Sturdy 특성](https://github.com/smogon/pokemon-showdown/blob/master/data/abilities.ts#L4650), [Focus Sash 도구](https://github.com/smogon/pokemon-showdown/blob/master/data/items.ts#L2262), [gen5 대타 조건](https://github.com/smogon/pokemon-showdown/blob/master/data/mods/gen5/conditions.ts). 해당 모드에 없는 부분은 기본 자료의 gen5 분기를 적용했다.
+- 범위 밖: 파티 인원 수 기반 집단구타, 기합의띠 도구의 공용 소모 UI/일반 단일 타격 연결, 새 포텐셜 문장 자동 연결은 수정하지 않았다. DB 접촉 태그가 없는 기술에 접촉을 추론해 추가하는 작업은 하지 않았다.
+- 검증: `./desktop/verify.ps1 -Visual -OutputPath outputs/candidate` 통과(기계 회귀 318건). 고정/분포 횟수·빈사 중단·대타 후 본체·트리플 2타 실패/위력 상승·타격별 급소/난수/독/분노/폭탄·총합 요격·불명 횟수, 일격필살 레벨/명중/현재 HP/옹골참/틀깨기/대타/띠 소모/버텨라를 검사했다.
