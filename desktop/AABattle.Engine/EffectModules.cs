@@ -250,6 +250,8 @@ namespace AABattle {
 
   static string NormalizeBody(string text) {
    Match m; string action; double rate; MoveCondition c;
+   m = Regex.Match(text, @"^자신은\s*「(?<s>[^」]+)」\s*상태가\s*된다$");
+   if (m.Success && StateEffects.Find(m.Groups["s"].Value) != null) return "자신을 「" + m.Groups["s"].Value + "」 상태로 한다";
    // 「상대 기술의」처럼 조사가 빠진 주어
    string moveModule = MoveModules.Normalize(text);
    if (moveModule != null) return moveModule;
@@ -375,7 +377,7 @@ namespace AABattle {
    m = Regex.Match(text, @"^(?:자신은\s*)?(?<w>가장\s*먼저|상대보다\s*먼저|먼저)\s*행동(?<opt>한다|할\s*수\s*있다)$");
    if (m.Success) return "자신은 " + (m.Groups["w"].Value.StartsWith("가장") ? "가장" : "상대보다") + " 먼저 행동" + (m.Groups["opt"].Value.Contains("있다") ? "할 수 있다." : "한다.");
    m = Regex.Match(text, @"^(?:자신은\s*)?「(?<s>[^」]+)」\s*상태(?:가|에)\s*(?:되지|걸리지)\s*않는다$");
-   if (m.Success && m.Groups["s"].Value.Split('/').All(x => MajorStatuses.Contains(x.Trim()))) return "자신은 「" + m.Groups["s"].Value + "」상태가 되지 않는다.";
+   if (m.Success && m.Groups["s"].Value.Split('/').All(IsImmunityName)) return "자신은 「" + m.Groups["s"].Value + "」상태가 되지 않는다.";
    return null;
   }
 
@@ -445,10 +447,13 @@ namespace AABattle {
   public static int ActFirstTier(string text) { var m = Regex.Match(Clean(text), @"^자신은 (?<w>가장|상대보다) 먼저 행동(?:한다|할 수 있다)$"); return !m.Success ? 0 : m.Groups["w"].Value == "가장" ? 2 : 1; }
   public static bool IsActFirst(string text) { return ActFirstTier(text) > 0; }
   public static bool IsFloating(string text) { return Clean(text) == "자신은 공중에 떠오른다"; }
-  public static bool TryStatusImmunity(string text, out string[] statuses) {
-   var m = Regex.Match(Clean(text), @"^자신은 「(?<s>[^」]+)」상태가 되지 않는다$");
+  static bool IsImmunityName(string name) { return MajorStatuses.Contains(name.Trim()) || StateEffects.Find(name.Trim()) != null; }
+  public static bool TryStatusImmunity(string text, out string[] statuses) { bool opponentOnly; return TryStatusImmunity(text, out statuses, out opponentOnly); }
+  public static bool TryStatusImmunity(string text, out string[] statuses, out bool opponentOnly) {
+   var m = Regex.Match(Clean(text), @"^(?<o>상대의 기술에 의해 )?자신은 「(?<s>[^」]+)」\s*상태가 되지 않는다$");
    statuses = m.Success ? m.Groups["s"].Value.Split('/').Select(x => x.Trim()).ToArray() : new string[0];
-   return m.Success && statuses.All(MajorStatuses.Contains);
+   opponentOnly = m.Success && m.Groups["o"].Success;
+   return m.Success && statuses.All(IsImmunityName);
   }
   static string Clean(string text) { return Regex.Replace(PotentialParts.Clean(text ?? "").Trim().TrimEnd('.', '。', '．').Trim(), @"\s+", " "); }
 

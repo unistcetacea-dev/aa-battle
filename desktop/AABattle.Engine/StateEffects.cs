@@ -117,6 +117,7 @@ namespace AABattle {
     if (log != null) log.Add(source + ": 「" + rule.Name + "」 확률 판정 실패");
     return true;
    }
+   if (rule.Category != "상태이상" && !sentence.IgnoreImmunity && self != null && !Mechanics.BypassAbility(self) && PotentialModifiers.StatusImmune(target, self, rule.Name, rules ?? new Rules())) { if (log != null) log.Add(target.Data.name + ": 특성/포텐셜로 「" + rule.Name + "」 상태가 되지 않는다"); return true; }
    if (rule.Category == "상태변화" && Mechanics.AlreadyHas(target, rule.Name, log)) return true;
    var context = new StateEffectContext {
     Target = target, Source = self, Rules = rules ?? new Rules(), Rng = rng, Log = log,
@@ -133,6 +134,7 @@ namespace AABattle {
    if (rule == null) return EffectOutcome.Pending;
    var target = sentence.Target == "자신" || sentence.Target.Length == 0 && rule.SelfByDefault ? self : opponent;
    if (target == null || target.HP <= 0) { if (log != null) log.Add(source + ": 「" + rule.Name + "」 대상이 없다."); return EffectOutcome.Failed; }
+   if (rule.Category != "상태이상" && !sentence.IgnoreImmunity && self != null && !Mechanics.BypassAbility(self) && PotentialModifiers.StatusImmune(target, self, rule.Name, rules ?? new Rules())) { if (log != null) log.Add(target.Data.name + ": 특성/포텐셜로 「" + rule.Name + "」 상태가 되지 않는다"); return EffectOutcome.Failed; }
    if (rule.Category == "상태변화" && Mechanics.AlreadyHas(target, rule.Name, log)) return EffectOutcome.Failed;
    var context = new StateEffectContext { Target = target, Source = self, Rules = rules ?? new Rules(), Rng = rng, Log = log, Turns = sentence.UntilTurnEnd ? 1 : sentence.Turns, IgnoreImmunity = sentence.IgnoreImmunity };
    if (!rule.Apply(context)) return EffectOutcome.Failed;
@@ -161,7 +163,7 @@ namespace AABattle {
    }
    rules.Add(Rule("혼란", c => {
     var t = c.Target;
-    if (c.Source != null && !Mechanics.BypassAbility(c.Source) && Mechanics.Ability(t, "마이페이스") || c.Rules.Terrain == "미스트필드" && Mechanics.Grounded(t, c.Rules)) { c.Say("혼란 무효: 마이페이스 / 미스트필드"); return false; }
+    if (c.Source != null && !Mechanics.BypassAbility(c.Source) && PotentialModifiers.StatusImmune(t, c.Source, "혼란", c.Rules) || c.Rules.Terrain == "미스트필드" && Mechanics.Grounded(t, c.Rules)) { c.Say("혼란 무효: 특성/포텐셜 / 미스트필드"); return false; }
     if (StateTicks.Guarded(t, c.Source, c.Rules)) { c.Say("신비의부적: 혼란 무효"); return false; }
     t.Conditions.Confusion = c.Turns > 0 ? c.Turns : 1 + (int)(c.Roll() * 4);
     return true;

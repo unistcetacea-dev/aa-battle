@@ -61,5 +61,74 @@ namespace AABattle {
    Assert.That(AbilityPhrases.IgnoresIndirect(guard), Is.True);
    Assert.That(AbilityPhrases.IgnoresHazards(F("딱딱한발굽")), Is.True);
   }
+
+  [Test] public void RewrittenAbilityRulesReachTheirBattleChecks() {
+   var guard = F("매직가드");
+   Assert.That(AbilityPhrases.IgnoresIndirect(guard), Is.True);
+   Assert.That(AbilityPhrases.IgnoresHazards(F("부유")), Is.True);
+   Assert.That(AbilityPhrases.BlocksDrop(F("클리어바디"), 1), Is.True);
+   var sturdy = F("옹골참");
+   Assert.That(AbilityPhrases.Endures(sturdy, F()), Is.True);
+   var breaker = F("틀깨기");
+   breaker.Conditions.Acting = true;
+   Assert.That(Mechanics.BypassAbility(breaker), Is.True, string.Join(" | ", PotentialModifiers.Sentences(breaker, null, new Rules(), "관통")));
+  }
+
+  [Test] public void CatalogOnlyDefensiveAndPowerEffectsRunInBattle() {
+   var attacker = F("철주먹");
+   var defender = F();
+   var punch = M("냉동펀치");
+   var plain = Engine.Calculate(TestData.Db, F(), defender, punch, new Rules()).Max;
+   var boosted = Engine.Calculate(TestData.Db, attacker, defender, punch, new Rules()).Max;
+   Assert.That(boosted, Is.GreaterThan(plain));
+   var full = F("멀티스케일");
+   plain = Engine.Calculate(TestData.Db, F(), F(), M("몸통박치기"), new Rules()).Max;
+   Assert.That(Engine.Calculate(TestData.Db, F(), full, M("몸통박치기"), new Rules()).Max, Is.LessThan(plain));
+  }
+
+  [Test] public void AbsorptionAndEntryEffectsRunFromCatalogText() {
+   var t = Turn(F(), F("타오르는불꽃"), M("화염방사"), Idle());
+   Assert.That(t.Fighters[1].HP, Is.EqualTo(Max(t.Fighters[1])), Log(t));
+   Assert.That(t.Fighters[1].Stages[3], Is.EqualTo(1), Log(t));
+   Assert.That(t.Fighters[1].Conditions.FlashFire, Is.False, Log(t));
+   t = Turn(F(), F("수의베일"), Idle(), Idle());
+   Assert.That(t.Fighters[1].Conditions.AquaRing, Is.True, Log(t));
+   var soggy = F("마그마의무장");
+   Assert.That(Mechanics.StatusBlock(soggy, F(), "얼음", new Rules()), Does.Contain("특성"));
+   Assert.That(Mechanics.StatusBlock(F("수의베일"), F(), "화상", new Rules()), Does.Contain("특성"));
+   Assert.That(AbilityPhrases.NoCrit(soggy, F()), Is.True);
+  }
+
+  [Test] public void ElectricAbsorptionModuleMatchesElectricAttacks() {
+   var source = F();
+   var target = F("피뢰침");
+   var move = new Move { name = "검사 전기", category = "특수", types = new[] { "전기" }, tags = new string[0], power = 80, accuracy = 100 };
+   Assert.That(PotentialModifiers.Sentences(target, source, new Rules(), "무효"), Does.Contain("상대의 「전기」 기술을 무효화한다."));
+   var guard = PotentialProtection.Check(TestData.Db, source, target, move, new Rules(), () => .5, false);
+   Assert.That(guard.HasValue, Is.True, string.Join(" | ", PotentialModifiers.Sentences(target, source, new Rules(), "무효")));
+  }
+
+  [Test] public void CatalogPowerRewritesMatchTheirMoveTags() {
+   var defender = F();
+   var move = new Move { name = "분류검사", category = "물리", types = new[] { "노말" }, tags = new[] { "펀치" }, power = 60, accuracy = 100 };
+   Assert.That(PotentialModifiers.Power(F("테크니션"), defender, move, new Rules(), 1), Is.EqualTo(1.5));
+   Assert.That(PotentialModifiers.Power(F("철주먹"), defender, move, new Rules(), 1), Is.EqualTo(1.5));
+   move.tags = new[] { "파동" };
+   Assert.That(PotentialModifiers.Power(F("메가런처"), defender, move, new Rules(), 1), Is.EqualTo(1.5));
+   move.tags = new[] { "물기/엄니" };
+   Assert.That(PotentialModifiers.Power(F("옹골찬턱"), defender, move, new Rules(), 1), Is.EqualTo(1.5));
+   move.tags = new[] { "칼/검" };
+   Assert.That(PotentialModifiers.Power(F("예리함"), defender, move, new Rules(), 1), Is.EqualTo(1.5));
+   move.tags = new[] { "반동" };
+   Assert.That(PotentialModifiers.Power(F("이판사판"), defender, move, new Rules(), 1), Is.EqualTo(1.2));
+  }
+
+  [Test] public void BulletproofOnlyHalvesCatalogListedExplosions() {
+   var attacker = F();
+   var explosion = new Move { name = "자폭", category = "물리", types = new[] { "노말" }, tags = new string[0], power = 100, accuracy = 100, attack = "공격", defense = "방어" };
+   var plain = Engine.Calculate(TestData.Db, attacker, F(), explosion, new Rules()).Max;
+   var guarded = Engine.Calculate(TestData.Db, attacker, F("방탄"), explosion, new Rules()).Max;
+   Assert.That(guarded, Is.LessThan(plain));
+  }
  }
 }

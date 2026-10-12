@@ -147,7 +147,7 @@ namespace AABattle {
   public static bool IgnoresHazards(Fighter f) { return Lines(f, null, "설치물").Any(x => x == HazardProof); }
   [ThreadStatic] static bool piercing;
   public static bool PiercesAbility(Fighter f) {
-   if (f == null || !f.Conditions.Acting || piercing) return false;
+   if (f == null || piercing) return false;
    piercing = true;
    try { return Lines(f, null, "관통").Any(x => x == Pierce); } finally { piercing = false; }
   }

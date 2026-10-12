@@ -11,11 +11,11 @@ namespace AABattle {
   public static readonly string[] KnownItems={"풍선","철구","방진고글","먹다남은음식","검은진흙","통굽부츠"};
   public static bool Has(Fighter f,string type){return f.Data.types.Contains(type);}
   public static bool Ability(Fighter f,params string[] names){return f!=null&&names.Any(x=>AbilityRuntime.Has(f,x));}
-  public static bool Grounded(Fighter f,Rules r){if(r.Gravity>0||ItemRuntime.Holds(f,"검은철구","철구")||f.Conditions.Ingrain)return true;return !Has(f,"비행")&&!Ability(f,"부유")&&!(f.Data.item=="풍선"&&!f.Conditions.BalloonPopped)&&!PotentialModifiers.Floating(f,r)&&!StateTicks.Floating(f);}
+  public static bool Grounded(Fighter f,Rules r){if(r.Gravity>0||ItemRuntime.Holds(f,"검은철구","철구")||f.Conditions.Ingrain)return true;return !Has(f,"비행")&&!(f.Data.item=="풍선"&&!f.Conditions.BalloonPopped)&&!PotentialModifiers.Floating(f,r)&&!StateTicks.Floating(f);}
   public static string Weather(Fighter a,Fighter b,Rules r){return (a.HP>0&&Ability(a,"날씨부정","에어록"))||(b.HP>0&&Ability(b,"날씨부정","에어록"))?"없음":r.Weather;}
   public static bool Sunny(string w){return w=="쾌청"||w=="큰가뭄";}
   public static bool Rain(string w){return w=="비"||w=="강한 비";}
-  public static bool BypassAbility(Fighter a){return a!=null&&(a.Conditions.PiercingAbility||AbilityPhrases.PiercesAbility(a))||Ability(a,"틀깨기","터보블레이즈","테라볼티지");}
+  public static bool BypassAbility(Fighter a){return a!=null&&(a.Conditions.PiercingAbility||AbilityPhrases.PiercesAbility(a));}
   public static bool Sound(Move m){return (m.tags??new string[0]).Any(t=>t.Contains("소리"))||(m.effect??"").Contains("「소리」");}
   public static bool Powder(Move m){return new[]{"수면가루","독가루","저리가루","버섯포자","분노가루","분진"}.Contains(m.name);}
   public static bool BypassSub(Fighter a,Move m){return Ability(a,"틈새포착")||Sound(m)||m.name=="도발"||m.name=="앙코르";}
@@ -25,7 +25,7 @@ namespace AABattle {
    if(p.IgnoreAll)return TypeRules.Adjust(a,b,m,r,1);
    var each=m.types.Concat(p.Added).Distinct().Select(t=>b.Data.types.Aggregate(1.0,(v,d)=>{double k=db.chart.ContainsKey(d)&&db.chart[d].ContainsKey(t)?db.chart[d][t]:1;
     if(t=="땅"&&d=="비행"&&Grounded(b,r))k=1;
-    if(d=="고스트"&&(t=="노말"||t=="격투")&&Ability(a,"배짱"))k=1;
+    if(d=="고스트"&&(t=="노말"||t=="격투")&&p.IgnoreGhostImmune)k=1;
     if(d=="비행"&&k>1&&weather=="난기류")k=1;k=MoveModules.TypeOverride(a,m,d,k);
     // 포텐셜: 상성 무효 관통(0→1), 타입 내성 관통(반감·무효→1, 사용자 결정)
     if(k==0&&p.PierceImmune)k=1;
@@ -35,49 +35,40 @@ namespace AABattle {
    double type=p.Favorable?each.Max():each.Aggregate(1.0,(x,y)=>x*y);
    return TypeRules.Adjust(a,b,m,r,type);
   }
-  public static int Priority(Fighter a,Move m){return m.priority+(m.category=="변화"&&Ability(a,"짓궂은마음")?1:0)+AbilityPhrases.PriorityBonus(a,m);}
+  public static int Priority(Fighter a,Move m){return m.priority+AbilityPhrases.PriorityBonus(a,m);}
   public static int Priority(Fighter a,Move m,Fighter opponent){return Priority(a,m)+PriorityEffectRuntime.ForMove(a,opponent,null,null,null);}
   public static int Priority(Fighter a,Move m,Fighter opponent,TrainerRecord ownTrainer,TrainerRecord opponentTrainer){return Priority(a,m)+PriorityEffectRuntime.ForMove(a,opponent,ownTrainer,opponentTrainer,null);}
   public static string Block(Database db,Fighter a,Fighter b,Move m,Rules r){
    if(ProtectModules.Blocks(db,b,m)||StateTicks.QuickGuarded(a,b,m,r))return ProtectModules.Blocked;if(m.category=="변화"&&b.Conditions.MagicCoat&&!a.Conditions.MagicCoat)return StateTicks.Reflected;if(Ohko(m)){if(a.Data.level<b.Data.level)return "일격필살 실패: 대상 레벨이 더 높다";if(!BypassAbility(a)&&Ability(b,"옹골참"))return "옹골참: 일격필살 무효";}
-   if(Powder(m)&&(Has(b,"풀")||!BypassAbility(a)&&Ability(b,"방진")||b.Data.item=="방진고글"))return "풀 타입 / 방진 / 방진고글: 가루 기술 무효";
+   if(Powder(m)&&(Has(b,"풀")||b.Data.item=="방진고글"))return "풀 타입 / 방진고글: 가루 기술 무효";
    if(m.category=="변화"&&Ability(a,"짓궂은마음")&&Has(b,"악"))return "악 타입: 짓궂은마음 변화기 무효";
    if(r.Terrain=="사이코필드"&&Grounded(b,r)&&Priority(a,m,b)>0)return "사이코필드: 접지 대상에게 우선도 기술 무효";
    string w=Weather(a,b,r);
    if(m.category!="변화"&&((w=="큰가뭄"&&m.types.Contains("물"))||(w=="강한 비"&&m.types.Contains("불꽃"))))return w+": 해당 공격기 실패";
    if(m.types.Contains("땅")&&!Grounded(b,r)&&!Has(b,"비행")&&!(Ability(b,"부유")&&BypassAbility(a)&&!(b.Data.item=="풍선"&&!b.Conditions.BalloonPopped)))return "공중 상태: 땅 기술 무효";
    if(m.types.Contains("땅")&&b.Data.item=="풍선"&&!b.Conditions.BalloonPopped&&!Grounded(b,r))return "풍선: 땅 기술 무효";
-   if(!BypassAbility(a)){
-    if(m.types.Contains("땅")&&Ability(b,"부유")&&!Grounded(b,r))return "부유: 땅 기술 무효";
-    if(m.types.Contains("불꽃")&&Ability(b,"타오르는불꽃"))return "타오르는불꽃";
-    if(m.types.Contains("전기")&&Ability(b,"축전","피뢰침","전기엔진"))return b.Data.ability;
-    if(m.types.Contains("물")&&Ability(b,"저수","마중물"))return b.Data.ability;
-    if(m.types.Contains("풀")&&Ability(b,"초식"))return "초식";
-    if(Sound(m)&&Ability(b,"방음"))return "방음: 소리 기술 무효";
-    if((m.tags??new string[0]).Any(t=>t.Contains("탄")||t.Contains("볼"))&&Ability(b,"방탄"))return "방탄: 탄/볼 기술 무효";
-   }
    if((m.category!="변화"||m.name=="전기자석파")&&TypeEffect(db,a,b,m,r)==0)return "타입 상성에 의한 무효";
    if(m.category=="변화"&&b.Conditions.Substitute>0&&!BypassSub(a,m))return "대타: 변화기 차단";
    if(StatusMoves.ContainsKey(m.name))return StatusBlock(b,a,StatusMoves[m.name],r);
    if(m.name=="씨뿌리기"&&Has(b,"풀"))return "풀 타입: 씨뿌리기 무효";
-   if((m.name=="이상한빛"||m.name=="초음파")&&(!BypassAbility(a)&&Ability(b,"마이페이스")||r.Terrain=="미스트필드"&&Grounded(b,r)))return "마이페이스 / 미스트필드: 혼란 무효";
+   if((m.name=="이상한빛"||m.name=="초음파")&&(!BypassAbility(a)&&PotentialModifiers.StatusImmune(b,a,"혼란",r)||r.Terrain=="미스트필드"&&Grounded(b,r)))return "특성/포텐셜 / 미스트필드: 혼란 무효";
    return "";
   }
   public static bool DefensiveNullification(Move move,string reason){if(move==null||move.category=="변화"||string.IsNullOrEmpty(reason)||reason.StartsWith("방어")||reason.StartsWith("대타"))return false;return new[]{"타입 상성","타오르는불꽃","축전","저수","피뢰침","마중물","전기엔진","초식","부유","풍선","방음","방탄","방호 포텐셜"}.Any(reason.Contains);}
-  public static string StatusBlock(Fighter target,Fighter source,string status,Rules r,bool fromRest=false){if(StateTicks.Guarded(target,source,r))return "신비의부적";if(PotentialModifiers.StatusImmune(target,source,status,r))return "포텐셜: 「"+status+"」상태가 되지 않는다";
+  public static string StatusBlock(Fighter target,Fighter source,string status,Rules r,bool fromRest=false){if(StateTicks.Guarded(target,source,r))return "신비의부적";if(!BypassAbility(source)&&PotentialModifiers.StatusImmune(target,source,status,r))return "특성/포텐셜: 「"+status+"」상태가 되지 않는다";
    if(status=="정상")return "";if(target.HP<=0)return "기절 상태";if(target.Status!="정상")return "이미 상태이상이 있음";if(status=="잠듦"&&!fromRest){string sleepBlock=SleepBlock(target,r);if(sleepBlock.Length>0)return sleepBlock;}
    if(!Object.ReferenceEquals(target,source)&&PrivilegeRules.Has(target,"왕자의 특권"))return "왕자의 특권: 상대로부터의 상태이상 무효";
    if(r.Terrain=="미스트필드"&&Grounded(target,r))return "미스트필드: 접지 포켓몬의 상태이상 방지";
    if(status=="잠듦"&&r.Terrain=="일렉트릭필드"&&Grounded(target,r))return "일렉트릭필드: 접지 포켓몬의 잠듦 방지";
-   if(status=="화상"&&(Has(target,"불꽃")||(!BypassAbility(source)&&Ability(target,"수의베일"))))return "불꽃 타입 / 수의베일: 화상 무효";
-   if((status=="독"||status=="맹독")&&((Has(target,"독")||Has(target,"강철"))&&!Ability(source,"부식")||(!BypassAbility(source)&&Ability(target,"면역"))))return "독·강철 타입 / 면역: 독 무효";
-   if(status=="마비"&&(Has(target,"전기")||(!BypassAbility(source)&&Ability(target,"유연"))))return "전기 타입 / 유연: 마비 무효";
-   if((status=="얼음"||status=="동상")&&(Has(target,"얼음")||(!BypassAbility(source)&&Ability(target,"마그마의무장"))))return "얼음 타입 / 마그마의무장: 결빙 무효";
+   if(status=="화상"&&Has(target,"불꽃"))return "불꽃 타입: 화상 무효";
+   if((status=="독"||status=="맹독")&&(Has(target,"독")||Has(target,"강철"))&&!Ability(source,"부식"))return "독·강철 타입: 독 무효";
+   if(status=="마비"&&Has(target,"전기"))return "전기 타입: 마비 무효";
+   if((status=="얼음"||status=="동상")&&Has(target,"얼음"))return "얼음 타입: 결빙 무효";
    if(status=="얼음"&&Sunny(Weather(target,source,r)))return "쾌청·큰가뭄: 새로운 얼음 상태 방지";
-   if(status=="잠듦"&&!BypassAbility(source)&&Ability(target,"불면","의기양양"))return "불면 / 의기양양: 잠듦 무효";return "";
+   return "";
   }
   public static bool ApplyStatus(Fighter target,Fighter source,string status,Rules r,Func<double> rng,List<string> log,bool fromRest=false,bool ignoreImmunity=false){string reason=!ignoreImmunity?StatusBlock(target,source,status,r,fromRest):target.Status!="정상"?"이미 상태이상이 있다.":status=="잠듦"?SleepBlock(target,r):"";if(reason.Length>0){log.Add(target.Data.name+" — "+reason);return false;}target.Status=status;target.Conditions.ToxicStage=1;if(status=="잠듦"){target.Conditions.SleepTurns=fromRest?2:SleepDuration(rng);target.Conditions.SleepStart=target.Conditions.SleepTurns;target.Conditions.SleepFromRest=fromRest;}log.Add(target.Data.name+": "+status);return true;}
-  public static double StatFactor(Fighter a,Fighter b,int index,Rules r,int side=-1){double v=1;string w=Weather(a,b,r);if(index==5){if(a.Status=="마비")v*=.5;if(side>=0&&side<2&&r.Sides[side].Tailwind>0)v*=2;if(Rain(w)&&Ability(a,"쓱쓱")||Sunny(w)&&Ability(a,"엽록소")||w=="모래바람"&&Ability(a,"모래헤치기")||(w=="눈"||w=="싸라기눈")&&Ability(a,"눈치우기"))v*=2;}if(index==1&&a.Status!="정상"&&Ability(a,"근성"))v*=1.5;if(index==4&&w=="모래바람"&&Has(a,"바위"))v*=1.5;if(index==2&&w=="눈"&&Has(a,"얼음"))v*=1.5;return v;}
+  public static double StatFactor(Fighter a,Fighter b,int index,Rules r,int side=-1){double v=1;string w=Weather(a,b,r);if(index==5){if(a.Status=="마비")v*=.5;if(side>=0&&side<2&&r.Sides[side].Tailwind>0)v*=2;}if(index==4&&w=="모래바람"&&Has(a,"바위"))v*=1.5;if(index==2&&w=="눈"&&Has(a,"얼음"))v*=1.5;return v;}
   public static double PowerFactor(Fighter a,Fighter b,Move m,Rules r){double v=1;string w=Weather(a,b,r);if(a.Status=="화상"&&m.category=="물리"&&!Ability(a,"근성")&&m.name!="객기")v*=.5;if(a.Status=="동상"&&m.category=="특수")v*=.5;bool umbrella=(Sunny(w)||Rain(w))&&(MiscModules.IgnoresWeather(a,w,r)||MiscModules.IgnoresWeather(b,w,r));if(!umbrella&&Sunny(w))v*=m.types.Contains("불꽃")?1.5:m.types.Contains("물")?.5:1;if(!umbrella&&Rain(w))v*=m.types.Contains("물")?1.5:m.types.Contains("불꽃")?.5:1;
    if(IsRollout(m)&&a.Conditions.RolloutMove==m.name)v*=Math.Pow(2,Math.Max(0,Math.Min(4,a.Conditions.RolloutCount)));v*=ChargePower(a,m);v*=MoveModules.PowerFactor(a,b,m,r);if(a.Conditions.HelpingHand)v*=1.5;
    if(m.name=="객기"&&new[]{"화상","독","맹독","마비"}.Contains(a.Status))v*=2;
@@ -94,7 +85,7 @@ namespace AABattle {
   public static int MaxHP(Fighter a,Fighter b,Rules r){return Max(a,b,r);}
   public static bool Contact(Move move){return move!=null&&(move.tags??new string[0]).Any(x=>x=="접촉"||x.Contains("접촉"));}
   public static bool SureHit(Move move){return move!=null&&(move.tags??new string[0]).Any(x=>x.Contains("필중"))||move!=null&&new[]{"손가락흔들기"}.Contains(move.name);}
-  internal static void Hurt(Fighter a,Fighter b,Rules r,int damage,string reason,List<string> log,bool indirect=true){if(a.HP<=0||indirect&&(Ability(a,"매직가드")||AbilityPhrases.IgnoresIndirect(a)))return;int before=a.HP;int loss=Math.Min(a.HP,Math.Max(1,damage));a.HP-=loss;log.Add(a.Data.name+" — "+reason+": HP -"+loss);RuntimeTriggers.Damaged(a,loss,reason,log.Add);AnsweredTriggers.HpChanged(a,b,r,before,a.HP,reason,log.Add);if(indirect)AnsweredTriggers.IndirectDamage(a,b,loss,reason,log.Add);if(a.HP==0)log.Add(a.Data.name+"은 쓰러졌다!");}
+  internal static void Hurt(Fighter a,Fighter b,Rules r,int damage,string reason,List<string> log,bool indirect=true){if(a.HP<=0||indirect&&AbilityPhrases.IgnoresIndirect(a))return;int before=a.HP;int loss=Math.Min(a.HP,Math.Max(1,damage));a.HP-=loss;log.Add(a.Data.name+" — "+reason+": HP -"+loss);RuntimeTriggers.Damaged(a,loss,reason,log.Add);AnsweredTriggers.HpChanged(a,b,r,before,a.HP,reason,log.Add);if(indirect)AnsweredTriggers.IndirectDamage(a,b,loss,reason,log.Add);if(a.HP==0)log.Add(a.Data.name+"은 쓰러졌다!");}
   // 오레마스: 「매 T종료 시의 회복」은 중복되지 않고 회복량이 가장 큰 효과 하나만 적용한다. 아쿠아링은 1/8.
   public static IEnumerable<KeyValuePair<string,int>> TurnEndHeals(Fighter a,Fighter b,Rules r,int max){var c=a.Conditions;if(r.Terrain=="그래스필드"&&Grounded(a,r))yield return new KeyValuePair<string,int>("그래스필드",Math.Max(1,max/16));if(a.Data.item=="먹다남은음식")yield return new KeyValuePair<string,int>("먹다남은음식",Math.Max(1,max/16));if(a.Data.item=="검은진흙"&&Has(a,"독"))yield return new KeyValuePair<string,int>("검은진흙",Math.Max(1,max/16));if(c.AquaRing)yield return new KeyValuePair<string,int>("아쿠아링",Math.Max(1,max/8));if(c.Ingrain)yield return new KeyValuePair<string,int>("뿌리박기",Math.Max(1,max/16));}
   public static KeyValuePair<string,int> TurnEndHeal(Fighter a,Fighter b,Rules r,int max){var all=TurnEndHeals(a,b,r,max).ToList();if(all.Count==0)return new KeyValuePair<string,int>("",0);var best=all.OrderByDescending(x=>x.Value).First();return all.Count==1?best:new KeyValuePair<string,int>(best.Key+" (중복 회복은 가장 큰 효과만)",best.Value);}
@@ -103,12 +94,12 @@ namespace AABattle {
   static bool ChangeStage(Fighter target,Fighter other,int index,int amount,Rules r,string reason,List<string> log,bool reflected){
    if(target==null||index<0||index>=target.Stages.Length||amount==0)return false;bool opponent=other!=null&&!Object.ReferenceEquals(target,other);int resolved=amount;
    if(Ability(target,"심술꾸러기"))resolved=-resolved;if(Ability(target,"단순"))resolved+=Math.Sign(resolved);
-   if(resolved<0&&opponent&&!BypassAbility(other)&&AbilityPhrases.BlocksDrop(target,index)){log.Add(target.Data.name+"의 「"+AbilityRuntime.Name(target)+"」: 능력이 내려가지 않는다");return false;}if(resolved<0&&opponent&&StateTicks.Mist(target,r)){log.Add(target.Data.name+": 흰안개로 능력이 내려가지 않는다");return false;}if(resolved<0&&opponent&&!BypassAbility(other)&&Ability(target,"클리어바디","하얀연기")){string ability=AbilityRuntime.Name(target);log.Add(target.Data.name+"의 「"+ability+"」: 능력 감소 무효");AnsweredTriggers.AbilityActivated(target,ability,log.Add);return false;}
+   if(resolved<0&&opponent&&!BypassAbility(other)&&AbilityPhrases.BlocksDrop(target,index)){log.Add(target.Data.name+"의 「"+AbilityRuntime.Name(target)+"」: 능력이 내려가지 않는다");return false;}if(resolved<0&&opponent&&StateTicks.Mist(target,r)){log.Add(target.Data.name+": 흰안개로 능력이 내려가지 않는다");return false;}
    if(resolved<0&&opponent&&!reflected&&!BypassAbility(other)&&Ability(target,"미러아머")){log.Add(target.Data.name+"의 「미러아머」: "+Engine.Names[index]+" 감소 반사");AnsweredTriggers.AbilityActivated(target,"미러아머",log.Add);return ChangeStage(other,target,index,resolved,r,"미러아머",log,true);}
    int before=target.Stages[index],after=Math.Max(-6,Math.Min(6,before+resolved));if(before==after)return false;target.Stages[index]=after;target.Conditions.StageByOpponent=opponent;StateWatch.CheckCurrent(log.Add);target.Conditions.StageByOpponent=false;log.Add(target.Data.name+": "+Engine.Names[index]+" "+(resolved>0?"+":"")+(after-before)+(reason.Length>0?" ("+reason+")":""));AnsweredTriggers.StageChanged(target,other,index,before,after,log.Add);
-   if(after<before&&opponent){if(Ability(target,"오기")&&ChangeStage(target,other,1,2,r,"오기",log,true))AnsweredTriggers.AbilityActivated(target,"오기",log.Add);if(Ability(target,"승기")&&ChangeStage(target,other,3,2,r,"승기",log,true))AnsweredTriggers.AbilityActivated(target,"승기",log.Add);}return true;
+   return true;
   }
-  public static void Absorb(Fighter a,Fighter b,string reason,Rules r,List<string> log){if(reason=="축전"||reason=="저수"){if(Heal(b,a,r,Max(b,a,r)/4,reason,log)>0)AnsweredTriggers.AbilityActivated(b,reason,log.Add);}if(reason=="피뢰침"||reason=="마중물"){if(ChangeStage(b,a,3,1,r,reason,log))AnsweredTriggers.AbilityActivated(b,reason,log.Add);}if(reason=="전기엔진"){if(ChangeStage(b,a,5,1,r,reason,log))AnsweredTriggers.AbilityActivated(b,reason,log.Add);}if(reason=="초식"){if(ChangeStage(b,a,1,1,r,reason,log))AnsweredTriggers.AbilityActivated(b,reason,log.Add);}if(reason=="타오르는불꽃"){b.Conditions.FlashFire=true;AnsweredTriggers.AbilityActivated(b,reason,log.Add);}}
+  public static void Absorb(Fighter a,Fighter b,string reason,Rules r,List<string> log){}
   public static bool BeforeMove(Fighter a,Fighter b,Move m,Rules r,Func<double> rng,List<string> log){var c=a.Conditions;
    if(a.Status=="잠듦"){if(c.SleepTurns>0){c.SleepTurns--;log.Add(a.Data.name+": 쿨쿨 잠들어 있다");return false;}a.Status="정상";c.SleepFromRest=false;log.Add(a.Data.name+": 잠에서 깨어났다.");}
    if(c.Recharge){c.Recharge=false;log.Add(a.Data.name+": 반동으로 행동할 수 없다.");return false;}

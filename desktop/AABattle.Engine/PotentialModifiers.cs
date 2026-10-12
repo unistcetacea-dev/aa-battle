@@ -175,7 +175,7 @@ namespace AABattle {
   // 상태이상 면역: 「자신은 「독」상태가 되지 않는다」
   public static bool StatusImmune(Fighter target, Fighter source, string status, Rules rules) {
    if (target == null) return false;
-   foreach (string s in ContinuousSentences(target, source, rules, "않")) { string[] list; if (EffectModules.TryStatusImmunity(s, out list) && list.Contains(status)) return true; }
+   foreach (string s in ContinuousSentences(target, source, rules, "않")) { string[] list; bool opponentOnly; if (EffectModules.TryStatusImmunity(s, out list, out opponentOnly) && list.Contains(status) && (!opponentOnly || source != null && !ReferenceEquals(source, target))) return true; }
    return false;
   }
   // 강제교대 무효: 「자신은 강제교대되지 않는다」
