@@ -45,7 +45,7 @@ namespace AABattle {
    return "기타 원문";
   }
   // 교대·유턴·교대 제한·상승 무시·데이터 해석은 아래 전용 설명을 쓴다
-  static bool SpecificModule(string module){return new[]{"교대 효과","유턴 효과","교대 제한","능력 상승·강화 무시","데이터 해석"}.Any(module.Contains);}
+  static bool SpecificModule(string module){return module.Split(new[]{" + "},StringSplitOptions.None).Any(x=>new[]{"교대 효과","유턴 효과","교대 제한","능력 상승·강화 무시","데이터 해석"}.Contains(x));}
   static string ModuleImplementation(string module){
    var parts=new List<string>();
    foreach(string kind in module.Split(new[]{" + "},StringSplitOptions.RemoveEmptyEntries))switch(kind){
@@ -61,6 +61,10 @@ namespace AABattle {
     case "강제교대":parts.Add("행동 뒤 교대 단계에서 상대 멤버 중 무작위로 교대시킵니다. 교대할 멤버가 없거나 상대가 강제교대되지 않으면 실패합니다.");break;
     case "강제교대 무효":parts.Add("계속 성립하는 동안 포텐셜 강제교대를 받지 않습니다.");break;
     case "추가행동":parts.Add("기술과 대상을 새로 고르는 추가행동을 얻습니다(「같은 기술」이면 직전 기술). 가장 먼저는 일반 행동 앞(사건이면 바로 다음), 가장 마지막에는 턴 마지막 행동입니다. 배수 T 조건과 기술 조건을 판정하고, 추가행동 중에는 추가행동을 얻지 못하며 교대·빈사면 사라집니다. 「지령에 의한 추가행동권」은 다른 규칙이라 아직 판정 대기입니다.");break;
+    case "기술 무효화":parts.Add("방호(포켓몬 포텐셜 출처)입니다. 명중 판정 직전에 조건에 맞는 상대 기술을 무효화하고 「무효화했을 때」 사건을 냅니다. 확률이 있으면 공격마다 판정합니다. 공격 측의 방호 관통이 조건에 맞으면 뚫립니다.");break;
+    case "회피":parts.Add("방호가 아니므로 방호 관통에 뚫리지 않습니다. 명중 판정 직전에 공격마다 확률을 판정하고, 필중 기술은 회피하지 못합니다.");break;
+    case "방호 관통":parts.Add("조건에 맞는 자신의 기술이 상대의 포켓몬 포텐셜 방호(기술 무효화)를 무시합니다. 회피·방어 기술·방호 특성·트레이너 방호는 뚫지 않습니다(확정 28).");break;
+    case "데이터 해석 무효":parts.Add("상대의 해석 허가 효과가 자신에게 실패합니다.");break;
     case "부유":parts.Add("계속 성립하는 동안 접지하지 않습니다(중력·철구·뿌리박기는 우선).");break;
     case "상태이상 면역":parts.Add("계속 성립하는 동안 지정한 상태이상에 걸리지 않습니다(기술·포텐셜 모두).");break;
    }
@@ -95,5 +99,5 @@ namespace AABattle {
   }
   public static void Test(){PotentialProbability.Test();var all=Entries();int expected=PotentialParts.Build(PotentialParts.StandardEntries()).effects.Count(x=>!x.excludedFromImplementation);if(all.Count!=expected)throw new Exception("Implementation dex effect count mismatch");if(!all.Any(x=>x.status=="자동 구현"&&x.family=="트레이너 4식·지령")||!all.Any(x=>x.family=="확률 발동"&&x.status=="구현 규칙 준비")||!all.Any(x=>x.status=="구현 규칙 준비")||!all.Any(x=>x.status=="미구현"))throw new Exception("Implementation dex statuses missing");var switchEntry=Analyze(new PotentialPart{text=EffectNormalizer.CanonicalSwitch()});var pivotEntry=Analyze(new PotentialPart{text=EffectNormalizer.CanonicalPivotGrant()});var ignoreEntry=Analyze(new PotentialPart{text=EffectNormalizer.CanonicalStatIgnore("『야생의 두목』","능력","상승(강화)")});if(switchEntry.status!="자동 구현"||pivotEntry.status!="자동 구현"||ignoreEntry.status!="자동 구현"||ignoreEntry.family!="능력치 무시")throw new Exception("Structured effect implementation status missing");var analysisEntry=Analyze(new PotentialPart{text=EffectNormalizer.CanonicalAnalysisPermission()});if(analysisEntry.status!="일부 자동 구현"||analysisEntry.family!="정보·해석")throw new Exception("Analysis effect implementation status missing");}
  }
- partial class DataEditorForm {void BuildEffectImplementationTab(){var page=Page("효과 구현 방식");page.Controls.Add(EffectImplementationDex.CreateView());}}
+ partial class DataEditorForm {void BuildEffectImplementationTab(){var page=Page("효과 구현 방식");bool built=false;Action build=()=>{if(built||!page.Visible)return;built=true;var view=EffectImplementationDex.CreateView();page.Controls.Add(view);view.BringToFront();};page.VisibleChanged+=(s,e)=>build();/* 목록 계산이 무거워 화면을 처음 열 때 만든다 */}}
 }

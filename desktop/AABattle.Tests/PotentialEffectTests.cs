@@ -245,6 +245,41 @@ namespace AABattle {
    Assert.That(lost.Log.Any(x => x.Contains("추가행동이 사라졌다")), Is.True, string.Join("\n", lost.Log));
   }
 
+  // ===== G 방호·회피·관통(확정 28) =====
+  static TurnResult Attack(Fighter attacker, Fighter defender, Move move, Func<double> rng) {
+   return Engine.Resolve(TestData.Db, new[] { attacker, defender }, new[] { move, Idle() }, new Rules(), rng);
+  }
+
+  [Test] public void NullifyBlocksMatchingMovesAndPierceGoesThrough() {
+   var hit = Mv("노말"); hit.priority = 1;
+   var guard = F("노말", P(Field, "상대의 「물리」 기술을 무효화한다."));
+   var blocked = Attack(F(), guard, hit, () => .5);
+   Assert.That(blocked.Fighters[1].HP, Is.EqualTo(guard.HP));
+   Assert.That(blocked.Log.Any(x => x.Contains("방호 포텐셜로 무효화")), Is.True);
+   var special = Mv("노말", "특수"); special.priority = 1;
+   Assert.That(Attack(F(), guard, special, () => .5).Fighters[1].HP, Is.LessThan(guard.HP), "special move not covered");
+   var piercer = F("노말", P(Field, "자신의 「노말」기술이 상대의 방호 포텐셜을 무시한다"));
+   Assert.That(Attack(piercer, guard, hit, () => .5).Fighters[1].HP, Is.LessThan(guard.HP), "pierce ignores pokemon protection");
+  }
+
+  [Test] public void EvasionRollsPerAttackAndIsNotPierced() {
+   var hit = Mv("노말"); hit.priority = 1;
+   var dodger = F("노말", P(Field, "상대의 「노말」 기술을 중확률로 회피한다"));
+   var dodged = Attack(F(), dodger, hit, () => .1);
+   Assert.That(dodged.Fighters[1].HP, Is.EqualTo(dodger.HP));
+   Assert.That(dodged.Log.Any(x => x.Contains("회피했다")), Is.True);
+   Assert.That(Attack(F(), dodger, hit, () => .9).Fighters[1].HP, Is.LessThan(dodger.HP));
+   var piercer = F("노말", P(Field, "자신의 기술이 상대의 방호 포텐셜을 무시한다."));
+   Assert.That(Attack(piercer, dodger, hit, () => .1).Fighters[1].HP, Is.EqualTo(dodger.HP), "evasion is not protection");
+   var sure = hit.Copy(); sure.tags = new[] { "필중" };
+   Assert.That(Attack(F(), dodger, sure, () => .1).Fighters[1].HP, Is.LessThan(dodger.HP), "sure-hit moves are not evaded");
+  }
+
+  [Test] public void AnalysisImmunityBlocksDataAnalysis() {
+   var target = F("노말", P(Field, "상대의 「데이터해석」을 무효화한다"));
+   Assert.That(PotentialProtection.AnalysisBlocked(target, F(), new Rules()), Is.True);
+  }
+
   [Test] public void SpeciesRaiseToTrainerAptitude() {
    var owner = F("노말", P(TriggerStructures.TurnEndLabel, "자신의 「방어」의 종족치를 트레이너의 「육성」과 같은 랭크까지 올린다")); var other = F();
    var trainer = new TrainerRecord(); trainer.training.rank = "A";

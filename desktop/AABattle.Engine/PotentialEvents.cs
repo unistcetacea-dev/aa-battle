@@ -406,6 +406,7 @@ namespace AABattle {
      c => {
       var target = c.Opponent;
       if (target == null || target.HP <= 0) return EffectOutcome.Failed;
+      if (PotentialProtection.AnalysisBlocked(target, c.Owner, c.Rules)) { c.Say(target.Data.name + ": 데이터 해석을 무효화했다"); return EffectOutcome.Failed; }
       RuntimeTriggers.Analyzed(c.Owner, new[] { c.Owner }, target, c.Say);
       c.Say("『" + c.Source.Name + "』 선택 발동 · " + target.Data.name + "의 데이터를 해석한다.");
       return EffectOutcome.Success;
@@ -489,6 +490,17 @@ namespace AABattle {
       g.Owner = c.Owner; g.Source = c.Source.Label;
       scope.ExtraActions.Add(g);
       c.Say(c.Owner.Data.name + ": 추가행동을 얻었다 (" + (g.First ? "바로 다음" : "턴 마지막") + ")");
+      return EffectOutcome.Success;
+     });
+    // G 사건으로 걸린 방호·회피·관통·해석 무효: 기간(NT동안·T종료시까지)·이번 행동·필드를 떠날 때까지
+    PotentialExecutors.Register("방호 상태",
+     c => { int turns; string body = Duration(c.Line, out turns); bool e; MoveCondition m; double? rate; return PotentialProtection.TryGuard(body, out e, out m, out rate) || PotentialProtection.TryPierce(body, out m) || PotentialProtection.IsAnalysisImmunity(body); },
+     c => {
+      int turns; string body = Duration(c.Line, out turns);
+      var owner = c.Owner; if (owner == null || owner.HP <= 0) return EffectOutcome.Failed;
+      bool action = turns == 0 && ActionEvent(c.Event);
+      PotentialModifiers.Add(owner, new ActiveModifier { Key = c.Source.Key, Text = body, Source = c.Source.Label, Turns = turns == 0 ? -1 : turns, Action = action });
+      c.Say(owner.Data.name + ": " + body + (action ? " (이번 행동)" : turns > 0 ? " (" + turns + "T)" : " (필드를 떠날 때까지)"));
       return EffectOutcome.Success;
      });
     // F3 상태이상 치유

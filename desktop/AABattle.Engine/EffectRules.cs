@@ -18,7 +18,12 @@ namespace AABattle {
   public static readonly string[] ProbabilityChoices={"없음","드물게","저확률","중확률"};
   public static bool TryProbabilityPrefix(string text,out string probability,out string effect){probability=effect="";string value=(text??"").Normalize(System.Text.NormalizationForm.FormKC).Trim();var match=Probability.Match(value);if(!match.Success)return false;probability=match.Groups["label"].Value;effect=match.Groups["effect"].Value.Trim();return effect.Length>0;}
   public static string WithProbability(string probability,string effect){string value=(effect??"").Trim();if(value.Length==0)return "";switch(probability??""){case "드물게":return "드물게 "+value;case "저확률":return "저확률로 "+value;case "중확률":return "중확률로 "+value;case "고확률":return "고확률로 "+value;default:return value;}}
-  public static string Normalize(string text){
+  // 같은 문장은 결과가 같으므로 기억해 둔다(편집기 시작·도감·실행기에서 수천 번 호출)
+  static readonly System.Collections.Concurrent.ConcurrentDictionary<string,string> normalized=new System.Collections.Concurrent.ConcurrentDictionary<string,string>();
+  public static string Normalize(string text){return normalized.GetOrAdd(text??"",NormalizeUncached);}
+  static string NormalizeUncached(string text){
+   // 방호·회피는 확률을 문장 안(공격마다 판정)으로 옮기므로 확률 접두어를 떼기 전에 처리한다
+   string guarded=EffectModules.NormalizeGuard(PotentialParts.Clean(text??""));if(guarded!=null)return guarded;
    string probability,body;bool probabilistic=TryProbabilityPrefix(text,out probability,out body);string clean=PotentialParts.Clean(probabilistic?body:text);
    clean=Regex.Replace(clean,@"임의의\s*능력치","임의의 능력");
    clean=Regex.Replace(clean,@"랜덤한\s*능력(?!치)","랜덤한 능력치");

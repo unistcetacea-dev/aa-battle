@@ -53,6 +53,14 @@ namespace AABattle {
     Assert.That(extra, Is.EqualTo("「4」배수 T, 가장 먼저 「강철」「물리」 기술에 의한 추가행동을 얻는다."));
     Assert.That(EffectModules.Classify(extra), Is.EqualTo("추가행동"));
     Assert.That(EffectModules.Classify(Build(form, "추가행동", "같은 기술로 가장 마지막에", "매 T")), Is.EqualTo("추가행동"));
+    // G 방호·회피
+    Field<PixelComboBox>(form, "effectDuration").SelectedItem = "없음";
+    string dodge = Build(form, "방호·회피", "상대의 기술 회피", "저확률로", "드래곤");
+    Assert.That(dodge, Is.EqualTo("상대의 「드래곤」 기술을 저확률로 회피한다."));
+    Assert.That(EffectModules.Classify(dodge), Is.EqualTo("회피"));
+    Assert.That(EffectModules.Classify(Build(form, "방호·회피", "상대의 기술 무효화", "항상", "물리 위력 40 이하")), Is.EqualTo("기술 무효화"));
+    Assert.That(EffectModules.Classify(Build(form, "방호·회피", "자신의 기술 방호 관통", "항상", "격투")), Is.EqualTo("방호 관통"));
+    Assert.That(EffectModules.Classify(Build(form, "방호·회피", "데이터 해석 무효", "항상")), Is.EqualTo("데이터 해석 무효"));
    }
   }
  }

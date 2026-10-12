@@ -18,10 +18,11 @@ namespace AABattle {
   public string Effectiveness = "";  // 효과가 굉장(매우 포함) · 효과가 별로(매우 포함) · 효과 보통
   public string Range = "";          // 단일 · 전체
   public int PowerMax = -1, PowerMin = -1;
+  public bool PriorityPositive;      // 「우선도 +」 선공기
   public List<string> Tags = new List<string>();
   public List<string> Names = new List<string>();
   public bool Placeholder;           // 빈 괄호 「」·「○」: 타입 자리 표시(실행하지 않음)
-  public bool Empty { get { return Types.Count == 0 && Category == "" && Stab == "" && Effectiveness == "" && Range == "" && PowerMax < 0 && PowerMin < 0 && Tags.Count == 0 && Names.Count == 0 && !Placeholder; } }
+  public bool Empty { get { return Types.Count == 0 && Category == "" && Stab == "" && Effectiveness == "" && Range == "" && PowerMax < 0 && PowerMin < 0 && !PriorityPositive && Tags.Count == 0 && Names.Count == 0 && !Placeholder; } }
 
   public string Text {
    get {
@@ -34,6 +35,7 @@ namespace AABattle {
     if (Range.Length > 0) parts.Add("「" + Range + "」");
     if (PowerMax >= 0) parts.Add("「위력 " + PowerMax + " 이하」");
     if (PowerMin >= 0) parts.Add("「위력 " + PowerMin + " 이상」");
+    if (PriorityPositive) parts.Add("「우선도 +」");
     parts.AddRange(Tags.Select(x => "「" + x + "」"));
     parts.AddRange(Names.Select(x => "「기술:" + x + "」"));
     return string.Concat(parts);
@@ -86,6 +88,7 @@ namespace AABattle {
    if (core == "전체" || core == "전체공격") { Range = "전체"; if (core == "전체공격") Category = "공격"; return true; }
    var power = Regex.Match(core, @"^위력:?(?<n>\d+)(?<dir>이하|이상)$");
    if (power.Success) { int n = int.Parse(power.Groups["n"].Value); if (power.Groups["dir"].Value == "이하") PowerMax = n; else PowerMin = n; return true; }
+   if (core == "우선도+" || core == "우선도가+" || core == "선공") { PriorityPositive = true; return true; }
    if (!bracketed) return false;
    Tags.Add(core);
    return true;
@@ -109,6 +112,7 @@ namespace AABattle {
    if (Range == "단일" && spread) return false;
    if (PowerMax >= 0 && !(move.power > 0 && move.power <= PowerMax)) return false;
    if (PowerMin >= 0 && move.power < PowerMin) return false;
+   if (PriorityPositive && move.priority <= 0) return false;
    foreach (string tag in Tags) if (!(move.tags ?? new string[0]).Contains(tag) && !(move.effect ?? "").Contains(tag) && move.name != tag) return false;
    if (Names.Count > 0 && !Names.Contains(move.name)) return false;
    return true;
@@ -224,11 +228,14 @@ namespace AABattle {
    text = Regex.Replace(text, @"「위력\s*:?\s*(\d+)」\s*(이하|이상)(?:인|의)?", "「위력 $1 $2」");
    text = Regex.Replace(text, @"위력\s*「(\d+)」\s*(이하|이상)(?:인|의)?", "「위력 $1 $2」");
    text = Regex.Replace(text, @"[.．。]\s*(이 대미지로는 빈사로 할 수 없다)", " $1");
+   text = Regex.Replace(text, @"우선도가\s*「\+」\s*인", "「우선도 +」");
    text = StateNames.Replace(text, m => "「" + m.Groups["n"].Value + "」");
    return text;
   }
 
   public static string Normalize(string clean) {
+   var activation = Activation.Match((clean ?? "").Trim());
+   if (activation.Success) { string inner = Normalize(clean.Trim().Substring(activation.Length)); return inner == null ? null : activation.Groups[1].Value + " " + inner; }
    string text = Prepare(clean);
    if (text.Length == 0) return null;
    // 기간 접두어는 떼었다가 다시 붙인다
@@ -301,6 +308,9 @@ namespace AABattle {
     string st = m.Groups["st"].Value.StartsWith("「") || m.Groups["st"].Value == "전능력치" ? m.Groups["st"].Value : "「" + m.Groups["st"].Value + "」";
     return Scalar(Subj(m.Groups["s"].Value) + "의 " + st, action, rate);
    }
+   // G 방호·회피·관통
+   string guard = NormalizeGuard(text);
+   if (guard != null) return guard;
    // F4b 추가행동
    string extra = NormalizeExtra(text);
    if (extra != null) return extra;
@@ -349,6 +359,36 @@ namespace AABattle {
    m = Regex.Match(text, @"^(?:자신은\s*)?「(?<s>[^」]+)」\s*상태(?:가|에)\s*(?:되지|걸리지)\s*않는다$");
    if (m.Success && m.Groups["s"].Value.Split('/').All(x => MajorStatuses.Contains(x.Trim()))) return "자신은 「" + m.Groups["s"].Value + "」상태가 되지 않는다.";
    return null;
+  }
+
+  // 방호(무효화)·회피·방호 관통·데이터 해석 무효 변형 → 표준 문장. 확률은 문장 안(공격마다 판정)으로 옮긴다
+  // 「자동」「선행」「1/자동/」 같은 발동 방식 접두어는 떼었다가 다시 붙인다
+  static readonly Regex Activation = new Regex(@"^((?:\d+/)?(?:자동|선행|T시)(?:/\S+)?)\s+");
+  public static string NormalizeGuard(string clean) {
+   var activation = Activation.Match((clean ?? "").Trim());
+   if (activation.Success) { string inner = NormalizeGuard(clean.Trim().Substring(activation.Length)); return inner == null ? null : activation.Groups[1].Value + " " + inner; }
+   string text = Prepare(clean);
+   string prefix = "";
+   var duration = Regex.Match(text, @"^(?:(?<n>\d+)\s*T\s*(?:간|동안)|(?<end>T\s*종료\s*시\s*까지))\s*,?\s*");
+   if (duration.Success) { prefix = duration.Groups["end"].Success ? "T종료시까지 " : duration.Groups["n"].Value + "T동안 "; text = text.Substring(duration.Length).Trim(); }
+   if (Regex.IsMatch(text, @"^(?:자신에\s*대한|상대로부터의|상대의)\s*(?:「데이터\s*해석」|데이터\s*해석)을\s*무효화한다$")) return prefix + "자신에 대한 데이터 해석을 무효화한다.";
+   var pierce = Regex.Match(text, @"^(?:자신의\s*(?<c>(?:「[^」]+」\s*)*)\s*기술이\s*)?상대의\s*(?:『방호\s*포텐셜』|방호\s*포텐셜)을\s*(?:무시|무효화|관통)한다$");
+   if (pierce.Success) { MoveCondition pc; if (!MoveCondition.TryParse(pierce.Groups["c"].Value, out pc)) return null; return prefix + "자신의 " + (pc.Empty ? "" : pc.Text + " ") + "기술이 상대의 방호 포텐셜을 무시한다."; }
+   string probability = "";
+   string body; string label;
+   if (EffectNormalizer.TryProbabilityPrefix(text, out label, out body)) { probability = label == "드물게" ? "드물게" : label + "로"; text = body.Trim(); }
+   var m = Regex.Match(text, @"^(?:상대(?:의)?\s*)?(?<c>.*?)\s*(?<o>기술|공격)?\s*(?:을|를)\s*(?<p>드물게|저확률로|중확률로)?\s*(?<v>무효화|회피)한다$");
+   if (!m.Success) return null;
+   string raw = m.Groups["c"].Value.Trim();
+   if (!m.Groups["o"].Success && !raw.Contains("기술") && !Regex.IsMatch(raw, "^(?:「[^」]*」)+$")) return null;
+   if (raw.Contains("「데이터") || raw.Contains("포텐셜") || raw.Contains("『")) return null;
+   MoveCondition c;
+   string tokens = Regex.Replace(raw, @"(?<=」)\s*기술$|(?<=」)(?:의)?$", "");
+   if (!MoveCondition.TryParse(tokens, out c)) return null;
+   if (m.Groups["o"].Value == "공격" && c.Category.Length == 0) c.Category = "공격";
+   if (c.Tags.Any(t => t.Contains("데이터") || t.Contains("해석") || t.Contains("추가행동") || t.Contains("포텐셜"))) return null;
+   if (m.Groups["p"].Success) probability = m.Groups["p"].Value;
+   return prefix + PotentialProtection.Canonical(c, probability, m.Groups["v"].Value == "회피");
   }
 
   // 추가행동 변형 → 「「N」배수 T, 가장 먼저/마지막에 「조건」 기술에 의한 추가행동을 얻는다」. 지령에 의한 추가행동권은 다른 규칙이라 바꾸지 않는다
@@ -530,11 +570,14 @@ namespace AABattle {
   }
 
   // 포텐셜 도감·실행기 공용: 표준 문장의 모듈 이름. 모듈이 아니면 ""
-  public static string Classify(string text) {
+  static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> classified = new System.Collections.Concurrent.ConcurrentDictionary<string, string>();
+  public static string Classify(string text) { return classified.GetOrAdd(text ?? "", ClassifyUncached); }
+  static string ClassifyUncached(string text) {
    string value = EffectNormalizer.Normalize(text ?? "");
    string probability, body;
    if (EffectNormalizer.TryProbabilityPrefix(value, out probability, out body)) value = body;
    value = Regex.Replace(Prepare(value), @"^(?:\d+\s*T\s*(?:간|동안)|T\s*종료\s*시\s*까지)\s*,?\s*", "");
+   value = Activation.Replace(value, "");
    var sentences = Regex.Split(value, @"(?<=[.．。])\s+").Where(x => x.Trim().Length > 0).ToArray();
    if (sentences.Length == 0) return "";
    var kinds = sentences.Select(ClassifySentence).ToArray();
@@ -553,6 +596,10 @@ namespace AABattle {
    if (IsForcedSwitch(s)) return "강제교대";
    if (IsForcedSwitchImmunity(s)) return "강제교대 무효";
    if (IsFloating(s)) return "부유";
+   bool evade; MoveCondition guardCondition; double? guardRate;
+   if (PotentialProtection.TryGuard(s, out evade, out guardCondition, out guardRate)) return evade ? "회피" : "기술 무효화";
+   if (PotentialProtection.TryPierce(s, out guardCondition)) return "방호 관통";
+   if (PotentialProtection.IsAnalysisImmunity(s)) return "데이터 해석 무효";
    ExtraActionGrant extra; int every;
    if (ExtraActionRuntime.TryParse(s, out extra, out every)) return "추가행동";
    if (TryStatusImmunity(s, out statuses)) return "상태이상 면역";

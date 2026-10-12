@@ -48,7 +48,7 @@ namespace AABattle {
    for (int side = 0; side < 2; side++) {
     var owner = f[side];
     if (owner == null || owner.HP <= 0 || !owner.OnField) continue;
-    foreach (string s in PotentialModifiers.Sentences(owner, f[1 - side], r, "추가행동")) {
+    foreach (string s in PotentialModifiers.Sentences(owner, f[1 - side], r, "추가")) {
      ExtraActionGrant grant; int every;
      if (!TryParse(s, out grant, out every) || every > 0 && (r.Turn <= 0 || r.Turn % every != 0)) continue;
      grant.Side = side; grant.Owner = owner; grant.Source = owner.Data.name + "의 포텐셜";
