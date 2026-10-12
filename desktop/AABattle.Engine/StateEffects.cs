@@ -182,6 +182,9 @@ namespace AABattle {
     string name = swap;
     rules.Add(Rule(name, c => { Mechanics.SetTypeSwap(c.Target, name, c.Log); return true; }, true));
    }
+   // 방어 기술(사용자 결정: 「방어」 상태가 된다, T 종료까지) · 버티기
+   rules.Add(Rule("방어", c => { c.Target.Conditions.Protect = true; c.Say(c.Target.Data.name + ": 방어 태세!"); return true; }, true));
+   rules.Add(Rule("버티기", c => { c.Target.Conditions.Enduring = true; c.Say(c.Target.Data.name + ": 버티기 태세!"); return true; }, true));
    // 행동불능(반동): 다음 행동을 쉰다(파괴광선 등 「다음 T 종료 후까지」)
    // 빈사(자폭 등): 자신이 쓰러진다
    rules.Add(Rule("빈사", c => { if (c.Target.HP <= 0) return false; c.Target.HP = 0; c.Say(c.Target.Data.name + "은 쓰러졌다!"); return true; }, true));

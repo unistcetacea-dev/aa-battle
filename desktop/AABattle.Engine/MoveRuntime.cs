@@ -13,12 +13,14 @@ namespace AABattle {
   public List<string> After = new List<string>();      // 공격기술 명중 후(기술마다 1번)
   public List<string> Secondary = new List<string>();  // 「N할:X」 토큰
   public List<string> Unknown = new List<string>();    // 아직 모듈로 읽지 못한 문장
+  public List<string> Crash = new List<string>();      // 빗나가거나 무효화됐을 때(무릎차기 등)
+  public List<string> Finally = new List<string>();    // 기술을 낸 뒤 언제나(빗나가도): 자신을 「빈사」 상태로(사용자 결정)
  }
 
  public static class MoveRuntime {
   // 전용 코드로 처리하는 기술(문서 문장과 맞춰 두었다)
   public static readonly HashSet<string> Dedicated = new HashSet<string> {
-   "방어", "판별", "대타출동", "잠자기", "멸망의노래", "안개제거", "리플렉터", "빛의장막", "순풍", "날개쉬기", "태만함", "도우미", "고속스핀", "객기"
+   "대타출동", "잠자기", "멸망의노래", "리플렉터", "빛의장막", "순풍", "날개쉬기", "태만함", "도우미", "고속스핀", "객기", "발버둥"
   };
   static readonly Dictionary<string, MovePlan> cache = new Dictionary<string, MovePlan>();
 
@@ -45,7 +47,13 @@ namespace AABattle {
   static void Read(Move m, string s, List<string> into, MovePlan plan) {
    s = s.Trim().TrimEnd(',').Trim();
    if (s.Length == 0 || s.StartsWith("(")) return;
+   if (s == "「방어」 기술" && ProtectModules.IsGuard(m)) { into.Add("자신을 「방어」 상태로 한다."); return; }
    if (Ignored(m, s)) return;
+   if (s == "「빈사」가 되는 공격을 남은 HP 「1」로 버틴다") { into.Add("자신을 「버티기」 상태로 한다."); return; }
+   // 반동: 준 대미지 비율은 MoveModules.Recoil, 최대 HP 비율은 기술을 낸 뒤 언제나, 「빗나가거나 무효화됐을 때」는 그때만
+   var recoil = Regex.Match(s, @"^(?<c>빗나가거나 무효화됐을 때\s*,\s*)?HP의 1/(?<n>\d+)만큼 반동 대미지를 받는다$");
+   if (recoil.Success) { (recoil.Groups["c"].Success ? plan.Crash : plan.Finally).Add("자신에게 최대 HP의 1/" + recoil.Groups["n"].Value + " 대미지를 준다."); return; }
+   if (s.Replace("자진을", "자신을") == "자신을 「빈사」 상태로 한다") { plan.Finally.Add("자신을 「빈사」 상태로 한다."); return; }
    Match x;
    x = Regex.Match(s, @"^명중 후\s*,\s*(?<r>.+)$");
    if (x.Success) { Read(m, x.Groups["r"].Value, plan.After, plan); return; }
@@ -71,6 +79,8 @@ namespace AABattle {
    x = Regex.Match(s, @"^다음 T 종료 후까지\s*,?\s*(?<r>자신을 「행동불능」 상태로 한다)$");
    if (x.Success) { into.Add(x.Groups["r"].Value + "."); return; }
    // 회복
+   x = Regex.Match(s, @"^상대에게 HP의 1/(?<n>\d+)만큼 고정 대미지를 준다$");
+   if (x.Success) { into.Add("상대에게 최대 HP의 1/" + x.Groups["n"].Value + " 대미지를 준다."); return; }
    x = Regex.Match(s, @"^HP를 1/(?<n>\d+)만큼 회복한다$");
    if (x.Success) { into.Add("자신의 체력을 최대 HP의 1/" + x.Groups["n"].Value + " 회복한다."); return; }
    // 날씨·필드·장
@@ -111,6 +121,8 @@ namespace AABattle {
    if (Regex.IsMatch(s, @"급소에 맞기 쉽다|반드시 급소에 맞는다|유리한 타입 상성|능력치로 대미지를 계산한다|「방어」 기술을 관통한다|성별이 같으면 실패한다")) return true;
    if (Regex.IsMatch(s, @"준 대미지의 \d+/\d+만큼 HP를 회복한다|「모으기」 기술|모습을 감추|^날씨가 「[^」]+」일 때")) return true;
    if (m.tags != null && m.tags.Contains("조이기") && s.Contains("「조이기」 상태로 한다")) return true;
+   if (Regex.IsMatch(s, @"^준 대미지의 \d+/\d+만큼 반동 대미지를 받는다$")) return true;
+   if (Regex.IsMatch(s, @"기술을 「방어」한다$|무효화했을 때\s*,|연속해서 내보내면 실패(?:하기 쉽다|한다)$")) return true;
    if (m.tags != null && m.tags.Contains("난동부리기") && s.Contains("「난동부리기」 상태로 한다")) return true;
    if (s.Contains("「잠듦」 상태가 아니면 실패한다") || s.Contains("「필드에 나온 후 최초」가 아니면 실패한다")) return true;
    if (Regex.IsMatch(s, @"^상대가 「[^」]+」\s*(?:상태|도중|중)?일 때\s*,\s*위력이 강화\(\d+(?:\.\d+)?배\)된다$|^「[^」]+」 타입이 내보내면 「필중」 효과가 부여된다$|^1T째에 자신의 「[^」]+」을 올리고")) return true;
@@ -136,7 +148,7 @@ namespace AABattle {
   public static bool TextDriven(Move m) {
    if (m == null || Dedicated.Contains(m.name)) return false;
    var plan = Plan(m);
-   return plan.Unknown.Count == 0 && (plan.Use.Count + plan.After.Count + plan.Secondary.Count) > 0;
+   return plan.Unknown.Count == 0 && (plan.Use.Count + plan.After.Count + plan.Secondary.Count + plan.Finally.Count + plan.Crash.Count) > 0;
   }
 
   // 변화기술: 문장 기술이면 문장대로, 아니면 전용 코드. 하나라도 성공하면 성공
@@ -147,10 +159,33 @@ namespace AABattle {
    }
    var plan = Plan(m);
    bool done = false;
+   if (ProtectModules.IsGuard(m)) a.Conditions.ProtectMove = m.name;
    foreach (string line in plan.Use) done |= Run(a, b, m, line, r, rng, log) == EffectOutcome.Success;
    foreach (string token in plan.Secondary) done |= SecondaryEffects.Roll(a, b, token, m.name, r, rng, log, null);
    foreach (string s in plan.Unknown) log.Add(m.name + ": 효과 판정 대기 — " + s);
    return done;
+  }
+
+  // 기술을 낸 뒤 언제나(빗나가도·막혀도): 자폭류 「빈사」
+  public static void Finally(Fighter a, Move m, List<string> log, Func<double> rng) {
+   if (a == null || m == null || log == null) return;
+   var plan = Plan(m);
+   if (plan.Finally.Count == 0) return;
+   var scope = EffectScope.Current;
+   var other = scope == null ? null : scope.Opponent(a);
+   foreach (string line in plan.Finally) Run(a, other, m, line, scope == null ? new Rules() : scope.Rules, rng, log);
+  }
+  // 빗나가거나 무효화됐을 때
+  public static void Crash(Fighter a, Fighter b, Move m, Rules r, Func<double> rng, List<string> log) {
+   if (a == null || m == null || a.HP <= 0) return;
+   foreach (string line in Plan(m).Crash) Run(a, b, m, line, r, rng, log);
+  }
+  // 문장 하나를 표준 문장들로(방어 반응 등)
+  public static List<string> Convert(Move m, string sentence, List<string> unknown) {
+   var plan = new MovePlan();
+   Read(m, sentence, plan.Use, plan);
+   if (unknown != null) unknown.AddRange(plan.Unknown);
+   return plan.Use.Concat(plan.After).ToList();
   }
 
   // 공격기술 타격마다: 상대에게 거는 추가효과(대타에 막히면 걸지 않는다)

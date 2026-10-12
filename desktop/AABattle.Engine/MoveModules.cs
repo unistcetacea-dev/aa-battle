@@ -35,6 +35,7 @@ namespace AABattle {
   const string ContactGuard = "자신의 「접촉」 기술에 반응하는 효과를 받지 않는다";
   const string RestoreDrops = "자신의 내려간 능력을 원래대로 되돌린다";
   const string GiveItem = "자신의 소지품을 상대에게 옮긴다";
+  public const string ClearField = "전체 필드의 특수한 상태를 해제한다";
 
   // 숨는 곳 → 닿는 기술(값은 위력 배율)
   static readonly Dictionary<string, Dictionary<string, double>> Reach = new Dictionary<string, Dictionary<string, double>> {
@@ -63,7 +64,7 @@ namespace AABattle {
    if (t.Length == 0) return null;
    Match m;
    if (DrainBoost.IsMatch(t) || BindTurns.IsMatch(t) || BindDamage.IsMatch(t) || Repeat.IsMatch(t) || NextPriority.IsMatch(t)) return t + ".";
-   if (t == SkipCharge || t == ContactGuard || t == RestoreDrops || t == GiveItem) return t + ".";
+   if (t == SkipCharge || t == ContactGuard || t == RestoreDrops || t == GiveItem || t == ClearField) return t + ".";
    // 수집 원문(아바돈 소지품)
    m = Regex.Match(t, @"^체력을\s*흡수하는\s*기술의\s*회복량이\s*(?<p>\d+)\s*%\s*증가한다$");
    if (m.Success) return "자신의 「드레인」 기술의 회복량을 " + (1 + int.Parse(m.Groups["p"].Value) / 100.0).ToString("0.##") + "배로 한다.";
@@ -91,6 +92,7 @@ namespace AABattle {
    if (s == ContactGuard) return "접촉 반응 무시";
    if (s == RestoreDrops) return "능력 하락 복구";
    if (s == GiveItem) return "소지품 이동";
+   if (s == ClearField) return "장 해제";
    return "";
   }
 
@@ -116,6 +118,14 @@ namespace AABattle {
    int amount = Math.Max(1, (int)Math.Floor(dealt * top / (double)bottom * boost + 1e-9));
    int gain = Mechanics.Heal(a, b, r, amount, m.name + " 흡수" + (boost != 1 ? " ×" + boost : ""), log);
    if (gain > 0) AnsweredTriggers.Drained(a, b, dealt, gain, log.Add);
+  }
+
+  // ===== 반동: 「준 대미지의 N/M만큼 반동 대미지를 받는다」(돌머리·매직가드는 받지 않는다) =====
+  public static void Recoil(Fighter a, Fighter b, Move m, Rules r, int dealt, List<string> log) {
+   if (a == null || a.HP <= 0 || dealt <= 0 || Mechanics.Ability(a, "돌머리")) return;
+   var x = Regex.Match(Plain(m), @"준 대미지의 (\d+)/(\d+)만큼 반동 대미지를 받는다");
+   if (!x.Success) return;
+   Mechanics.Hurt(a, b, r, Math.Max(1, dealt * int.Parse(x.Groups[1].Value) / int.Parse(x.Groups[2].Value)), m.name + " 반동", log);
   }
 
   // ===== 조이기 =====
@@ -286,6 +296,7 @@ namespace AABattle {
    if (a.FieldOpponent != null && a.FieldOpponent.Conditions.HeldInSky && !string.IsNullOrEmpty(c.ChargeMove)) { a.FieldOpponent.Conditions.HeldInSky = false; a.FieldOpponent.Conditions.Hidden = ""; }
    c.ChargeMove = ""; c.Hidden = ""; c.HeldInSky = false;
    c.RepeatMove = ""; c.RepeatCount = 0; c.NextPriority = 0; c.BindDivisor = 0;
+   c.ProtectMove = ""; c.Enduring = false; c.SoloChain = 0;
   }
 
   // ===== 사건 효과 실행기 =====
@@ -312,6 +323,20 @@ namespace AABattle {
      f.Conditions.NextPriority += n;
      c.Say(f.Data.name + ": 다음 T 기술 우선도 +" + n + " (" + c.Source.Label + ")");
      return EffectOutcome.Success;
+    });
+   // 장 해제(사용자 결정): 양쪽 진영의 벽·설치물과 지형·중력·룸이 모두 사라진다
+   PotentialExecutors.Register("장 해제",
+    c => Clean(c.Line) == ClearField,
+    c => {
+     var r = c.Rules ?? new Rules();
+     bool any = r.Terrain != "없음" || r.Gravity > 0 || r.TrickRoom > 0;
+     foreach (var side in r.Sides) {
+      any |= side.HasHazards() || side.Reflect > 0 || side.LightScreen > 0;
+      side.ClearHazards(); side.Reflect = 0; side.LightScreen = 0;
+     }
+     r.Terrain = "없음"; r.TerrainTurns = 0; r.Gravity = 0; r.TrickRoom = 0;
+     c.Say(any ? "전체 필드의 특수한 상태가 사라졌다 (" + c.Source.Name + ")" : "해제할 특수한 상태가 없다");
+     return any ? EffectOutcome.Success : EffectOutcome.Failed;
     });
    PotentialExecutors.Register("소지품 이동",
     c => Clean(c.Line) == GiveItem,

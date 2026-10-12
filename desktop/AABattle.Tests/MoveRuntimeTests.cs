@@ -75,5 +75,62 @@ namespace AABattle {
    var flyer = F(); flyer.Conditions.Hidden = "하늘 위";
    Assert.That(MoveModules.PowerFactor(F(), flyer, M("번개"), new Rules()), Is.EqualTo(2), "문서: 하늘 위 상태일 때 2배");
   }
+
+  // 방어 기술 = 「방어」 상태(사용자 결정). 연속 사용은 1, 1/3…
+  [Test] public void GuardMovesBecomeProtectState() {
+   var a = F(); var b = F(); int full = Mechanics.MaxHP(b, a, new Rules());
+   var t1 = Turn(a, b, M("몸통박치기"), M("방어"));
+   Assert.That(t1.Fighters[0].HP, Is.EqualTo(full));
+   Assert.That(t1.Fighters[1].HP, Is.EqualTo(full), Log(t1));
+   var t2 = Engine.Resolve(TestData.Db, t1.Fighters, new[] { M("몸통박치기"), M("방어") }, t1.Rules, () => .5);
+   Assert.That(Log(t2), Does.Contain("연속 사용 실패"));
+   Assert.That(t2.Fighters[1].HP, Is.LessThan(full));
+  }
+
+  // 킹실드: 공격만 막고, 접촉 기술을 막으면 상대 공격 -2. 니들가드: 접촉이면 상대에게 1/8
+  [Test] public void GuardReactionsAndScope() {
+   var k = Turn(F(), F(), M("몸통박치기"), M("킹실드"));
+   Assert.That(k.Fighters[0].Stages[1], Is.EqualTo(-2), Log(k));
+   Assert.That(ProtectModules.Blocks(TestData.Db, k.Fighters[1], M("도깨비불")), Is.False, "공격 기술만");
+   var n = Turn(F(), F(), M("몸통박치기"), M("니들가드"));
+   int max = Mechanics.MaxHP(n.Fighters[0], n.Fighters[1], new Rules());
+   Assert.That(n.Fighters[0].HP, Is.EqualTo(max - max / 8), Log(n));
+  }
+
+  [Test] public void EndureLeavesOneHp() {
+   var b = F(); b.HP = 5;
+   var t = Turn(F(), b, M("몸통박치기"), M("버티기"));
+   Assert.That(t.Fighters[1].HP, Is.EqualTo(1), Log(t));
+  }
+
+  // 안개제거(사용자 결정): 상대 회피 -1, 양쪽 벽·설치물과 지형·중력·룸이 사라진다
+  [Test] public void DefogClearsTheWholeField() {
+   var r = new Rules { Terrain = "그래스필드", Gravity = 3, TrickRoom = 3 };
+   r.Sides[0].Reflect = 3; r.Sides[1].StealthRock = true; r.Sides[0].Spikes = 2; r.Sides[1].LightScreen = 2;
+   var t = Turn(F(), F(), M("안개제거"), Idle(), .5, r);
+   Assert.That(t.Fighters[1].EvasionStage, Is.EqualTo(-1), Log(t));
+   Assert.That(t.Rules.Terrain, Is.EqualTo("없음"));
+   Assert.That(t.Rules.Gravity + t.Rules.TrickRoom + t.Rules.Sides[0].Reflect + t.Rules.Sides[1].LightScreen + t.Rules.Sides[0].Spikes, Is.EqualTo(0));
+   Assert.That(t.Rules.Sides[1].StealthRock, Is.False);
+  }
+
+  // 자폭류(사용자 결정): 빗나가거나 막혀도 빈사
+  [Test] public void SelfDestructFaintsEvenWhenBlocked() {
+   var t = Turn(F(), F(), M("자폭"), M("방어"));
+   Assert.That(t.Fighters[0].HP, Is.EqualTo(0), Log(t));
+   Assert.That(t.Fighters[1].HP, Is.EqualTo(Mechanics.MaxHP(t.Fighters[1], t.Fighters[0], new Rules())));
+  }
+
+  // 반동: 준 대미지 1/3 · 최대 HP 1/2(언제나) · 빗나가거나 무효화됐을 때 1/2
+  [Test] public void RecoilKinds() {
+   var a = F(); var b = F();
+   var t = Turn(a, b, M("이판사판태클"), Idle());
+   int dealt = Mechanics.MaxHP(b, a, new Rules()) - t.Fighters[1].HP; int max = Mechanics.MaxHP(a, b, new Rules());
+   Assert.That(max - t.Fighters[0].HP, Is.EqualTo(dealt / 3), Log(t));
+   var beam = Turn(F(), F(), M("철제광선"), Idle());
+   Assert.That(beam.Fighters[0].HP, Is.EqualTo(max - max / 2), Log(beam));
+   var crash = Turn(F(), F("고스트"), M("무릎차기"), Idle());
+   Assert.That(crash.Fighters[0].HP, Is.EqualTo(max - max / 2), "고스트에게 무효화 → 반동\n" + Log(crash));
+  }
  }
 }
