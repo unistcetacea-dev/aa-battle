@@ -28,6 +28,7 @@ namespace AABattle {
   // partner: 교대해 들어간 아군(「「X」 타입 아군과 교대해 장소에 나올 때」)
   public static void Enter(Fighter fighter,Fighter opponent,Rules rules,Func<double> rng,EntryReason reason,Action<string> log,Fighter partner=null){
    if(fighter==null)return;
+   StateWatch.Reset(fighter);
    // 등장한 T가 1T째(선발·죽어내밀기는 인터벌 등장이라 다음 T가 1T째)
    fighter.Conditions.FieldTurn=reason==EntryReason.Lead||reason==EntryReason.Replacement?0:1;
    // 효과 실행 범위 밖(죽어내밀기 화면)에서 나오면 다음 T 처음에 그 방식으로 처리한다(인터벌은 다음 T, 타이밍 규칙 5-1)

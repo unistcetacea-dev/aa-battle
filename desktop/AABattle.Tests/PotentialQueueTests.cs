@@ -27,7 +27,7 @@ namespace AABattle {
    Runs = 0; CostOutcome = EffectOutcome.Success;
    registered.Add(PotentialExecutors.Register("검사 성공", c => c.Line.StartsWith("검사 성공"), c => { Runs++; return EffectOutcome.Success; }));
    registered.Add(PotentialExecutors.Register("검사 실패", c => c.Line.StartsWith("검사 실패"), c => { Runs++; return EffectOutcome.Failed; }));
-   registered.Add(PotentialExecutors.Register("검사 연쇄", c => c.Line.StartsWith("검사 연쇄"), c => { Runs++; AnsweredTriggers.StageChanged(c.Owner, c.Opponent, 1, 0, 1, c.Say); return EffectOutcome.Success; }));
+   registered.Add(PotentialExecutors.Register("검사 연쇄", c => c.Line.StartsWith("검사 연쇄"), c => { Runs++; if (c.Owner.Stages.Skip(1).All(x => x >= 6)) { c.Owner.Stages = new int[6]; StateWatch.Reset(c.Owner); } int k = Enumerable.Range(1, 5).First(i => c.Owner.Stages[i] < 6); c.Owner.Stages[k]++; AnsweredTriggers.StageChanged(c.Owner, c.Opponent, k, c.Owner.Stages[k] - 1, c.Owner.Stages[k], c.Say); return EffectOutcome.Success; }));
    registered.Add(PotentialExecutors.Register("검사 대가", c => c.Line.StartsWith("체력을 소비"), c => CostOutcome));
   }
   [TearDown] public void Unregister() { foreach (var x in registered) PotentialExecutors.Unregister(x); registered.Clear(); PotentialQueue.ChooseTarget = (s, list) => list.FirstOrDefault(); }
@@ -128,7 +128,7 @@ namespace AABattle {
    var owner = F(100, potentials);
    var log = new List<string>();
    using (EffectScope.Begin(new[] { owner, F(100) }, new Rules(), () => .5, new[] { new TrainerBattleState(), new TrainerBattleState() }))
-    AnsweredTriggers.StageChanged(owner, null, 1, 0, 1, log.Add);
+   { owner.Stages[1] = 1; AnsweredTriggers.StageChanged(owner, null, 1, 0, 1, log.Add); }
    Assert.That(log.Any(x => x.Contains("8단계를 넘어 중단")), Is.True, string.Join("\n", log));
   }
 

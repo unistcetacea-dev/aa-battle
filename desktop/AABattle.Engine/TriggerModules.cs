@@ -19,6 +19,14 @@ namespace AABattle {
   public string[] Types = new string[0];               // 쓰러뜨린 상대 / 교대 상대 아군의 타입
   public int Every, FieldTurn;                         // 「N」배수 T / 장소에 나와 「N」T째
   public string Inner = "";                            // 「…」가 성립한 T 종료 시
+  // 2단계(TriggerStates): 상태 이름 · 체력 비교 · 날씨/장소 이름 · 랭크
+  public string Subject = "자신";                      // 자신 · 상대 · 아군(출전 = 자신) · 자신과 상대
+  public string[] Names = new string[0];
+  public string Op = "";                               // 체력: 가득 · 가득 아님 · 이하 · 이상 · 1 · 감소
+  public int Top = 1, Bottom = 1;
+  public string Place = "";
+  public bool Release, Rise, Big;
+  public int[] Stats = new int[0];
   public bool IsEvent { get { return TriggerModules.EventModules.Contains(Module); } }
  }
 
@@ -35,11 +43,13 @@ namespace AABattle {
   public string[] OtherTypes = new string[0];   // 쓰러뜨린 상대의 타입
   public string[] PartnerTypes = new string[0]; // 교대한 상대 아군의 타입
   public bool OtherAin;                         // 상대(공격한 쪽·쓰러뜨린 쪽)가 아인종
+  public int Before, After2, Max, Stat, Delta;  // 체력 변화(전·후·최대) / 랭크 변화(능력 번호·변화량)
   public TriggerFact For(bool self, bool received) { var copy = (TriggerFact)MemberwiseClone(); copy.Self = self; copy.Received = received; return copy; }
  }
 
- public static class TriggerModules {
-  public static readonly string[] EventModules = { "등장", "교대", "퇴장", "타이밍", "피격", "명중", "급소", "쓰러뜨림", "기술 사용" };
+ public static partial class TriggerModules {
+  public static readonly string[] EventModules = { "등장", "교대", "퇴장", "타이밍", "피격", "명중", "급소", "쓰러뜨림", "기술 사용", "상태 됨", "상태 해제", "체력 변화", "회복", "날씨 변화", "장소 변화", "랭크" };
+  public static readonly string[] StateModules = { "상태", "체력", "날씨", "장소" };
   public static readonly string[] EntryMethods = { "선발", "죽어내밀기", "임의교대", "통상교대", "강제교대", "선발 또는 죽어내밀기" };
   static readonly ConcurrentDictionary<string, TriggerSpec> specs = new ConcurrentDictionary<string, TriggerSpec>();
   static readonly TriggerSpec None = new TriggerSpec();
@@ -95,7 +105,7 @@ namespace AABattle {
      return s.Condition.Empty ? TriggerStructures.DefeatLabel : "자신의 " + s.Condition.Text + " 기술로 상대를 쓰러뜨렸을 때";
     case "기술 사용": return (s.Opponent ? "상대가 " : "") + CondText(s.Condition) + "기술을 " + (s.After ? "내보냈을 때" : "내보낼 때");
    }
-   return "";
+   return CanonicalState(s);
   }
 
   // ===== 수집 원문 → 구조 =====
@@ -103,6 +113,7 @@ namespace AABattle {
    spec = null;
    string t = Clean(text);
    if (t.Length == 0) return false;
+   if (TryParseState(t, out spec)) return true;
    Match m; MoveCondition c;
    // 타이밍
    m = Regex.Match(t, @"^(?:매\s*)?(?:「?(?<n>\d+)」?\s*(?:의\s*)?배수\s*(?:의\s*)?)?(?:T|턴)\s*(?:의\s*)?(?<k>개시|시작|종료|최후|마지막)\s*(?:시|시에|에)?$");
@@ -210,6 +221,8 @@ namespace AABattle {
    p = Regex.Replace(p, @"(?:내보낸|사용한)$", "내보냈을 때");
    p = Regex.Replace(p, @"쓰러(?:뜨|트)린$", "쓰러뜨렸을 때");
    p = Regex.Replace(p, @"교대한$", "교대할 때");
+   p = Regex.Replace(p, @"해제된$", "해제되었을 때");
+   p = Regex.Replace(p, @"(?<=(?:가|이))\s*된$", " 되었을 때");
    if (!p.EndsWith("때")) return null;
    if (Regex.IsMatch(p, @"^공격을\s*받았을\s*때$")) p = "상대의 " + p;
    return p;
@@ -277,7 +290,7 @@ namespace AABattle {
     case "기술 사용":
      return f.Kind == "기술 사용" && s.After == f.After && s.Opponent != f.Self && move != null && s.Condition.Matches(move, f.User, 1);
    }
-   return false;
+   return MatchesState(s, f);
   }
 
   // ===== 사건 발생 =====
@@ -301,7 +314,7 @@ namespace AABattle {
   // 이 사건에 맞는 포텐셜이 있으면 큐 사건을 만든다(없으면 null — 로그를 남기지 않는다)
   public static PotentialEvent EventFor(Fighter owner, TriggerFact fact, string message, Action<string> log) {
    if (owner == null || owner.Data == null || log == null) return null;
-   if (owner.HP <= 0 && fact.Kind != "퇴장") return null;   // 빈사로 장소를 떠날 때는 발동
+   if (owner.HP <= 0 && fact.Kind != "퇴장" && !(fact.Kind == "상태 됨" && fact.Method == "빈사")) return null;   // 빈사로 장소를 떠날 때·빈사가 되었을 때는 발동
    Func<string, bool> spec = clause => Matches(Parse(TriggerStructures.Normalize(clause)), fact, owner);
    string label = (owner.Data.potentials ?? new Potential[0]).Where(p => p != null).SelectMany(TriggerStructures.Clauses).FirstOrDefault(spec);
    if (label == null) return null;
@@ -319,7 +332,9 @@ namespace AABattle {
    string normalized = TriggerStructures.Normalize(clause);
    if (normalized == TriggerStructures.AlwaysLabel) return true;
    if (normalized == TriggerStructures.FieldLabel) return owner != null && owner.HP > 0 && owner.OnField;
-   if (Parse(normalized).IsEvent) return false;
+   var spec = Parse(normalized);
+   if (spec.IsEvent) return false;
+   if (StateModules.Contains(spec.Module)) return Holds(spec, owner, opponent, rules ?? new Rules());
    return AnsweredTriggers.StateHolds(clause, owner, opponent, rules ?? new Rules());
   }
   // 등장 계열 사건 둘(「자신(상대)이 장소에 나왔을 때」)은 OR

@@ -55,6 +55,80 @@ namespace AABattle {
    if (!expected.StartsWith("서로")) Assert.That(TriggerModules.Classify(expected), Is.Not.Empty, "canonical is a module");
   }
 
+  // 2단계: 상태 · 체력 · 날씨 · 장소 · 랭크
+  [TestCase("「빈사」상태가 됐을 때", "자신이 「빈사」 상태가 되었을 때")]
+  [TestCase("쓰러졌을 때", "자신이 「빈사」 상태가 되었을 때")]
+  [TestCase("상대가 쓰러졌을 때", "상대가 「빈사」 상태가 되었을 때")]
+  [TestCase("상대가 「독」상태일 때", "상대가 「독」 상태이상일 때")]
+  [TestCase("자신이 「아쿠아링」상태일 때", "자신이 「아쿠아링」 상태변화일 때")]
+  [TestCase("상대가 「독(맹독)」상태가 됐을 때", "상대가 「독」「맹독」 상태이상이 되었을 때")]
+  [TestCase("「충전」상태가 해제되었을 때", "자신의 「충전」 상태가 해제되었을 때")]
+  [TestCase("상대가 「상태이상」에 걸렸을 때", "상대가 「상태이상」이 되었을 때")]
+  [TestCase("체력이 가득일 때", "자신의 체력이 가득일 때")]
+  [TestCase("자신의 체력이 1/2이하가 됐을 때", "자신의 체력이 1/2 이하가 되었을 때")]
+  [TestCase("체력이 절반 이하가 됐을 때", "자신의 체력이 1/2 이하가 되었을 때")]
+  [TestCase("체력이 「1/2」이하일 때", "자신의 체력이 1/2 이하일 때")]
+  [TestCase("체력이 가득하지 않아졌을 때", "자신의 체력이 가득하지 않게 되었을 때")]
+  [TestCase("상대의 체력이 「1」이 됐을 때", "상대의 체력이 「1」이 되었을 때")]
+  [TestCase("자신의 체력이 회복했을 때", "자신이 체력을 회복했을 때")]
+  [TestCase("날씨가 「(강한) 비」일 때", "날씨가 「비」일 때")]
+  [TestCase("날씨가 「모래날림」이 되었을 때", "날씨가 「모래바람」이 되었을 때")]
+  [TestCase("필드가 「일렉트릭필드」일때", "「일렉트릭필드」일 때")]
+  [TestCase("필드에 「중력」이 전개되어 있을 때", "「중력」이 전개되어 있을 때")]
+  [TestCase("필드가 「트릭룸」일 때", "「트릭룸」이 전개되어 있을 때")]
+  [TestCase("장소가 「그래스필드」로 변했을 때", "「그래스필드」가 되었을 때")]
+  [TestCase("상대의 속도가 내려갔을 때", "상대의 「속도」가 내려갔을 때")]
+  [TestCase("상대의 능력이 떨어졌을 때", "상대의 능력이 내려갔을 때")]
+  [TestCase("「공격」이 크게 올랐을 때", "자신의 「공격」이 크게 올랐을 때")]
+  [TestCase("자신의 「공/특공」이 올랐을 때", "자신의 「공격/특공」이 올랐을 때")]
+  [TestCase("상대가 「마비」상태가 된 T 종료시", "「상대가 「마비」 상태이상이 되었을 때」가 성립한 T 종료 시")]
+  public void NormalizesStageTwoWording(string raw, string expected) { NormalizesCollectedWording(raw, expected); }
+
+  [Test] public void FaintedOwnerTriggersOnBecomingFainted() {
+   var owner = F("노말", P("쓰러졌을 때", "종족 ①", "상대에게 최대 HP의 1/4 대미지를 준다.")); owner.HP = 1;
+   var attacker = F();
+   var turn = Turn(attacker, owner, Tackle(), Idle());
+   Assert.That(turn.Fighters[1].HP, Is.EqualTo(0));
+   Assert.That(turn.Fighters[0].HP, Is.LessThan(Mechanics.MaxHP(turn.Fighters[0], turn.Fighters[1], new Rules())), string.Join("\n", turn.Log));
+  }
+
+  [Test] public void HpCrossingFiresOnceWhenGoingBelow() {
+   var owner = F("노말", P("자신의 체력이 1/2 이하가 됐을 때"));
+   var first = Turn(owner, F(), Idle(), Tackle());
+   Assert.That(first.Fighters[0].Stages[1], Is.EqualTo(0), "still above half");
+   first.Fighters[0].HP = Mechanics.MaxHP(first.Fighters[0], first.Fighters[1], first.Rules) / 2 + 5;
+   var second = Engine.Resolve(TestData.Db, first.Fighters, new[] { Idle(), Tackle() }, first.Rules, () => .5);
+   Assert.That(second.Fighters[0].Stages[1], Is.EqualTo(1), "crossed below half");
+   var third = Engine.Resolve(TestData.Db, second.Fighters, new[] { Idle(), Tackle() }, second.Rules, () => .5);
+   Assert.That(third.Fighters[0].Stages[1], Is.EqualTo(1), "already below: no refire");
+  }
+
+  [Test] public void EventWithOpponentStatusCondition() {
+   var owner = F("노말", P("T 종료 시\n상대가 「화상」 상태이상일 때"));
+   var burned = F(); burned.Status = "화상";
+   Assert.That(Turn(owner, burned, Idle(), Idle()).Fighters[0].Stages[1], Is.EqualTo(1));
+   Assert.That(Turn(F("노말", P("T 종료 시\n상대가 「화상」 상태이상일 때")), F(), Idle(), Idle()).Fighters[0].Stages[1], Is.EqualTo(0));
+  }
+
+  [Test] public void RankAndWeatherChangeEvents() {
+   var owner = F("노말", P("상대의 「공격」이 내려갔을 때"), P("날씨가 「비」가 되었을 때", "종족 ②", "자신의 「방어」가 오른다."));
+   var other = F(); var rules = new Rules(); var log = new List<string>();
+   using (EffectScope.Begin(new[] { owner, other }, rules, () => .5, new[] { new TrainerBattleState(), new TrainerBattleState() })) {
+    Mechanics.ChangeStage(other, owner, 1, -1, rules, "검사", log);
+    Mechanics.SetWeather(other, owner, "비", 5, rules, log, "검사");
+   }
+   Assert.That(owner.Stages[1], Is.EqualTo(1), string.Join("\n", log));
+   Assert.That(owner.Stages[2], Is.EqualTo(1), string.Join("\n", log));
+  }
+
+  // 확정 21: 강한 비는 「비」 조건에 포함, 날씨부정이면 불성립
+  [Test] public void StrongRainCountsAsRain() {
+   var spec = TriggerModules.Parse(TriggerStructures.Normalize("날씨가 「비」일 때"));
+   var a = F(); var b = F();
+   Assert.That(TriggerModules.Holds(spec, a, b, new Rules { Weather = "강한 비" }), Is.True);
+   Assert.That(TriggerModules.Holds(TriggerModules.Parse(TriggerStructures.Normalize("날씨가 「강한 비」일 때")), a, b, new Rules { Weather = "비" }), Is.False);
+  }
+
   [TestCase("상대를 해석한 T 종료시")]
   [TestCase("「나무열매」를 사용했을 때")]
   [TestCase("우선도 「-3」의 기술을 내보낼 때")]

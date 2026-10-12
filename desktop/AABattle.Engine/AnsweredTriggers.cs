@@ -50,16 +50,15 @@ namespace AABattle {
   }
   // 상태 조건 절 하나가 지금 성립하는가(체력·능력 변화 합계·날씨·지형·소지품·특성·포텐셜 보유·순풍·상대 타입)
   public static bool StateHolds(string clause,Fighter owner,Fighter opponent,Rules rules){
+   var module=TriggerModules.Parse(TriggerStructures.Normalize(clause));if(TriggerModules.StateModules.Contains(module.Module))return TriggerModules.Holds(module,owner,opponent,rules);
    if(owner==null||rules==null||owner.HP<=0)return false;string key=Key(clause);var other=opponent??owner;int max=Mechanics.MaxHP(owner,other,rules);string weather=Mechanics.Weather(owner,other,rules);
    return IsFull(key)&&owner.HP>=max||FractionAtMost(key,owner.HP,max)||StageTotalCondition(key,owner)||IsWeatherNow(key,weather)||IsTerrainNow(key,rules.Terrain)||HasCurrentItem(key,owner)||HasCurrentAbility(key,owner)||HasNamedPotential(key,owner)||key.Contains("순풍")&&rules.Sides.Any(x=>x.Tailwind>0)||OpponentType(key,opponent);
   }
   // 「적진에 「불꽃」 포켓몬이 있을 때」: 장소의 상대가 그 타입(여럿이면 하나라도)
   static bool OpponentType(string key,Fighter opponent){var match=Regex.Match(key,@"^(?:적진|상대)(?:에|의)?「(?<t>[^」]+)」(?:타입)?(?:의|인)?포켓몬이(?:있을때|있는한|일때)$");if(!match.Success||opponent==null||opponent.HP<=0||!opponent.OnField)return false;var types=match.Groups["t"].Value.Split('/');return (opponent.Data.types??new string[0]).Any(types.Contains);}
-  public static void HpChanged(Fighter target,Fighter other,Rules rules,int before,int after,string reason,Action<string> log){
-   if(target==null||other==null||rules==null||after>=before)return;int max=Mechanics.MaxHP(target,other,rules);
-   Fire(target,x=>FractionCrossed(x,before,after,max),target.Data.name+"의 HP가 "+before+"→"+after+" ("+reason+")",log);
-  }
-  public static void Healed(Fighter target,int amount,string reason,Action<string> log){if(amount>0)Fire(target,IsRecover,target.Data.name+"의 HP가 "+amount+" 회복 ("+reason+")",log);}
+  // 체력 변화(확정 02)·회복(확정 03): 트리거 모듈 사건
+  public static void HpChanged(Fighter target,Fighter other,Rules rules,int before,int after,string reason,Action<string> log){StateWatch.CheckCurrent(log);}
+  public static void Healed(Fighter target,int amount,string reason,Action<string> log){if(amount<=0||target==null)return;var scope=EffectScope.Current;TriggerModules.Raise(new TriggerFact{Kind="회복"},target,scope==null?null:scope.Opponent(target),target.Data.name+"의 HP가 "+amount+" 회복 ("+reason+")",log);StateWatch.CheckCurrent(log);}
   public static void Drained(Fighter source,Fighter target,int damage,int heal,Action<string> log){if(damage>0&&heal>0)Fire(source,IsDrain,target.Data.name+"에게 "+damage+" 대미지 · "+heal+" 회복",log);}
   public static void IndirectDamage(Fighter target,Fighter other,int amount,string reason,Action<string> log){if(amount>0)Fire(other,IsIndirectDamage,target.Data.name+"이 공격 이외의 대미지 "+amount+" ("+reason+")",log);}
   public static void DefensiveBlocked(Fighter defender,Fighter attacker,Move move,string reason,Action<string> log){if(reason.StartsWith("방어"))Fire(defender,IsDefendBlock,defender.Data.name+"의 방어가 "+move.name+"을 막음",log);}
@@ -70,19 +69,15 @@ namespace AABattle {
    for(int i=0;i<2;i++){int other=1-i;Fire(fighters[i],x=>IsNoAttack(x,true)&&!attack[i],fighters[i].Data.name+"이 공격하지 않는 행동을 선택",log);Fire(fighters[i],x=>IsNoAttack(x,false)&&!attack[other],fighters[other].Data.name+"이 공격하지 않는 행동을 선택",log);Fire(fighters[i],x=>IsBothAttack(x)&&attack[0]&&attack[1],"서로 공격기를 선택",log);Fire(fighters[i],x=>IsBothSureHit(x)&&sure[0]&&sure[1],"서로 필중 공격기를 선택",log);}
   }
   public static void AbilityActivated(Fighter owner,string ability,Action<string> log){if(owner!=null&&ability==owner.Data.ability)Fire(owner,x=>IsAbility(x,ability),owner.Data.name+"의 특성 「"+ability+"」이 실제로 발동",log);}
-  public static void WeatherChanged(Fighter source,Fighter opponent,string before,string after,Action<string> log){if(before==after||after=="없음")return;Fire(source,x=>IsWeatherChanged(x,after),"날씨가 「"+after+"」가 됨",log);Fire(opponent,x=>IsWeatherChanged(x,after),"날씨가 「"+after+"」가 됨",log);}
-  public static void TerrainChanged(Fighter source,Fighter opponent,string before,string after,Action<string> log){if(before==after||after=="없음")return;Fire(source,x=>IsTerrainChanged(x,after),"필드가 「"+after+"」가 됨",log);Fire(opponent,x=>IsTerrainChanged(x,after),"필드가 「"+after+"」가 됨",log);}
-  public static void StageChanged(Fighter target,Fighter other,int index,int before,int after,Action<string> log){
-   if(before==after)return;bool rise=after>before;string stat=index>=0&&index<Engine.Names.Length?Engine.Names[index]:"명중/회피";
-   Fire(target,x=>IsStatChange(x,rise),target.Data.name+"의 "+stat+" 랭크 "+before+"→"+after,log);
-   Fire(other,x=>IsStatChange(x,!rise),target.Data.name+"의 "+stat+" 랭크 "+before+"→"+after,log);
-  }
+  public static void WeatherChanged(Fighter source,Fighter opponent,string before,string after,Action<string> log){StateWatch.CheckCurrent(log);}
+  public static void TerrainChanged(Fighter source,Fighter opponent,string before,string after,Action<string> log){StateWatch.CheckCurrent(log);}
+  public static void StageChanged(Fighter target,Fighter other,int index,int before,int after,Action<string> log){StateWatch.CheckCurrent(log);}
   static bool StageTotalCondition(string text,Fighter owner){
    var match=Regex.Match(text,@"^(?:자신의?)?능력(?:변화)?가?(?<sign>[+-])(?<value>\d+)(?:이상|이하)일때$");
    if(!match.Success)return false;int total=(owner.Stages??new int[0]).Sum()+owner.AccuracyStage+owner.EvasionStage;int value=int.Parse(match.Groups["value"].Value);return match.Groups["sign"].Value=="+"?total>=value:total<=-value;
   }
   public static void Test(){
-   var p=new Pokemon{name="검증",level=50,@base=new[]{100,100,100,100,100,100},iv=new int[6],types=new[]{"노말"},moves=new string[0],potentials=new[]{new Potential{name="반피",description="",triggers=new[]{"자신의 체력이 1/2 이하가 되었을 때"}},new Potential{name="회복",description="",triggers=new[]{"체력을 회복했을 때"}},new Potential{name="상승",description="",triggers=new[]{"자신의 능력이 올랐을 때"}}}};var a=new Fighter(p);var b=new Fighter(p);int hits=0;HpChanged(a,b,new Rules(),100,70,"검증",x=>hits++);HpChanged(a,b,new Rules(),70,60,"검증",x=>hits++);if(hits!=1)throw new Exception("HP threshold crosses only once");Healed(a,0,"검증",x=>hits++);Healed(a,10,"검증",x=>hits++);if(hits!=2)throw new Exception("Actual heal only");StageChanged(a,b,1,6,6,x=>hits++);StageChanged(a,b,1,0,1,x=>hits++);if(hits!=3)throw new Exception("Actual stage rise only");
+   var p=new Pokemon{name="검증",level=50,@base=new[]{100,100,100,100,100,100},iv=new int[6],types=new[]{"노말"},moves=new string[0],potentials=new[]{new Potential{name="회복",description="",triggers=new[]{"체력을 회복했을 때"}}}};var a=new Fighter(p);int hits=0;Healed(a,0,"검증",x=>hits++);if(hits!=0)throw new Exception("Actual heal only");Healed(a,10,"검증",x=>hits++);if(hits!=2)throw new Exception("Heal trigger");
   }
  }
 }
