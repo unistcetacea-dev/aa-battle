@@ -38,6 +38,17 @@ namespace AABattle {
     Assert.That(EffectModules.Classify(trainer), Is.EqualTo("종족치 변경"));
     Assert.That(EffectModules.Classify(Build(form, "능력 랭크 변화", "상대의 「명중」", "하락")), Is.EqualTo("능력 랭크 변화"));
     Assert.That(EffectModules.Classify(Build(form, "최대 HP의 1/N", "상대", "대미지")), Is.EqualTo("최대 HP의 1/N"));
+    // F4a 모듈
+    Field<PixelComboBox>(form, "effectDuration").SelectedItem = "없음";
+    Assert.That(Build(form, "장소 전개", "날씨", "모래바람"), Is.EqualTo("날씨를 「모래바람」으로 한다."));
+    Assert.That(EffectModules.Classify(Build(form, "장소 전개", "지형", "일렉트릭필드")), Is.EqualTo("장소 전개"));
+    Assert.That(EffectModules.Classify(Build(form, "장소 전개", "트릭룸", "전개")), Is.EqualTo("장소 전개"));
+    Assert.That(EffectModules.Classify(Build(form, "설치물", "적진", "압정뿌리기")), Is.EqualTo("설치물"));
+    Assert.That(EffectModules.Classify(Build(form, "설치물", "자진", "설치물 제거")), Is.EqualTo("설치물"));
+    Assert.That(EffectModules.Classify(Build(form, "강제교대", "상대", "강제교대시킬 수 있다")), Is.EqualTo("강제교대"));
+    Assert.That(EffectModules.Classify(Build(form, "강제교대", "자신", "강제교대되지 않는다")), Is.EqualTo("강제교대 무효"));
+    Assert.That(EffectModules.Classify(Build(form, "부유", "자신", "공중에 떠오른다")), Is.EqualTo("부유"));
+    Assert.That(EffectModules.Classify(Build(form, "상태이상 면역", "자신", "마비")), Is.EqualTo("상태이상 면역"));
    }
   }
  }

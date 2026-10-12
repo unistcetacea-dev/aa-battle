@@ -28,10 +28,22 @@ namespace AABattle {
   [TestCase("가장 높은 능력이 크게 오른다.", "자신의 가장 높은 능력이 크게 오른다.")]
   [TestCase("상대의 명중을 내린다.", "상대의 「명중」을 내린다.")]
   [TestCase("랜덤으로 상대의 능력을 내린다.", "상대의 랜덤한 능력치를 내린다.")]
-  public void NormalizesVariantsToModuleSentence(string raw, string expected) {
+  [TestCase("2T간 날씨를 「비」로 한다", "2T동안 날씨를 「비」로 한다.")]
+  [TestCase("날씨를 5T간 「비」로 할 수 있다", "5T동안 날씨를 「비」로 할 수 있다.")]
+  [TestCase("필드에 「중력」을 전개한다", "「중력」을 전개한다.")]
+  [TestCase("필드를 2T간 「중력」상태로 한다", "2T동안 「중력」을 전개한다.")]
+  [TestCase("저확률로 적진에 「스텔스록」을 설치한다", "저확률로 적진에 「스텔스록」을 설치한다.")]
+  [TestCase("자진의 설치물을 해제한다", "자진의 설치물을 제거한다.")]
+  [TestCase("강제교대 시킬 수 있다", "상대를 강제교대시킬 수 있다.")]
+  [TestCase("상대로부터의 강제교대를 받지 않는다", "자신은 강제교대되지 않는다.")]
+  [TestCase("「강제교대」되지 않는다", "자신은 강제교대되지 않는다.")]
+  [TestCase("공중에 떠오른다", "자신은 공중에 떠오른다.")]
+  [TestCase("「독」상태가 되지 않는다", "자신은 「독」상태가 되지 않는다.")]
+  public void NormalizesPlaceAndSwitchVariants(string raw, string expected) {
    Assert.That(EffectNormalizer.Normalize(raw), Is.EqualTo(expected));
    Assert.That(EffectModules.Classify(raw), Is.Not.Empty);
   }
+
 
   [TestCase("상대의 「위력:40」이하인 기술의 추가효과가 발생하지 않는다")]
   [TestCase("최초로 내보내는 기술의 위력을 배화한다")]

@@ -438,6 +438,44 @@ namespace AABattle {
     PotentialExecutors.Register("최대 HP의 1/N",
      c => { FractionEffect f; return EffectModules.TryFraction(c.Line, out f); },
      RunFraction);
+    // F4a 장소 전개(확정 24: 기술과 같은 규칙, 기간이 없으면 5T)
+    PotentialExecutors.Register("장소 전개",
+     c => { int turns; string kind, value; return EffectModules.TryPlace(Duration(c.Line, out turns), out kind, out value); },
+     c => {
+      int turns; string kind, value; EffectModules.TryPlace(Duration(c.Line, out turns), out kind, out value);
+      if (turns <= 0) turns = 5;
+      var rules = c.Rules ?? new Rules(); var log = c.Log ?? new List<string>();
+      if (kind == "날씨") return Mechanics.SetWeather(c.Owner, c.Opponent, value, turns, rules, log, c.Source.Label) ? EffectOutcome.Success : EffectOutcome.Failed;
+      if (kind == "지형") return Mechanics.SetTerrain(c.Owner, c.Opponent, value, turns, rules, log, c.Source.Label) ? EffectOutcome.Success : EffectOutcome.Failed;
+      if (kind == "트릭룸") { rules.TrickRoom = rules.TrickRoom > 0 ? 0 : turns; c.Say("트릭룸 " + (rules.TrickRoom > 0 ? turns + "턴" : "해제") + " (" + c.Source.Label + ")"); return EffectOutcome.Success; }
+      rules.Gravity = turns; c.Say("중력 " + turns + "턴 (" + c.Source.Label + ")");
+      return EffectOutcome.Success;
+     });
+    // F4a 설치물(확정 25: 층수 제한을 넘으면 실패, 묶인 뒤 효과도 실패)
+    PotentialExecutors.Register("설치물",
+     c => { bool install; string name; return EffectModules.TryHazard(c.Line, out install, out name); },
+     c => {
+      bool install; string name; EffectModules.TryHazard(c.Line, out install, out name);
+      var rules = c.Rules ?? new Rules();
+      int own = Mechanics.PartySide(c.Owner, rules); if (own < 0) own = 0;
+      if (install) return Mechanics.InstallHazard(1 - own, name, rules, c.Log ?? new List<string>()) ? EffectOutcome.Success : EffectOutcome.Failed;
+      if (!rules.Sides[own].Any()) { c.Say((own + 1) + "팀 진영에 제거할 설치물이 없다"); return EffectOutcome.Failed; }
+      rules.Sides[own].ClearHazards(); c.Say((own + 1) + "팀 진영의 설치물을 제거했다 (" + c.Source.Label + ")");
+      return EffectOutcome.Success;
+     });
+    // F4a 강제교대(확정 26): 행동 뒤 교대 단계에서 상대 멤버 중 무작위
+    PotentialExecutors.Register("강제교대",
+     c => EffectModules.IsForcedSwitch(c.Line),
+     c => {
+      var scope = EffectScope.Current; var target = c.Opponent;
+      if (scope == null || target == null || target.HP <= 0) return EffectOutcome.Failed;
+      int side = Mechanics.PartySide(target, c.Rules ?? new Rules());
+      if (side < 0) side = Array.IndexOf(scope.Fighters, target);
+      if (side < 0) return EffectOutcome.Failed;
+      scope.ForcedSwitches.Add(new KeyValuePair<int, string>(side, c.Source.Label));
+      c.Say(target.Data.name + ": " + c.Source.Label + "의 강제교대 요청");
+      return EffectOutcome.Success;
+     });
     // F3 상태이상 치유
     PotentialExecutors.Register("상태이상 치유",
      c => { string t; return EffectModules.TryCure(c.Line, out t); },

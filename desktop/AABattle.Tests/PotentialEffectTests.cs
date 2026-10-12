@@ -159,6 +159,58 @@ namespace AABattle {
    Assert.That(t4.Fighters[0].Stages[1], Is.EqualTo(1), "switched-in pokemon does not refire next turn");
   }
 
+  // ===== F4a 장소·설치물·강제교대·계속 효과 =====
+  [Test] public void PlaceDeploymentFollowsMoveRules() {
+   var rules = new Rules();
+   var owner = F("노말", P(TriggerStructures.TurnEndLabel, "2T간 날씨를 「비」로 한다", "종족 ①"), P(TriggerStructures.TurnEndLabel, "필드에 「중력」을 전개한다", "종족 ②")); var other = F();
+   Fire(owner, other, TriggerStructures.TurnEndLabel, null, rules);
+   Assert.That(rules.Weather, Is.EqualTo("비")); Assert.That(rules.WeatherTurns, Is.EqualTo(2));
+   Assert.That(rules.Gravity, Is.EqualTo(5), "no duration: 5 turns like the move");
+   var again = F("노말", P(TriggerStructures.TurnEndLabel, "날씨를 「비」로 한다"));
+   var log = Fire(again, other, TriggerStructures.TurnEndLabel, null, rules);
+   Assert.That(log.Any(x => x.Contains("이미 비")), Is.True, "same weather fails like the move");
+  }
+
+  [Test] public void HazardLayersCapAndOwnSideClear() {
+   var rules = new Rules();
+   var owner = F("노말", P(TriggerStructures.TurnEndLabel, "적진에 「독압정」을 설치한다")); var other = F();
+   for (int i = 0; i < 3; i++) Fire(owner, other, TriggerStructures.TurnEndLabel, null, rules);
+   Assert.That(rules.Sides[1].ToxicSpikes, Is.EqualTo(2), "two layers max");
+   rules.Sides[0].StealthRock = true;
+   var cleaner = F("노말", P(TriggerStructures.TurnEndLabel, "자진의 설치물을 해제한다"));
+   Fire(cleaner, other, TriggerStructures.TurnEndLabel, null, rules);
+   Assert.That(rules.Sides[0].Any(), Is.False);
+  }
+
+  static Move Idle() { return new Move { name = "미등록", category = "변화", types = new[] { "노말" }, tags = new string[0], accuracy = 100, target = "자신" }; }
+
+  [Test] public void ForcedSwitchPicksRandomReserveOrFails() {
+   var hit = Mv("노말"); hit.priority = 1; hit.power = 10;
+   var owner = F("노말", P(TriggerStructures.AttackSuccessLabel, "상대를 강제교대시킨다."));
+   var target = F(); var reserve = F(); reserve.OnField = false;
+   var turn = Engine.Resolve(TestData.Db, new[] { owner, target }, new[] { new BattleCommand { Move = hit }, new BattleCommand { Move = Idle(), Party = new[] { target, reserve } } }, new Rules(), new[] { new TrainerBattleState(), new TrainerBattleState() }, () => .5);
+   Assert.That(Mechanics.SameMember(turn.Fighters[1], reserve), Is.True, string.Join("\n", turn.Log));
+   var alone = Engine.Resolve(TestData.Db, new[] { owner, F() }, new[] { hit, Idle() }, new Rules(), () => .5);
+   Assert.That(alone.Log.Any(x => x.Contains("교대할 수 있는 멤버가 없어")), Is.True);
+  }
+
+  [Test] public void ForcedSwitchImmunityBlocks() {
+   var hit = Mv("노말"); hit.priority = 1; hit.power = 10;
+   var owner = F("노말", P(TriggerStructures.AttackSuccessLabel, "상대를 강제교대시킨다."));
+   var target = F("노말", P(Field, "상대로부터의 강제교대를 받지 않는다")); var reserve = F(); reserve.OnField = false;
+   var turn = Engine.Resolve(TestData.Db, new[] { owner, target }, new[] { new BattleCommand { Move = hit }, new BattleCommand { Move = Idle(), Party = new[] { target, reserve } } }, new Rules(), new[] { new TrainerBattleState(), new TrainerBattleState() }, () => .5);
+   Assert.That(Mechanics.SameMember(turn.Fighters[1], target), Is.True);
+  }
+
+  [Test] public void FloatingAndStatusImmunityAreContinuous() {
+   var floater = F("노말", P(Field, "공중에 떠오른다"));
+   Assert.That(Mechanics.Grounded(floater, new Rules()), Is.False);
+   Assert.That(Mechanics.Grounded(floater, new Rules { Gravity = 3 }), Is.True, "gravity grounds");
+   var guarded = F("노말", P(Field, "「독/마비」상태가 되지 않는다"));
+   Assert.That(Mechanics.ApplyStatus(guarded, F(), "독", new Rules(), () => .5, new List<string>()), Is.False);
+   Assert.That(Mechanics.ApplyStatus(guarded, F(), "화상", new Rules(), () => .5, new List<string>()), Is.True);
+  }
+
   [Test] public void SpeciesRaiseToTrainerAptitude() {
    var owner = F("노말", P(TriggerStructures.TurnEndLabel, "자신의 「방어」의 종족치를 트레이너의 「육성」과 같은 랭크까지 올린다")); var other = F();
    var trainer = new TrainerRecord(); trainer.training.rank = "A";

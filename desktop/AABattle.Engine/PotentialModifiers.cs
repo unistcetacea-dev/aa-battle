@@ -139,6 +139,36 @@ namespace AABattle {
    return factor;
   }
 
+  // 계속 성립하는 포텐셜의 표준 문장(확률·기간 없는 것)
+  static readonly Dictionary<string, List<string>> sentenceCache = new Dictionary<string, List<string>>();
+  static IEnumerable<string> ContinuousSentences(Fighter owner, Fighter opponent, Rules rules, string keyword = null) {
+   if (owner == null || owner.Data == null) yield break;
+   foreach (var p in (owner.Data.potentials ?? new Potential[0]).Where(x => x != null)) {
+    if (keyword != null && (p.description ?? "").IndexOf(keyword, StringComparison.Ordinal) < 0) continue;   // 관련 낱말이 없으면 조건 판정 생략
+    if (!Continuous(p, owner, opponent, rules ?? new Rules())) continue;
+    List<string> list;
+    lock (sentenceCache) {
+     if (!sentenceCache.TryGetValue(p.description ?? "", out list)) {
+      string condition, effect;
+      PotentialLibrary.Split(p.description ?? "", out condition, out effect);
+      list = Regex.Split(EffectNormalizer.NormalizeLines(effect.Length > 0 ? effect : p.description ?? "").Replace("\r", ""), @"\n|(?<=[.．。])\s+").Select(x => x.Trim()).Where(x => x.Length > 0).Where(x => { string a, b; return !EffectNormalizer.TryProbabilityPrefix(x, out a, out b); }).ToList();
+      sentenceCache[p.description ?? ""] = list;
+     }
+    }
+    foreach (string s in list) yield return s;
+   }
+  }
+  // 부유: 「자신은 공중에 떠오른다」(중력·철구·뿌리박기는 Grounded가 먼저 판정)
+  public static bool Floating(Fighter f, Rules rules) { return f != null && f.HP > 0 && ContinuousSentences(f, null, rules, "떠오").Any(EffectModules.IsFloating); }
+  // 상태이상 면역: 「자신은 「독」상태가 되지 않는다」
+  public static bool StatusImmune(Fighter target, Fighter source, string status, Rules rules) {
+   if (target == null) return false;
+   foreach (string s in ContinuousSentences(target, source, rules, "않")) { string[] list; if (EffectModules.TryStatusImmunity(s, out list) && list.Contains(status)) return true; }
+   return false;
+  }
+  // 강제교대 무효: 「자신은 강제교대되지 않는다」
+  public static bool ForcedSwitchImmune(Fighter f, Fighter opponent, Rules rules) { return f != null && ContinuousSentences(f, opponent, rules, "강제교대").Any(EffectModules.IsForcedSwitchImmunity); }
+
   // 사건으로 걸린 배율의 기간 감소(턴 종료)
   public static void Tick(Fighter f, List<string> log) {
    if (f == null || f.Conditions.Modifiers == null) return;
