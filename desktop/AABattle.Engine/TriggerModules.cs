@@ -364,6 +364,7 @@ namespace AABattle {
   }
   // 등장 계열 사건 둘(「자신(상대)이 장소에 나왔을 때」)은 OR
   public static bool Alternative(string matched, string other) {
+   if (ExclusiveTriggerModules.Alternative(matched, other)) return true;
    var a = Parse(TriggerStructures.Normalize(matched)); var b = Parse(TriggerStructures.Normalize(other));
    return a.Module == "등장" && b.Module == "등장";
   }

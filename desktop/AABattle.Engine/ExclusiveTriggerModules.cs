@@ -31,6 +31,18 @@ namespace AABattle
         && spec.Inner == NormalSwitchInner;
     }
 
+    public static bool Alternative(string matched, string other)
+    {
+      var a = TriggerModules.Parse(TriggerStructures.Normalize(matched));
+      var b = TriggerModules.Parse(TriggerStructures.Normalize(other));
+      return IsNormalSwitchLast(a) && IsMoveUse(b) || IsNormalSwitchLast(b) && IsMoveUse(a);
+    }
+
+    static bool IsMoveUse(TriggerSpec spec)
+    {
+      return spec != null && spec.Module == "기술 사용" && !spec.Opponent && !spec.Attack && !spec.After;
+    }
+
     public static bool MatchesNormalSwitchLast(TriggerFact fact, Fighter owner)
     {
       return fact != null && fact.Kind == "타이밍" && fact.Method == TriggerStructures.TurnLastLabel

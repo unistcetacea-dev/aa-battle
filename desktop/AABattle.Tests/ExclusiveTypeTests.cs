@@ -86,12 +86,33 @@ namespace AABattle {
    };
    Assert.That(TriggerModules.Classify(sentence), Is.EqualTo("타이밍"));
    Assert.That(ModuleCatalog.All.Any(x => x.Kind == ModuleKind.TriggerEvent && x.Template == sentence), Is.True);
+   Assert.That(TriggerModules.Alternative(sentence, ExclusiveTypes.MoveUse), Is.True, "기술 사용 또는 통상교대 턴 최후는 대체 발동 시점");
    Assert.That(TriggerModules.Matches(spec,
     new TriggerFact { Kind = "타이밍", Method = TriggerStructures.TurnLastLabel }, owner), Is.True);
    owner.Conditions.TurnFacts[0].Method = "선발";
    Assert.That(TriggerModules.Matches(spec,
     new TriggerFact { Kind = "타이밍", Method = TriggerStructures.TurnLastLabel }, owner), Is.False);
   }
+
+  [Test] public void MakenGrantsItsFunctionExtensionAtNormalSwitchTurnLast() {
+   var potential = Exclusive("마검");
+   potential.activation = "자동";
+   potential.uses = "";
+   potential.description = potential.description.Replace("몸통박치기", "화염방사");
+   Assert.That(EffectModules.Classify(potential.description), Is.EqualTo("기능확장 부여"), potential.description);
+   var owner = F(100, potential);
+   owner.Conditions.TurnFacts = new List<TriggerFact> {
+    new TriggerFact { Kind = "등장", Self = true, Method = "통상교대" }
+   };
+   var opponent = F();
+   var rules = new Rules();
+   var log = new List<string>();
+   Mechanics.SetParties(rules, new[] { owner, opponent });
+   using (EffectScope.Begin(new[] { owner, opponent }, rules, () => .5, new[] { new TrainerBattleState(), new TrainerBattleState() }))
+    RuntimeTriggers.Timing(new[] { owner, opponent }, null, TriggerStructures.TurnLastLabel, log.Add);
+   Assert.That(owner.Conditions.ExtensionMoves, Does.Contain("화염방사"), string.Join("\n", log));
+  }
+
 
   // ===== 사건으로 얻는 필중 · 관통 =====
   [Test] public void SureHitTypeHitsOnlyWhenDeclared() {
