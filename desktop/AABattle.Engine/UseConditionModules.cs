@@ -156,13 +156,17 @@ namespace AABattle
       string s = Regex.Replace(PotentialParts.Clean(sentence ?? ""), @"\s+", " ").Trim();
       return Regex.IsMatch(s, @"^(?:《[^》]*》\s*)?[^.]{0,30}?(?:전용|고유)\s*(?:포텐셜|퍼텐셜)\.?$")
         || Regex.IsMatch(s, @"^[^.]{0,20}서포트 효과\.?$")
-        || Regex.IsMatch(s, @"^[(（]\s*※.*[)）]\.?$");
+        || Regex.IsMatch(s, @"^[(（]\s*※.*[)）]\.?$")
+        || Regex.IsMatch(s, @"^(?:「[^」]*」종의 정점에 있는 『고유종』|원종인 「[^」]*」종과는 다른 생태를 갖는다|.{0,20}혼혈인 『변종』)\.?$");
     }
 
     // 변형 문장을 문장 단위 표준형으로 바꾼다(트리거 분리 전에 필요한 것만)
     static string Variant(string sentence)
     {
       string s = sentence;
+      // 짝이 없는 닫는 괄호는 시트 표기 실수다: 「…오른다.)」
+      if (s.Count(c => c == ')' || c == '）') > s.Count(c => c == '(' || c == '（'))
+        s = Regex.Replace(s, @"[)）]+$", "").TrimEnd();
       // 「빈사로 할 수 없다」 계열 → 앞 대미지 문장에 이어 붙는 표준 문장
       s = Regex.Replace(s, @"^(?:이\s*대미지로는\s*)?「?빈사」?(?:로는|로)\s*(?:할\s*수\s*없다)\.?$", "이 대미지로는 빈사로 할 수 없다.");
       // 「필드에 나와 2T간 …」 → 등장 사건 + 기간 효과

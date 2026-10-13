@@ -111,6 +111,11 @@ namespace AABattle
       if (m.Success)
         return "자신의 「" + m.Groups["st"].Value + "」 상태를 해제한다. 이때 가장 마지막에 「기술:" + m.Groups["mv"].Value + "」 기술에 의한 추가행동을 얻는다.";
 
+      // 유대의 지시 상승: 「필드에 있는 한」은 트리거로 갈라져 효과에는 본체만 남는다
+      m = Regex.Match(s, @"^트레이너의 지시(?:를|을) 「(?<n>\d+)」\s*랭크 올린다$");
+      if (m.Success)
+        return BondModules.RiseSentence(int.Parse(m.Groups["n"].Value));
+
       // 역할 임명의 조사 변형: 자신을 『엠페러』에 임명한다 → 자신을 『엠퍼러』로 임명(할 수 있다)
       m = Regex.Match(s, @"^자신을 『(?<r>[^』]+)』(?:에|으로|로) 임명(?<o>한다|할 수 있다)$");
       if (m.Success)

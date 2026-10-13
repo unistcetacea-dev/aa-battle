@@ -928,3 +928,8 @@ Codex 공유 링크는 특정 시점의 읽기 전용 대화 스냅샷이다. �
 - 보류 대미지는 자신의 행동 직후(행동 루프 앞머리 `FlushActed`), 교대 직전(`SwitchNow`), 행동하지 못한 채 루프가 끝났을 때(`FlushAll`) 적용한다. 여러 번 보류되면 합산한다.
 - 추가효과·반동·드레인·접촉 반응·「대미지를 받았을 때」 트리거는 원래 시점에 처리한다. 버팀 판정(`Engine.ReduceByEndure`, `BattleEngine.Endure.cs`)은 실제로 체력이 줄어드는 적용 시점에 한다.
 - 후속 결정: 실질적으로 죽을 대미지(버팀 적용 전 원래 대미지가 현재 체력 이상)에만 판정한다. 드레인·반동·`Received/Hit`·트레이너 「대미지를 받았을 때」는 원래 시점에 보류된 양 기준으로 처리하고, 체력 감소만 미룬다. 적용 때 `Damaged`는 다시 내지 않는다.
+
+## 2026-10-14 칼데아 3차 (task/G-chaldea-phase3)
+- 새 파일: `UseConditionModules`(사용 조건 수식문, 본문 앞처리, `IsNote`), `DamageVariantModules`(타입 대미지), `ChaldeaVariants`(효과 변형 정규화), `PotentialGrantModules`(포텐셜 부여), `ModuleCatalog.Effects.Chaldea.cs`. 연결 줄: `PotentialLibrary.Split`(앞처리, 명중시 트리거), `PotentialQueue.Candidates`(등급 제한)와 `Split`(`IsNote`), `ChaldeaModules.Normalize` 끝, `EffectModules.Classify`, `PotentialExecutors` 등록.
+- 타입을 단 대미지는 상성을 받는다(사용자 결정). 기존 검사 `EffectModuleTests`의 「고스트 대미지」 기대값을 이 결정에 맞춰 바꿨다.
+- 검사: `ChaldeaPhase3Tests`. 판정표는 `research/samples/chaldea/POTENTIALS.tsv`, `MODULE_GAPS.md`에 갱신.

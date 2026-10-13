@@ -216,6 +216,30 @@ namespace AABattle.Tests
       Assert.That(hits, Is.GreaterThanOrEqualTo(2), string.Join("\n", result.Log));
     }
 
+    [TestCase("「골드 십」종의 정점에 있는 『고유종』.")]
+    [TestCase("원종인 「캐스터」종과는 다른 생태를 갖는다.")]
+    public void SettingFlavorSentencesAreNotEffects(string flavor)
+    {
+      var steps = PotentialQueue.JudgeSteps(flavor + " 자신의 체력을 최대 HP의 1/4 회복한다.", false);
+      Assert.That(steps, Has.Count.EqualTo(1));
+    }
+
+    [Test]
+    public void StrayClosingParenthesisIsDropped()
+    {
+      string condition, effect;
+      PotentialLibrary.Split("『에이스』가 되면 트레이너의 「통솔」이 1랭크 오른다.)", out condition, out effect);
+      Assert.That(effect, Does.Not.Contain(")"));
+      foreach (var step in PotentialQueue.JudgeSteps(effect, false))
+        Assert.That(step.Ok, Is.True, step.Line);
+    }
+
+    [Test]
+    public void BareBondRiseReadsAsStandardModule()
+    {
+      Assert.That(EffectNormalizer.Normalize("트레이너의 지시를 「1」랭크 올린다"), Is.EqualTo(BondModules.RiseSentence(1)));
+    }
+
     // ---------- 5. 포텐셜 부여 ----------
     [TestCase("자신에게 『별의 주인』을 부여한다", "자신에게 『별의 주인』을 부여한다.")]
     [TestCase("자신에게 『관의주인』『주인의특권』을 부여한다.", "자신에게 『관의 주인』『주인의 특권』을 부여한다.")]
