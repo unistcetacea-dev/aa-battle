@@ -190,6 +190,35 @@ namespace AABattle
       log.Add(entering.Data.name + ": 아이스번으로 이번 T 기술의 우선도가 -1된다");
     }
 
+    // 초근성: 「중확률로 자신은 공격 이외의 대미지를 받지 않는다」. 간접 대미지를 받을 때마다 확률을 굴린다
+    // (확률 접두어가 붙은 문장은 상시 문장 목록에 없으므로 여기서 직접 읽는다)
+    public static bool IgnoresIndirectByChance(Fighter f)
+    {
+      var scope = EffectScope.Current;
+      if (f == null || f.Data == null || scope == null || scope.Rng == null)
+        return false;
+      var foe = FoeOf(f);
+      var rules = scope.Rules ?? new Rules();
+      foreach (var p in (f.Data.potentials ?? new Potential[0]).Where(x => x != null && (x.description ?? "").Contains("공격 이외")))
+      {
+        if (!PotentialModifiers.Continuous(p, f, foe, rules))
+          continue;
+        string trigger, effect;
+        PotentialLibrary.Split(p.description ?? "", out trigger, out effect);
+        foreach (string line in EffectNormalizer.NormalizeLines(effect.Length > 0 ? effect : p.description).Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+        {
+          string probability, body;
+          if (!EffectNormalizer.TryProbabilityPrefix(line.Trim(), out probability, out body) || Clean(body) != AbilityPhrases.MagicGuard)
+            continue;
+          double? rate = PotentialProbability.Rate(probability);
+          if (rate.HasValue && scope.Rng() < rate.Value)
+            return true;
+        }
+      }
+
+      return false;
+    }
+
     // 턴 끝: 회복한 만큼 반납(빈사가 되지 않는다)
     public static void EndTurn(Fighter[] fighters, Rules rules, List<string> log)
     {

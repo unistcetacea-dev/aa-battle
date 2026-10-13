@@ -273,6 +273,19 @@ namespace AABattle
       }
     }
 
+    [TestCase(0.0, true)]
+    [TestCase(0.99, false)]
+    public void ChanceIndirectDamageImmunityRollsPerDamage(double roll, bool ignored)
+    {
+      var f = F();
+      var foe = F();
+      Rule(f, "중확률로 상대의 공격 이외의 대미지를 무시한다");
+      int before = f.HP;
+      using (EffectScope.Begin(new[] { f, foe }, new Rules(), () => roll))
+        Mechanics.Hurt(f, foe, new Rules(), 10, "독", new List<string>());
+      Assert.That(f.HP == before, Is.EqualTo(ignored));
+    }
+
     [Test]
     public void IceBurnLowersPriorityOnEntryAndIsRemovedByFireOrIce()
     {
