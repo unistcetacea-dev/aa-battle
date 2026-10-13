@@ -12,7 +12,7 @@ namespace AABattle {
   static readonly Dictionary<string, string> LabelModules = new Dictionary<string, string> {
    { TriggerStructures.BattleStartLabel, "배틀 시작" }, { TriggerStructures.SelfOrderLabel, "지령" }, { TriggerStructures.AllyOrderLabel, "지령" },
    { TriggerStructures.AnalyzedLabel, "해석" }, { TriggerStructures.ReceivedOrNullifiedLabel, "피격·무효화" }, { TriggerStructures.DamagedLabel, "대미지" },
-   { "서로 공격기를 선택했을 때", "행동 선택" }, { "서로 필중 기술을 선택했을 때", "행동 선택" }, { "자신이 공격하지 않는 행동을 선택했을 때", "행동 선택" }, { "상대가 공격하지 않는 행동을 선택했을 때", "행동 선택" },
+   { "서로 공격기를 선택했을 때", "행동 선택" }, { "서로 변화기술을 선택했을 때", "행동 선택" }, { "서로 필중 기술을 선택했을 때", "행동 선택" }, { "자신이 공격하지 않는 행동을 선택했을 때", "행동 선택" }, { "상대가 공격하지 않는 행동을 선택했을 때", "행동 선택" },
    { "「방어」 등의 기술로 상대의 공격을 무효화했을 때", "방어 성공" }, { "「방어」 등의 기술로 상대의 기술을 무효화했을 때", "방어 성공" }, { "자신의 방어 상태가 공격을 막았을 때", "방어 성공" },
    { "상대가 공격 이외의 대미지를 받았을 때", "간접 대미지" }, { "상대의 체력을 드레인했을 때", "드레인" }
   };

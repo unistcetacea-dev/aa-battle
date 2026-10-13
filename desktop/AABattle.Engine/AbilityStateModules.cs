@@ -85,6 +85,11 @@ namespace AABattle {
    }
    return false;
   }
+  // 도주·탈피: 통상교대를 막는 상태(검은눈빛·조이기·붙잡힘)에서도 반드시 교대할 수 있다
+  public const string AlwaysSwitch = "반드시 아군과 교대할 수 있다";
+  public static bool AlwaysSwitchable(Fighter f) {
+   return f != null && Own(f, null, EffectScope.Current == null ? null : EffectScope.Current.Rules, "반드시 아군과").Any(x => x == AlwaysSwitch);
+  }
   public static bool ReversesDrain(Fighter drained, Fighter drainer, Rules rules) {
    return drained != null && Own(drained, drainer, rules, "드레인").Any(x => x == ReverseDrain);
   }

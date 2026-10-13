@@ -134,7 +134,8 @@ namespace AABattle {
   public static string Name(Fighter f) { if (!AbilityItemModules.CanUseItem(f)) return ""; var d = ItemCatalog.Find(f.Data.item); return d != null ? d.Name : f.Data.item ?? ""; }
   public static bool Holds(Fighter f, params string[] names) { string n = Name(f); return n.Length > 0 && names.Contains(n); }
   public static bool Choice(Fighter f) { return Holds(f, "구애머리띠", "구애안경", "구애스카프") || AbilityStateModules.MoveLocked(f); }
-  public static bool IsBerry(string item) { var d = ItemCatalog.Find(item); return d != null && d.Category == "나무열매"; }
+  // 나무열매: 소지품 도감의 이름이 「…열매」인 것(분류 이름은 하위 절 이름으로 바뀌므로 이름으로 가린다)
+  public static bool IsBerry(string item) { return !string.IsNullOrEmpty(item) && item.EndsWith("열매") && ItemCatalog.Find(item) != null; }
 
   // 「1번만」인 계속 배율(반감열매·보코/마쥬 등)이 이번 타격에 걸리는가. 맞기 전에 판정하고 맞은 뒤 소비한다
   public static List<Fighter> OnceScalars(Fighter a, Fighter b, Move m, double typeEffect, Rules r) {
@@ -172,7 +173,8 @@ namespace AABattle {
   }
   // 이동은 소모·파괴 사건과 구분한다.
   public static bool Transfer(Fighter from, Fighter to, Action<string> log, bool steal = false) {
-   if (from == null || to == null || from.HP <= 0 || to.HP <= 0 || ReferenceEquals(from, to) ||
+   // 약탈은 방금 쓰러뜨린 상대(빈사)의 소지품도 가져갈 수 있다
+   if (from == null || to == null || (from.HP <= 0 && !steal) || to.HP <= 0 || ReferenceEquals(from, to) ||
     string.IsNullOrEmpty(from.Data.item) || !string.IsNullOrEmpty(to.Data.item)) return false;
    string item = from.Data.item;
    Lose(from, steal ? "약탈" : "이동", log);

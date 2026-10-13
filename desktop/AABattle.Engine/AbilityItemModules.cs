@@ -80,21 +80,22 @@ namespace AABattle {
    return definition != null && AbilityModules.Sentences(definition).Any(s => Clean(s) == RipenRule)
     || (holder.Data.potentials ?? new Potential[0]).Any(p => p != null && p.id != ItemRuntime.Slot && (p.description ?? "").Contains(RipenRule));
   }
-  // 나무열매 효과 문장을 2배로: 회복·대미지 분수는 분모를 반으로, 랭크는 한 단계 크게, 감소 배율은 반으로, 우선도는 +1 더
+  // 나무열매 효과 문장을 2배로: 회복·대미지 분수는 분모를 반으로, 랭크는 한 단계 크게, 감소 배율은 반으로, 우선도는 2배
+  // 도감 원문 변형(「공」을 올린다)도 같게 읽도록 효과를 표준 문장으로 바꾼 뒤 옮긴다
   public static string Ripen(string description) {
-   string text = description ?? "";
-   text = Regex.Replace(text, @"(최대 HP의 )1/(\d+)", m => {
-    int n = int.Parse(m.Groups[2].Value);
-    return m.Groups[1].Value + "1/" + Math.Max(1, n / 2);
-   });
-   text = Regex.Replace(text, @"(「[^」]+」(?:이|가) )(크게 )?(오른다|내린다)", m =>
-    m.Groups[2].Success ? m.Groups[1].Value + "매우 크게 " + m.Groups[3].Value : m.Groups[1].Value + "크게 " + m.Groups[3].Value);
-   text = Regex.Replace(text, @"(랜덤한 능력치(?:가|이) )(크게 )?(오른다)", m =>
-    m.Groups[2].Success ? m.Groups[1].Value + "매우 크게 " + m.Groups[3].Value : m.Groups[1].Value + "크게 " + m.Groups[3].Value);
-   text = Regex.Replace(text, @"약화\((0?\.\d+|\d+(?:\.\d+)?)배\)", m => {
-    double rate = double.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture) / 2;
-    return "약화(" + rate.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "배)";
-   });
+   string condition, effect;
+   PotentialLibrary.Split(description ?? "", out condition, out effect);
+   if (effect.Length == 0) return description;
+   var lines = EffectNormalizer.NormalizeLines(effect).Replace("\r", "").Split('\n').Where(x => x.Trim().Length > 0).Select(RipenLine);
+   string triggers = string.Join(", ", condition.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()));
+   return (triggers.Length > 0 ? triggers + ", " : "") + string.Join(" ", lines);
+  }
+  static string RipenLine(string line) {
+   string text = line.Trim();
+   text = Regex.Replace(text, @"(최대 HP의 )1/(\d+)", m => m.Groups[1].Value + "1/" + Math.Max(1, int.Parse(m.Groups[2].Value) / 2));
+   text = Regex.Replace(text, @"(「[^」]+」(?:이|가) |랜덤한 능력치(?:가|이) )(크게 )?(오른다|내린다)", m =>
+    m.Groups[1].Value + (m.Groups[2].Success ? "매우 크게 " : "크게 ") + m.Groups[3].Value);
+   text = Regex.Replace(text, @"약화\(([0-9.]+)배\)", m => "약화(" + (double.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture) / 2).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "배)");
    text = Regex.Replace(text, @"우선도를 (\d) 올린다", m => "우선도를 " + (int.Parse(m.Groups[1].Value) * 2) + " 올린다");
    return text;
   }
@@ -119,7 +120,8 @@ namespace AABattle {
 
   // ===== 약탈 · 파괴 · 해석 =====
   public static EffectOutcome Steal(Fighter owner, Fighter other, Action<string> log) {
-   if (owner == null || other == null || owner.HP <= 0 || other.HP <= 0 || string.IsNullOrEmpty(other.Data.item)) return EffectOutcome.Failed;
+   // 방금 쓰러뜨린 상대(빈사)의 소지품도 빼앗을 수 있다
+   if (owner == null || other == null || owner.HP <= 0 || string.IsNullOrEmpty(other.Data.item)) return EffectOutcome.Failed;
    if (ItemProtected(other, owner)) {
     if (log != null) log(other.Data.name + ": 소지품 파괴·약탈을 무효화했다");
     return EffectOutcome.Failed;

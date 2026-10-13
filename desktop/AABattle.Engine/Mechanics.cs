@@ -45,7 +45,7 @@ namespace AABattle {
    if(r.Terrain=="사이코필드"&&Grounded(b,r)&&Priority(a,m,b)>0)return "사이코필드: 접지 대상에게 우선도 기술 무효";
    string w=Weather(a,b,r);
    if(m.category!="변화"&&((w=="큰가뭄"&&m.types.Contains("물"))||(w=="강한 비"&&m.types.Contains("불꽃"))))return w+": 해당 공격기 실패";
-   if(m.types.Contains("땅")&&!Grounded(b,r)&&!Has(b,"비행")&&!(AbilityPhrases.FloatsFromAbility(b)&&BypassAbility(a)&&!(ItemRuntime.Name(b)=="풍선"&&!b.Conditions.BalloonPopped)))return "공중 상태: 땅 기술 무효";
+   if(m.types.Contains("땅")&&!Grounded(b,r)&&!Has(b,"비행")&&!AbilityMoveModules.HitsFloating(a,b,m,r)&&!(AbilityPhrases.FloatsFromAbility(b)&&BypassAbility(a)&&!(ItemRuntime.Name(b)=="풍선"&&!b.Conditions.BalloonPopped)))return "공중 상태: 땅 기술 무효";
    if(m.types.Contains("땅")&&ItemRuntime.Name(b)=="풍선"&&!b.Conditions.BalloonPopped&&!Grounded(b,r))return "풍선: 땅 기술 무효";
    if((m.category!="변화"||m.name=="전기자석파")&&TypeEffect(db,a,b,m,r)==0)return "타입 상성에 의한 무효";
    if(m.category=="변화"&&b.Conditions.Substitute>0&&!BypassSub(a,m))return "대타: 변화기 차단";

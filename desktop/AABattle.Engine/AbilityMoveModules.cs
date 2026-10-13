@@ -34,6 +34,9 @@ namespace AABattle {
   static readonly Regex PierceProtect = new Regex(@"^자신의 (?<c>(?:「[^」]+」)*)\s*기술이 상대의 「방어」 기술을 관통한다$");
   static readonly Regex FailTaken = new Regex(@"^상대의 (?<c>(?:「[^」]+」)+)\s*기술이 실패한다$");
   static readonly Regex FailField = new Regex(@"^필드에 있는 전원의 (?<c>(?:「[^」]+」)+)\s*기술이 실패한다$");
+  static readonly Regex ReplaceMove = new Regex(@"^상대의 (?<c>(?:「[^」]+」)*)\s*기술은 (?<n>\d+)할로 「기술:(?<m>[^」]+)」(?:이|가) 된다$");
+  static readonly Regex FloatingHit = new Regex(@"^자신의 (?<c>(?:「[^」]+」)+)\s*기술은 공중에 떠 있는 상대에게도 명중한다$");
+  public const string Truant = "자신이 행동한 다음 T에는 자신의 기술이 실패한다";
   static readonly Regex LagMove = new Regex(@"^자신의 (?<c>(?:「[^」]+」)+)\s*기술의 우선도를 -0\.5한다$");
   static readonly Regex PierceAbilityMove = new Regex(@"^자신의 (?<c>(?:「[^」]+」)+)\s*기술은 상대의 〔방호 특성〕을 관통한다$");
   static readonly Regex Recoil = new Regex(@"^자신의 (?<c>(?:「[^」]+」)+)\s*기술의 반동 대미지를 받지 않는다$");
@@ -82,6 +85,9 @@ namespace AABattle {
    if (PierceProtect.IsMatch(s) && !s.StartsWith("자신의 「변화」 기술이")) return "방어 관통";
    if (Recoil.IsMatch(s)) return "조건 반동 무효";
    if (LagMove.IsMatch(s)) return "조건 우선도 -0.5";
+   if (ReplaceMove.IsMatch(s)) return "상대 기술 변경";
+   if (FloatingHit.IsMatch(s)) return "공중 상대 명중";
+   if (s == Truant) return "행동 후 쉼";
    if (PierceAbilityMove.IsMatch(s)) return "조건 특성 관통";
    if (FailTaken.IsMatch(s) || FailField.IsMatch(s)) return "기술 실패";
    return "";
@@ -180,9 +186,38 @@ namespace AABattle {
    return false;
   }
 
+  // 상대(b)의 계속 효과로 a의 공격기술이 확률로 다른 기술이 된다(동결·증발). 행동을 정할 때 한 번 굴린다
+  public static Move Replace(Database db, Fighter a, Fighter b, Move move, Rules rules, Func<double> rng, List<string> log) {
+   if (db == null || a == null || b == null || move == null || b.HP <= 0 || move.category == "변화") return move;
+   foreach (string line in Own(b, a, rules, "된다")) {
+    var m = ReplaceMove.Match(line); MoveCondition c;
+    if (!m.Success || !Cond(m.Groups["c"].Value, out c) || !c.Matches(move, a, 1)) continue;
+    var target = db.moves.FirstOrDefault(x => x.name == m.Groups["m"].Value);
+    if (target == null || (rng ?? (() => 1))() >= int.Parse(m.Groups["n"].Value) / 10.0) continue;
+    if (log != null) log.Add(b.Data.name + "의 〔" + AbilityRuntime.Name(b) + "〕: " + a.Data.name + "의 " + move.name + "이(가) " + target.name + "(으)로 바뀌었다");
+    AnsweredTriggers.AbilityActivated(b, AbilityRuntime.Name(b), log == null ? (Action<string>)null : log.Add);
+    return target;
+   }
+   return move;
+  }
+
+  // 「땅」 기술이 공중에 떠 있는 상대에게도 닿는가(천원돌파)
+  public static bool HitsFloating(Fighter a, Fighter b, Move move, Rules rules) {
+   foreach (string line in Own(a, b, rules, "공중에")) {
+    var m = FloatingHit.Match(line); MoveCondition c;
+    if (m.Success && Cond(m.Groups["c"].Value, out c) && c.Matches(move, a, 1)) return true;
+   }
+   return false;
+  }
+
   // 기술 실패(무효화가 아니므로 방호 관통과 무관): a가 내는 기술이 b의 계속 효과로 실패하는가
   public static string FailReason(Fighter a, Fighter b, Move move, Rules rules) {
    if (a == null || b == null || move == null) return "";
+   // 행동한 다음 T에는 쉰다(게으름): 기술을 내려는 행동마다 번갈아 간다
+   if (Own(a, b, rules, "다음 T").Any(x => x == Truant)) {
+    if (a.Conditions.TruantRest) { a.Conditions.TruantRest = false; return "행동한 다음 T라 기술이 실패한다."; }
+    a.Conditions.TruantRest = true;
+   }
    foreach (string line in Own(b, a, rules, "실패한다")) {
     var m = FailTaken.Match(line); MoveCondition c;
     if (m.Success && Cond(m.Groups["c"].Value, out c) && c.Matches(move, a, 1)) return line + ".";

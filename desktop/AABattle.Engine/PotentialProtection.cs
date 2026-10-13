@@ -8,7 +8,7 @@ namespace AABattle {
  // 포켓몬의 방호 관통은 포켓몬 포텐셜의 방호만 뚫는다. 트레이너 포텐셜의 방호(무효화·반사·『버텨라！』)는
  // 관통이 트레이너 포텐셜에서 나왔거나 「트레이너 방호」를 명시했을 때만 뚫린다. 회피는 어떤 관통에도 뚫리지 않는다.
  public static class PotentialProtection {
-  static readonly Regex Guard = new Regex(@"^상대의 (?<c>(?:「[^」]+」)*)\s*기술을 (?:(?<p>드물게|저확률로|중확률로) )?(?<v>무효화|회피|반사)한다$");
+  static readonly Regex Guard = new Regex(@"^상대의 (?<c>(?:「[^」]+」)*)\s*기술을 (?:(?<once>1번만) )?(?:(?<p>드물게|저확률로|중확률로) )?(?<v>무효화|회피|반사)한다$");
   static readonly Regex Pierce = new Regex(@"^자신의 (?<c>(?:「[^」]+」)*)\s*기술이 상대의 (?<tr>트레이너 )?방호 포텐셜을 무시한다$");
 
   static string Clean(string text) { return Regex.Replace(PotentialParts.Clean(text ?? "").Trim().TrimEnd('.', '。', '．').Trim(), @"\s+", " "); }
@@ -16,10 +16,15 @@ namespace AABattle {
 
   // 「상대의 「조건」 기술을 (확률) 무효화/회피/반사한다」. kind = 무효화·회피·반사
   public static bool TryGuard(string text, out string kind, out MoveCondition condition, out double? rate) {
-   kind = ""; condition = new MoveCondition(); rate = null;
+   bool once;
+   return TryGuard(text, out kind, out condition, out rate, out once);
+  }
+  // once: 「1번만」(특성의 1/시 방호. 쓴 기록은 포켓몬이 들고 있고, 사용 횟수 복구 효과로 지운다)
+  public static bool TryGuard(string text, out string kind, out MoveCondition condition, out double? rate, out bool once) {
+   kind = ""; condition = new MoveCondition(); rate = null; once = false;
    var m = Guard.Match(Clean(text));
    if (!m.Success || !MoveCondition.TryParse(m.Groups["c"].Value, out condition)) return false;
-   kind = m.Groups["v"].Value; rate = Rate(m.Groups["p"].Value);
+   kind = m.Groups["v"].Value; rate = Rate(m.Groups["p"].Value); once = m.Groups["once"].Success;
    return true;
   }
   public static bool TryPierce(string text, out MoveCondition condition, out bool trainer) {
@@ -86,11 +91,13 @@ namespace AABattle {
    var seen = new HashSet<string>();
    foreach (var line in Lines(b, a, rules, "무효").Concat(Lines(b, a, rules, "회피")).Concat(Lines(b, a, rules, "반사"))) {
     if (!seen.Add((line.Trainer ? "T:" : "P:") + line.Text)) continue;
-    string kind; MoveCondition c; double? rate;
-    if (!TryGuard(line.Text, out kind, out c, out rate) || !c.Matches(move, a, type)) continue;
+    string kind; MoveCondition c; double? rate; bool once;
+    if (!TryGuard(line.Text, out kind, out c, out rate, out once) || !c.Matches(move, a, type)) continue;
+    if (once && b.Conditions.GuardUsed.Contains(line.Text)) continue;                  // 1번만: 이미 썼다
     if (kind == "회피" && sureHit) continue;                                         // 필중 기술은 회피하지 못한다
     if (kind != "회피" && (line.Trainer ? pierceTrainer : piercePokemon)) continue;   // 방호(무효화·반사) 관통
     if (rate.HasValue && (rng ?? (() => .5))() >= rate.Value) continue;
+    if (once) b.Conditions.GuardUsed.Add(line.Text);
     return new KeyValuePair<string, string>(kind == "회피" ? "회피" : kind == "반사" ? "반사" : "무효", (line.Trainer ? "트레이너 " : "") + line.Text);
    }
    return null;

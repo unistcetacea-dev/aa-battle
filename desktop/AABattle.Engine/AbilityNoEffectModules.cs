@@ -37,6 +37,14 @@ namespace AABattle {
    return "";
   }
 
+  // 포텐셜에 쓴 효과 없음 문장은 실행할 것이 없는 것으로 보고 건너뛴다(판정 대기를 남기지 않는다)
+  public static void Register() {
+   PotentialExecutors.Register("효과 없음", c => IsNoEffect(c.Line), c => {
+    c.Say(c.Source.Label + ": " + (Clean(c.Line).EndsWith(OutOfBattle) ? "배틀 밖 효과라 효과가 없다" : "싱글에서는 효과가 없다"));
+    return EffectOutcome.Success;
+   });
+  }
+
   // 도감 표시용: 특성의 모든 문장이 효과 없음이면 「효과 없음(싱글)」, 일부면 「일부 문장 효과 없음(싱글)」
   public static string Describe(string[] sentences) {
    var list = (sentences ?? new string[0]).Where(x => (x ?? "").Trim().Length > 0).ToList();

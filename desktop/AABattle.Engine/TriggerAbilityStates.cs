@@ -68,7 +68,7 @@ namespace AABattle {
     case "공중": return s.Subject == "자신과 상대" ? "서로 공중에 떠 있을 때" : "자신이 공중에 떠 있을 때";
     case "같은 타입": return SameTypeLabel;
     case "최후 아님": return NotLastLabel;
-    case "PT 특성": return "PT에 특성이 " + string.Concat(s.Names.Select(x => "「" + x + "」")) + "인 아군이 있을 때";
+    case "PT 특성": return "PT에 특성이 「" + string.Join("/", s.Names) + "」인 아군이 있을 때";
     case "급소 받음": return "상대의 " + CondText(s.Condition) + "기술이 급소에 맞았을 때";
     case "필드 빈사": return AnyFaintLabel;
     case "나무열매 사용": return BerryUsedLabel;

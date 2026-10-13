@@ -17,6 +17,7 @@ namespace AABattle {
   public const string MirrorStatus = "상대를 자신과 같은 상태이상으로 한다";
   public const string FollowRise = "자신의 능력을 상대가 올린 만큼 올린다";
   static readonly Regex RandomStatus = new Regex(@"^상대를 「(?<s>[^」]+)」 중 무작위 상태이상으로 한다$");
+  public const string RestoreGuard = "자신의 1번만 효과의 사용 횟수를 복구한다";
   public const string ClearScreens = "전체 필드의 「벽」을 해제한다";
   public const string ReturnDamage = "상대에게 자신이 마지막으로 받은 대미지만큼 고정 대미지를 준다";
   static readonly Regex SetRank = new Regex(@"^자신의 「(?<st>[^」]+)」 랭크를 「(?<n>[+-]?\d)」(?:으로|로) 한다$");
@@ -42,6 +43,7 @@ namespace AABattle {
    if (s == FollowRise) return "랭크 따라가기";
    if (s == ReturnDamage) return "받은 대미지 반격";
    if (s == ClearScreens) return "전체 필드 벽 해제";
+   if (s == RestoreGuard) return "1번만 효과 복구";
    var random = RandomStatus.Match(s);
    if (random.Success && random.Groups["s"].Value.Split('/').Length > 1 && random.Groups["s"].Value.Split('/').All(x => Mechanics.Statuses.Contains(x.Trim()) && x.Trim() != "정상")) return "무작위 상태이상 부여";
    var m = SetRank.Match(s);
@@ -104,6 +106,13 @@ namespace AABattle {
     var rng = c.Rng ?? (() => .5);
     string status = choices[Math.Min(choices.Length - 1, (int)(rng() * choices.Length))];
     return Mechanics.ApplyStatus(other, c.Owner, status, c.Rules ?? new Rules(), rng, c.Log ?? new List<string>()) ? EffectOutcome.Success : EffectOutcome.Failed;
+   });
+   PotentialExecutors.Register("1번만 효과 복구", c => Clean(c.Line) == RestoreGuard, c => {
+    var self = c.Owner;
+    if (self == null || self.HP <= 0 || self.Conditions.GuardUsed.Count == 0) return EffectOutcome.Failed;
+    self.Conditions.GuardUsed.Clear();
+    c.Say(self.Data.name + ": 1번만 쓸 수 있는 방호의 사용 횟수가 복구되었다 (" + c.Source.Label + ")");
+    return EffectOutcome.Success;
    });
    PotentialExecutors.Register("전체 필드 벽 해제", c => Clean(c.Line) == ClearScreens, c => {
     var rules = c.Rules;
