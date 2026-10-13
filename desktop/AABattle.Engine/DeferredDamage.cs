@@ -67,7 +67,8 @@ namespace AABattle
     // 지금 맞은 대미지를 미룰 수 있으면 보류하고 true. 확률 판정은 이 때 굴린다
     public static bool TryDefer(Fighter attacker, Fighter defender, Move move, Move hitMove, string defendingForm, bool multi, int damage, Rules rules, Func<double> rng, List<string> log)
     {
-      if (damage <= 0 || defender == null || defender.HP <= 0 || !defender.Conditions.PendingAction)
+      // 실질적으로 죽을 대미지(체력이 0 이하가 됨)에만 판정한다. 버팀 적용 전 원래 대미지 기준
+      if (damage <= 0 || defender == null || defender.HP <= 0 || damage < defender.HP || !defender.Conditions.PendingAction)
         return false;
       string line = PotentialModifiers.Sentences(defender, attacker, rules ?? new Rules(), Keyword).Select(Clean).FirstOrDefault(x => Standard.IsMatch(x));
       if (line == null)

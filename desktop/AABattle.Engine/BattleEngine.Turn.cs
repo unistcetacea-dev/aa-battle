@@ -585,22 +585,23 @@ namespace AABattle
           }
 
           hits++;
-          totalBody += bodyDamage;
+          int dealt = bodyDamage + deferredAmount;
+          totalBody += dealt;
           directDefeat |= bodyDamage > 0 && b.HP == 0;
           if (damage + deferredAmount > 0)
-            Mechanics.AfterHit(a, b, hitMove, r, rng, result.Log, sub, i, bodyDamage);
-          RuntimeTriggers.Received(b, a, hitMove, bodyDamage, result.Log.Add);
-          if (bodyDamage > 0)
+            Mechanics.AfterHit(a, b, hitMove, r, rng, result.Log, sub, i, dealt);
+          RuntimeTriggers.Received(b, a, hitMove, dealt, result.Log.Add);
+          if (dealt > 0)
             FieldEffectRuntime.Fire(r, TriggerStructures.ReceivedLabel, f, b.Data.name + "이 공격을 받음", rng, result.Log.Add);
           foreach (var holder in onceItems)
             if (!(sub && ReferenceEquals(holder, b)))
               ItemRuntime.Lose(holder, "소비", result.Log.Add);
-          RuntimeTriggers.Hit(a, b, hitMove, bodyDamage, sub, hitRules.Critical && !AbilityRuntime.BlocksCritical(a, b), d.Type, result.Log.Add);
+          RuntimeTriggers.Hit(a, b, hitMove, dealt, sub, hitRules.Critical && !AbilityRuntime.BlocksCritical(a, b), d.Type, result.Log.Add);
           if (damage + deferredAmount > 0 && !sub)
             SecondaryEffects.Apply(a, b, hitMove, d.Type, r, rng, result.Log);
           if (damage + deferredAmount > 0 && !sub)
             MoveRuntime.PerHit(a, b, hitMove, r, rng, result.Log);
-          MoveModules.Drain(a, b, hitMove, r, sub ? subDealt : bodyDamage, result.Log);
+          MoveModules.Drain(a, b, hitMove, r, sub ? subDealt : dealt, result.Log);
           RuntimeTriggers.AttackSucceeded(a, b, hitMove, result.Log.Add);
         }
 

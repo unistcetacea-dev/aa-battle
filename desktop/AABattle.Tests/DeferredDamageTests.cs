@@ -99,7 +99,7 @@ namespace AABattle
     public void DeferredDamageIsAppliedBeforeTheDefenderSwitchesOut()
     {
       var attacker = Mon(300, false);
-      var defender = Mon(50, true);
+      var defender = Mon(50, true, 1);
       var bench = Mon(10, false);
       bench.OnField = false;
       var turn = Run(attacker, defender, "몸통박치기", "유턴", .1, "", bench);
@@ -132,7 +132,7 @@ namespace AABattle
     public void SeveralDeferredHitsAreAppliedOnceAsTheirSum()
     {
       var attacker = Mon(300, false);
-      var defender = Mon(50, true);
+      var defender = Mon(50, true, 1);
       var turn = Run(attacker, defender, "더블어택", "몸통박치기", .1);
       string text = string.Join("\n", turn.Log);
       var deferred = turn.Log.Where(l => l.Contains("미뤘다")).ToList();
@@ -141,6 +141,64 @@ namespace AABattle
       Assert.That(applied.Count, Is.EqualTo(1), text);
       int sum = deferred.Sum(l => int.Parse(System.Text.RegularExpressions.Regex.Match(l, @"대미지 (\d+)").Groups[1].Value));
       Assert.That(applied[0], Does.Contain("보류한 대미지 " + sum + " 적용"), text);
+    }
+
+    [Test]
+    public void NonFatalDamageIsNeverDeferredEvenWhenTheRollSucceeds()
+    {
+      var attacker = Mon(300, false);
+      var defender = Mon(50, true);
+      var turn = Run(attacker, defender, "몸통박치기", "몸통박치기", .1);
+      string text = string.Join("\n", turn.Log);
+      Assert.That(Index(turn, "미뤘다"), Is.LessThan(0), text);
+      Assert.That(turn.Fighters[1].HP, Is.LessThan(defender.HP), text);
+    }
+
+    [Test]
+    public void DrainUsesTheDeferredAmountAtTheOriginalTime()
+    {
+      var attacker = Mon(300, false);
+      attacker.HP = attacker.HP / 2;
+      var defender = Mon(50, true, 1);
+      var turn = Run(attacker, defender, "기가드레인", "몸통박치기", .1);
+      string text = string.Join("\n", turn.Log);
+      Assert.That(Index(turn, "미뤘다"), Is.GreaterThanOrEqualTo(0), text);
+      Assert.That(turn.Log.Any(l => l.Contains("흡수: HP +27")), Is.True, "보류량(55) 기준으로 회복: " + text);
+    }
+
+    [Test]
+    public void RecoilUsesTheDeferredAmountAtTheOriginalTime()
+    {
+      var attacker = Mon(300, false);
+      var defender = Mon(50, true, 1);
+      var turn = Run(attacker, defender, "이판사판태클", "몸통박치기", .1);
+      string text = string.Join("\n", turn.Log);
+      Assert.That(Index(turn, "미뤘다"), Is.GreaterThanOrEqualTo(0), text);
+      Assert.That(turn.Fighters[0].HP, Is.LessThan(attacker.HP), "보류량 기준 반동: " + text);
+    }
+
+    [Test]
+    public void DamagedTrainerTriggerFiresAtTheOriginalTime()
+    {
+      var attacker = Mon(300, false);
+      var defender = Mon(50, true, 1);
+      var states = new[] { new TrainerBattleState(), new TrainerBattleState() };
+      states[1].Trainer = new TrainerRecord
+      {
+        id = "tr-defer",
+        potentials = new System.Collections.Generic.List<PotentialRecord>
+        {
+          new PotentialRecord { name = "받음검사", slot = "고유", enabled = true, trigger = "대미지를 받았을 때", effect = "자신의 「공격」을 1랭크 올린다." }
+        }
+      };
+      var turn = Engine.Resolve(TestData.Db, new[] { attacker, defender }, new[]
+      {
+        new BattleCommand { Move = Move("몸통박치기") }, new BattleCommand { Move = Move("몸통박치기") }
+      }, new Rules(), states, () => .1, q => q.Candidates.First());
+      string text = string.Join("\n", turn.Log);
+      int fired = Index(turn, "받음검사");
+      Assert.That(fired, Is.GreaterThanOrEqualTo(0), text);
+      Assert.That(fired, Is.LessThan(Index(turn, "보류한 대미지")), text);
     }
   }
 }
