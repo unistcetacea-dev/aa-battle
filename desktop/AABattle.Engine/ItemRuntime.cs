@@ -163,6 +163,7 @@ namespace AABattle {
    if (f == null || f.Data == null || string.IsNullOrEmpty(f.Data.item)) return;
    string item = f.Data.item;
    f.LostItem = item;
+   if (reason == "소비") f.ConsumedItem = item;   // 리사이클: 소모한 소지품
    if (reason == "소비" && IsBerry(item)) f.LostBerry = item;   // 되돌려받기(수확·풍작)·되새김질용: 소모한 나무열매
    f.Data.item = "";
    Sync(f);

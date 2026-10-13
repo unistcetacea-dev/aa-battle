@@ -831,3 +831,10 @@ Codex 공유 링크는 특정 시점의 읽기 전용 대화 스냅샷이다. �
 ## 2026-10-14 트리거 「기본 조건」 분류 해체
 - 지시서 `research/tasks/2026-10-14-trigger-basic-split.md`, 브랜치 `task/trigger-basic-split`. 편집기 분류 「기본 조건」과 `TL` 도우미를 지우고 고정 문장 49개를 기존 분류로 나눴다(빈칸 없는 문장은 `TF`, 분류 인자 포함).
 - 같은 꼴 문장은 선택 빈칸 하나짜리 모듈로 합쳤다(`TX` 도우미: 선택지에 조사까지 넣고, 선택지마다 `TriggerModules.Parse/Canonical`로 표준 문장을 확인하며 `TryRead`는 선택지마다 대조). 표준 문장·엔진 판정은 바꾸지 않았다. 합친 모듈 id는 바뀌었으나 저장은 문장 기준이라 영향이 없다. 새 분류: 「상시·배틀」, 「데이터 해석」.
+
+## 2026-10-14 기술 — 소지품 기술 묶음
+- 지시서 `research/tasks/2026-10-14-move-items.md`, 브랜치 `task/move-items`. 새 파일: `MoveItemModules.cs`(표준 문장·읽기·실행기), `MoveItemTables.cs`(내던지기·자연의은혜·타입 소지품 실기 표), `ModuleCatalog.MoveItems.cs`(모듈 7개 등록), 검사 `MoveItemTests.cs`. 연결 줄만 `MoveRuntime.Read/Ignored/Status`, `MoveModules.Normalize/Classify/PowerFactor/FailReason/RegisterExecutors`, `VariablePower.Transform`, `ModuleCatalog.Effects.Core.cs`에 넣었다.
+- 새 모듈: 소지품 교환 · 소지품 제한 파괴(나무열매·주얼) · 소지품 재획득 · 나무열매 모두 먹기 · 나무열매 뺏어먹기 · 소지품 던지기 · 나무열매 소모. 기존 재사용: 상대의 소지품을 빼앗는다(도둑질·탐내기) · 파괴한다(「소지품 파괴」 기술 묶음, 부식가스 포함) · 소지품 이동(기프트패스) · 나무열매 사용(볼가득넣기, 못 먹으면 뒤 효과 없이 실패).
+- 위력/타입 쪽(기술 설명 처리): 「파괴할 때/빈손일 때 위력 강화」는 `MoveItemModules.PowerFactor`, 내던지기·자연의은혜·배의뭉치·심판의뭉치는 `Transform`이 기술 복사본의 위력·타입을 바꾼다. 소지품 소모는 명중 후(`AfterHits`)에 한다(실기는 빗나가도 소모).
+- `Fighter.ConsumedItem`: 「소비」로 잃은 마지막 소지품(리사이클용; 파괴·약탈은 제외). 기술이 일으킨 빼앗기·파괴·교환은 대타가 막고, 점착(`ItemProtected`)도 따른다.
+- 표 값은 실기(Showdown) 기준 추정이며 소지품 도감에 없는 항목(표에 없는 소지품 던지기 위력 30, 표에 없는 열매의 자연의은혜 노말 80)은 기본값이다.

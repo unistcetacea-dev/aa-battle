@@ -49,6 +49,8 @@ namespace AABattle {
   static void Read(Move m, string s, List<string> into, MovePlan plan) {
    s = s.Trim().TrimEnd(',').Trim();
    if (s.Length == 0 || s.StartsWith("(")) return;
+   string itemRest;
+   if (MoveItemModules.Read(m, s, into, out itemRest)) { if (itemRest != null) Read(m, itemRest, into, plan); return; }
    if (s == "「강제교대」 기술") { into.Add("상대를 강제교대시킨다."); return; }
    if (s == "「방어」 기술" && ProtectModules.IsGuard(m)) { into.Add("자신을 「방어」 상태로 한다."); return; }
    // 「…상태로 하고, …」
@@ -140,6 +142,7 @@ namespace AABattle {
    if (Regex.IsMatch(s, @"급소에 맞기 쉽다|반드시 급소에 맞는다|유리한 타입 상성|능력치로 대미지를 계산한다|「방어」 기술을 관통한다")) return true;
    if (FailModules.IsModule(s)) return true;
    if (VariablePower.Handles(s)) return true;
+   if (MoveItemModules.Handles(s)) return true;
    if (Mechanics.IsDelayedMove(m) && Regex.IsMatch(s, @"^상대를 「[^」]+」 상태로 한다$|^「미래예지」 기술$")) return true;
    if (Regex.IsMatch(s, @"^상대가 「[^」]+」 상태일 때\s*,\s*위력이 강화\([^)]*\)되고 「필중」 효과가 부여된다$")) return true;
    if (m.category != "변화" && s.EndsWith("고정 대미지를 준다")) return true;
@@ -191,7 +194,7 @@ namespace AABattle {
    foreach (string line in plan.Use) {
     var outcome = Run(a, b, m, line, r, rng, log);
     done |= outcome == EffectOutcome.Success;
-    bool gate = line.Contains("소비한다") || line.Contains("「비축하기」 상태로 한다");
+    bool gate = line.Contains("소비한다") || line.Contains("「비축하기」 상태로 한다") || MoveItemModules.IsGate(line);
     if (gate && outcome != EffectOutcome.Success) return false;
    }
    foreach (string token in plan.Secondary) done |= SecondaryEffects.Roll(a, b, token, m.name, r, rng, log, null);

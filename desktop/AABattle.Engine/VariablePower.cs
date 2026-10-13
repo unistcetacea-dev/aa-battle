@@ -53,6 +53,7 @@ namespace AABattle {
   // 날씨·필드에 따라 타입과 위력이 바뀌는 기술
   public static Move Transform(Fighter a, Fighter b, Move m, Rules r) {
    if (a == null || m == null || r == null) return m;
+   m = MoveItemModules.Transform(a, m);
    string t = Plain(m), type = "";
    if (t.Contains("날씨에 따라 타입과 위력이 변화한다")) {
     string w = Mechanics.Weather(a, b ?? a, r);

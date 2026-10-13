@@ -122,6 +122,7 @@ namespace AABattle {
   public static EffectOutcome Steal(Fighter owner, Fighter other, Action<string> log) {
    // 방금 쓰러뜨린 상대(빈사)의 소지품도 빼앗을 수 있다
    if (owner == null || other == null || owner.HP <= 0 || string.IsNullOrEmpty(other.Data.item)) return EffectOutcome.Failed;
+   if (MoveRuntime.CurrentMove != null && other.Conditions.Substitute > 0) return EffectOutcome.Failed;   // 기술은 대타에 막힌다
    if (ItemProtected(other, owner)) {
     if (log != null) log(other.Data.name + ": 소지품 파괴·약탈을 무효화했다");
     return EffectOutcome.Failed;
@@ -132,6 +133,7 @@ namespace AABattle {
   }
   static EffectOutcome BreakItem(Fighter owner, Fighter other, Action<string> log) {
    if (owner == null || other == null || owner.HP <= 0 || other.HP <= 0 || string.IsNullOrEmpty(other.Data.item)) return EffectOutcome.Failed;
+   if (MoveRuntime.CurrentMove != null && other.Conditions.Substitute > 0) return EffectOutcome.Failed;   // 기술은 대타에 막힌다
    if (ItemProtected(other, owner)) {
     if (log != null) log(other.Data.name + ": 소지품 파괴·약탈을 무효화했다");
     return EffectOutcome.Failed;
@@ -142,18 +144,19 @@ namespace AABattle {
 
   // ===== 나무열매 =====
   // 소지품 슬롯의 효과를 조건과 관계없이 지금 실행한다(1번만인 열매는 쓰면 사라진다)
-  static EffectOutcome UseNow(EffectCall c) {
-   var f = c.Owner;
+  static EffectOutcome UseNow(EffectCall c) { return EatBerry(c.Owner, c.Opponent, c.Say, c.Source.Label); }
+  // 지닌 나무열매를 지금 먹는다(다과회·볼가득넣기·남의 열매 먹기가 공유)
+  public static EffectOutcome EatBerry(Fighter f, Fighter opponent, Action<string> say, string label) {
    if (f == null || f.HP <= 0 || !ItemRuntime.IsBerry(f.Data.item) || !CanUseItem(f)) return EffectOutcome.Failed;
    string item = f.Data.item;
    if (!PotentialQueue.Active) return EffectOutcome.Pending;
-   c.Say(f.Data.name + ": 「" + item + "」을 지금 사용한다 (" + c.Source.Label + ")");
+   say(f.Data.name + ": 「" + item + "」을 지금 사용한다 (" + label + ")");
    PotentialQueue.Raise(new PotentialEvent {
-    Owner = f, Other = c.Opponent, Spec = clause => true, Label = "나무열매 사용", Message = "", Log = c.Say, SlotOnly = ItemRuntime.Slot
+    Owner = f, Other = opponent, Spec = clause => true, Label = "나무열매 사용", Message = "", Log = say, SlotOnly = ItemRuntime.Slot
    });
    return f.Data.item == item ? EffectOutcome.Failed : EffectOutcome.Success;
   }
-  static void ForgetItemUsage(Fighter f) {
+  public static void ForgetItemUsage(Fighter f) {
    var scope = EffectScope.Current;
    if (scope == null || scope.States == null || f == null) return;
    int side = Mechanics.PartySide(f, scope.Rules);

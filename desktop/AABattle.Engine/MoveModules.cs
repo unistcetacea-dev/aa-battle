@@ -90,7 +90,7 @@ namespace AABattle {
    if (Regex.IsMatch(t, @"^(?:자신의\s*)?능력의\s*감소를\s*원래대로\s*되돌린다$")) return RestoreDrops + ".";
    m = Regex.Match(t, @"^다음\s*T\s*(?:자신이\s*)?내보내는\s*기술의\s*우선도를\s*\+(?<n>[1-7])\s*한다$");
    if (m.Success) return "다음 T 자신의 기술 우선도를 " + m.Groups["n"].Value + " 올린다.";
-   return null;
+   return MoveItemModules.Normalize(t);
   }
   public static string Classify(string sentence) {
    string s = Clean(sentence);
@@ -109,7 +109,7 @@ namespace AABattle {
    if (s == ClearSubsAndHazards) return "대타·설치물 해제";
    if (s == Swallow) return "비축 회복";
    if (ResetStages.IsMatch(s)) return "능력 변화 초기화";
-   return "";
+   return MoveItemModules.Classify(s);
   }
 
   static IEnumerable<string> Lines(Fighter f, Fighter other, string keyword) {
@@ -175,6 +175,7 @@ namespace AABattle {
   public static string FailReason(Fighter a, Fighter b, Move m) {
    var rules = EffectScope.Current == null ? new Rules() : EffectScope.Current.Rules;
    string reason = FailModules.Reason(a, b, m, rules);
+   if (reason.Length == 0) reason = MoveItemModules.FailReason(a, b, m);
    return reason.Length > 0 ? reason : AbilityMoveModules.FailReason(a, b, m, rules);
   }
 
@@ -244,6 +245,7 @@ namespace AABattle {
      var x = Repeat.Match(line);
      if (x.Success) v *= Math.Min(double.Parse(x.Groups["m"].Value), 1 + double.Parse(x.Groups["s"].Value) * a.Conditions.RepeatCount);
     }
+   v *= MoveItemModules.PowerFactor(a, b, m);
    return v;
   }
   // ===== 급소·방어 관통·필중 =====
@@ -414,6 +416,7 @@ namespace AABattle {
 
   // ===== 사건 효과 실행기 =====
   public static void RegisterExecutors() {
+   MoveItemModules.Register();
    PotentialExecutors.Register("능력 하락 복구",
     c => Clean(c.Line) == RestoreDrops,
     c => {
