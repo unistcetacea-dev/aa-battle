@@ -9,6 +9,7 @@ namespace AABattle
   public sealed class BondEntry
   {
     public string Key = "", Name = "", Uses = "";
+    public bool IsOrder;
     public PotentialInstance Template; // 재발동에 쓰는 원본(Owner만 바꿔 쓴다)
   }
 
@@ -20,12 +21,15 @@ namespace AABattle
     public const string KindRise = "지시 랭크 상승";
     public const string KindRegain = "트레이너 포텐셜 재사용 권한";
     public const string KindReplay = "트레이너 포텐셜 재발동";
+    public const string KindHot = "모든 종족치 ++";
+    public const string HotSentence = "자신의 모든 종족치에 「++」를 부여한다.";
     public const string RegainSentence = "포텐셜을 다시 받을 수 있다";
     public const string ReplaySentence = "자신을 대상으로 포텐셜을 다시 발동한다";
     const string Prefix = @"(?<p>(?:저확률|중확률|드물게)(?:로)?\s+)?";
     static readonly Regex Rise = new Regex(@"^필드에\s*(?:있는\s*한|있을\s*때)\s*,?\s*트레이너의\s*「?지시」?(?:를|을)\s*「?(?<n>\d+)」?\s*랭크\s*올린다$");
     static readonly Regex Regain = new Regex("^" + Prefix + @"(?:자신이\s*)?포텐셜을\s*다시\s*받을\s*수\s*있다$");
     static readonly Regex Replay = new Regex("^" + Prefix + @"자신을\s*대상으로\s*포텐셜을\s*다시\s*발동한다$");
+    static readonly Regex Hot = new Regex(@"^자신의\s*모든\s*종족치에\s*「\+\+」를\s*부여한다$");
 
     static string Clean(string text)
     {
@@ -35,6 +39,8 @@ namespace AABattle
     public static string Normalize(string text)
     {
       string s = Clean(text);
+      if (Hot.IsMatch(s))
+        return HotSentence;
       var m = Rise.Match(s);
       if (m.Success)
         return RiseSentence(int.Parse(m.Groups["n"].Value));
@@ -61,7 +67,7 @@ namespace AABattle
     public static string Classify(string text)
     {
       string s = Clean(text);
-      return Rise.IsMatch(s) ? KindRise : Regain.IsMatch(s) ? KindRegain : Replay.IsMatch(s) ? KindReplay : "";
+      return Hot.IsMatch(s) ? KindHot : Rise.IsMatch(s) ? KindRise : Regain.IsMatch(s) ? KindRegain : Replay.IsMatch(s) ? KindReplay : "";
     }
 
     static bool IsRegain(string line)
@@ -157,6 +163,18 @@ namespace AABattle
       });
     }
 
+    public static void RecordOrder(TrainerBattleState state, Fighter receiver, string order)
+    {
+      if (state == null || receiver == null || string.IsNullOrWhiteSpace(order)) return;
+      string key = "order:" + order;
+      string who = FighterKey(receiver);
+      List<BondEntry> mine;
+      if (!state.Usage.Bond.TryGetValue(who, out mine)) state.Usage.Bond[who] = mine = new List<BondEntry>();
+      if (mine.Any(x => x.Key == key)) return;
+      mine.Add(new BondEntry { Key = key, Name = order, Uses = "1/시", IsOrder = true,
+        Template = new PotentialInstance { Owner = receiver, Trainer = state.Trainer, Key = key, Name = order, Slot = "지령", Uses = "1/시", Effect = "지령" } });
+    }
+
     // 이 포켓몬이 발동했거나 받은 이력
     public static List<BondEntry> Own(TrainerBattleState state, Fighter owner)
     {
@@ -184,6 +202,7 @@ namespace AABattle
 
     static bool Spent(TrainerBattleState state, BondEntry entry)
     {
+      if (entry.IsOrder) return state.UsedOrders.Contains(entry.Name);
       int count;
       bool perTurn;
       if (!PotentialUsage.TryLimit(entry.Uses, out count, out perTurn) || perTurn)
@@ -210,6 +229,7 @@ namespace AABattle
       PotentialExecutors.Register(ExecutorPrefix + "지시 랭크", c => Classify(c.Line) == KindRise, c => EffectOutcome.Success);
       PotentialExecutors.Register(ExecutorPrefix + "재사용 권한", c => Classify(c.Line) == KindRegain, Regain_);
       PotentialExecutors.Register(ExecutorPrefix + "재발동", c => Classify(c.Line) == KindReplay, Replay_);
+      PotentialExecutors.Register(ExecutorPrefix + "모든 종족치 ++", c => Classify(c.Line) == KindHot, Hot_);
     }
 
     static bool Rolled(EffectCall call, Func<string, bool> pick)
@@ -245,6 +265,12 @@ namespace AABattle
       }
 
       var picked = entries[index];
+      if (picked.IsOrder)
+      {
+        state.UsedOrders.Remove(picked.Name);
+        call.Say(call.Owner.Data.name + ": " + call.Source.Label + " — 『" + picked.Name + "』 지령을 다시 쓸 수 있다 (사용 횟수 1회 회복)");
+        return EffectOutcome.Success;
+      }
       int used = state.Usage.Battle[picked.Key] - 1;
       if (used <= 0)
         state.Usage.Battle.Remove(picked.Key);
@@ -278,6 +304,45 @@ namespace AABattle
       call.Say(call.Owner.Data.name + ": " + call.Source.Label + " — TRAINER 『" + picked.Name + "』를 자신을 대상으로 다시 발동한다");
       PotentialQueue.Replay(scope, picked.Template, call.Owner, call.Event, call.Log);
       return EffectOutcome.Success;
+    }
+
+    static int HotValue(int value)
+    {
+      if (value >= 200) return value;
+      if (value >= 170) return 199;
+      if (value >= 140) return 169;
+      if (value >= 110) return 139;
+      if (value >= 90) return 109;
+      if (value >= 60) return 89;
+      if (value >= 40) return 59;
+      return value >= 1 ? 39 : value;
+    }
+
+    static EffectOutcome Hot_(EffectCall call)
+    {
+      var owner = call.Owner;
+      if (owner == null || owner.HP <= 0 || owner.Data == null || owner.Data.@base == null || owner.Data.@base.Length < 6)
+        return EffectOutcome.Failed;
+      int[] stats = owner.Data.@base;
+      if (owner.Conditions.OriginalBase == null)
+        owner.Conditions.OriginalBase = (int[])stats.Clone();
+      bool changed = false;
+      for (int i = 0; i < 6; i++)
+      {
+        int next = HotValue(stats[i]);
+        if (next == stats[i]) continue;
+        call.Say(owner.Data.name + ": " + Engine.Names[i] + " 종족치 " + stats[i] + "→" + next + " (" + call.Source.Label + ")");
+        stats[i] = next;
+        changed = true;
+      }
+      if (changed && owner.Data.@base[0] != owner.Conditions.OriginalBase[0])
+      {
+        var opponent = EffectScope.Current == null ? null : EffectScope.Current.Opponent(owner);
+        owner.HP = Math.Min(owner.HP, Engine.Stats(owner, opponent == null ? owner.Data.level : opponent.Data.level, call.Rules ?? new Rules())[0]);
+      }
+      if (!changed && owner.Conditions.OriginalBase.SequenceEqual(stats))
+        owner.Conditions.OriginalBase = null;
+      return changed ? EffectOutcome.Success : EffectOutcome.Failed;
     }
   }
 }

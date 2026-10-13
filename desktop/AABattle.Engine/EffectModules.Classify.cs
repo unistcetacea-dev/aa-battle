@@ -47,6 +47,8 @@ namespace AABattle
       if (batonKind.Length == 0)
         batonKind = BondModules.Classify(s);
       if (batonKind.Length == 0)
+        batonKind = RoleModules.ClassifyEffect(s);
+      if (batonKind.Length == 0)
         batonKind = ExclusiveModules.Classify(s);
       if (batonKind.Length == 0)
         batonKind = PotentialNullify.Classify(s);

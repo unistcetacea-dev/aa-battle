@@ -90,6 +90,7 @@ namespace AABattle {
 
   // ===== 표준 문장 =====
   public static string Canonical(TriggerSpec s) {
+   if (RoleModules.IsRoleSpec(s)) return RoleModules.Canonical(s);
    if (s.Module == "소지품 소실") return CanonicalItemLoss(s);
    switch (s.Module) {
     case "등장":
@@ -120,6 +121,7 @@ namespace AABattle {
    spec = null;
    string t = Clean(text);
    if (t.Length == 0) return false;
+   if (RoleModules.TryParse(t, out spec)) return true;
    if (TryParseItemLoss(t, out spec)) return true;
    if (TryParseAbilityState(t, out spec)) return true;
    if (TryParseState(t, out spec)) return true;
@@ -246,6 +248,8 @@ namespace AABattle {
   // 수집 원문의 같은 뜻 변형 → 표준 문장. 모듈이 아니면 null
   public static string Normalize(string text) {
    string t = Clean(text);
+   string role = RoleModules.NormalizeTrigger(t);
+   if (role != null) t = role;
    string chaldea = ChaldeaTriggers.Normalize(t);
    if (chaldea != null) t = chaldea;
    if (Regex.IsMatch(t, @"^서로\s*(?:「)?필중(?:」)?\s*기술을\s*(?:내보낼|선택했을)\s*때$")) return "서로 필중 기술을 선택했을 때";
@@ -266,6 +270,7 @@ namespace AABattle {
   }
   public static bool Matches(TriggerSpec s, TriggerFact f, Fighter owner) {
    if (s == null || f == null || s.Module.Length == 0) return false;
+   if (RoleModules.IsRoleSpec(s)) return RoleModules.Matches(s, f);
    if (s.Module == "소지품 소실") return MatchesItemLoss(s, f);
    var move = f.Move;
    switch (s.Module) {

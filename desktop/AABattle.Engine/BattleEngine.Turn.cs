@@ -127,6 +127,7 @@ namespace AABattle
           if (states[i].UsedOrders.Contains(order))
             throw new Exception(order + "은 이미 사용했습니다.");
           states[i].UsedOrders.Add(order);
+          BondModules.RecordOrder(states[i], f[i], order);
           result.Log.Add("TRAINER " + (i + 1) + " — 『" + order + "』 지령!");
           deployed[i] = ApplyOrder(f[i], f[1 - i], order, r, result.Log);
           if (deployed[i] == -2)
