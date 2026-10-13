@@ -176,7 +176,7 @@ namespace AABattle
             Event = new PotentialEvent(),
             Line = step.Line
           };
-          var executor = PotentialExecutors.Find(call);
+          var executor = FindExecutor(call, step);
           if (executor != null)
             kind = executor.Name;
         }

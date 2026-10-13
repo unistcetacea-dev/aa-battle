@@ -226,7 +226,7 @@ namespace AABattle
           Rules = scope.Rules,
           Rng = scope.Rng
         };
-        step.Executor = PotentialExecutors.Find(call);
+        step.Executor = FindExecutor(call, step);
         plan.Steps.Add(step);
       }
 
@@ -235,6 +235,33 @@ namespace AABattle
       // 유대의 재사용 선택은 목록 창이 맡으므로 별도의 확인 창을 띄우지 않는다
       plan.Optional = Regex.IsMatch(PotentialParts.Clean(source.Effect), @"수\s*있다") && !plan.Steps.Any(s => s.Executor != null && s.Executor.Name.StartsWith(BondModules.ExecutorPrefix)) || plan.Steps.Any(s => s.Executor != null && s.Executor.Name == BuiltIn.AnalysisName);
       return plan;
+    }
+
+    // 실행기를 찾는다. 없고 「~할 수 있다」로 끝나면 직설형(「~한다」)으로 바꿔 다시 찾는다.
+    // 선택 확인(OptionalEffectPrompt)은 큐가 포텐셜당 한 번 하므로 이 단계에서 다시 묻지 않는다
+    static PotentialExecutor FindExecutor(EffectCall call, Step step)
+    {
+      var executor = PotentialExecutors.Find(call);
+      if (executor != null)
+        return executor;
+      string direct = OptionalForm.Direct(step.Line);
+      if (direct == null)
+        return null;
+      foreach (string candidate in new[] { direct, EffectNormalizer.Normalize(direct) })
+      {
+        if (string.IsNullOrEmpty(candidate))
+          continue;
+        call.Line = candidate;
+        executor = PotentialExecutors.Find(call);
+        if (executor != null)
+        {
+          step.Line = candidate;
+          return executor;
+        }
+      }
+
+      call.Line = step.Line;
+      return null;
     }
 
     static bool IsDeferred(PotentialExecutor executor)

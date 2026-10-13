@@ -33,7 +33,7 @@ namespace AABattle
         PotentialExecutor executor = null;
         try
         {
-          executor = PotentialExecutors.Find(call);
+          executor = FindExecutor(call, step);
         }
         catch (Exception)
         {
