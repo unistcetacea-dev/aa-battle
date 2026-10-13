@@ -43,6 +43,7 @@ namespace AABattle {
    AE(modules, "status.powerimmune", "상태이상 위력 저하 무효", "「{상태}」의 기술 위력 저하 효과를 무효화한다.", AMulti("상태", ModuleSlotKind.State, "화상"));
    AE(modules, "type.add", "타입 추가", "자신의 타입에 「{타입}」를 추가한다.", S("타입", ModuleSlotKind.Type, "고스트"));
    AE(modules, "survive.chance", "확률 버팀", "자신은 빈사가 되는 공격을 {확률} HP 1로 버틴다.", S("확률", ModuleSlotKind.Probability, "드물게", "드물게", "저확률로", "중확률로"));
+   AE(modules, "damage.defer", "대미지 지연", "자신은 상대의 기술의 대미지를 {확률} 자신의 행동 후로 미룬다.", S("확률", ModuleSlotKind.Probability, "저확률로", "드물게", "저확률로", "중확률로"));
    AE(modules, "status.damageimmune", "상태이상 대미지 면역", "자신은 「{상태}」의 대미지를 받지 않는다.", AMulti("상태", ModuleSlotKind.State, "독/맹독", "독", "맹독", "화상", "동상"));
    AE(modules, "switch.trap", "통상교대 금지", "상대는 「통상교대」를 할 수 없다.");
    AE(modules, "switch.trapground", "통상교대 금지", "접지한 상대는 「통상교대」를 할 수 없다.");

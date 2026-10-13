@@ -68,6 +68,9 @@ namespace AABattle
       string abilityMoveKind = AbilityMoveModules.Classify(s);
       if (abilityMoveKind.Length > 0)
         return abilityMoveKind;
+      string deferKind = DeferredDamage.Classify(s);
+      if (deferKind.Length > 0)
+        return deferKind;
       string abilityStateKind = AbilityStateModules.Classify(s);
       if (abilityStateKind.Length > 0)
         return abilityStateKind;

@@ -147,6 +147,7 @@ namespace AABattle
 
     static void SwitchNow(Database db, Fighter[] fighters, TrainerBattleState[] states, Rules rules, Func<double> rng, TurnResult result, int side, Fighter incoming, SwitchReason reason, SwitchTiming timing, string source)
     {
+      DeferredDamage.Flush(db, fighters[side], fighters, rules, rng, result.Log, "교대 전");
       Fighter outgoing = fighters[side].Copy();
       RuntimeTriggers.Switch(fighters[side], incoming, reason, result.Log.Add);
       var transfer = BatonModules.Capture(fighters[side], fighters[1 - side], rules, reason, incoming, result.Log);

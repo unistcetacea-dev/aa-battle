@@ -258,6 +258,7 @@ namespace AABattle
       bool makenTurnLastProcessed = false;
       for (int qi = 0;; qi++)
       {
+        DeferredDamage.FlushActed(db, f, r, rng, result.Log);
         pursuit.Complete(f, side => SwitchNow(db, f, states, r, rng, result, side, commands[side].SwitchIn, SwitchReason.Normal, SwitchTiming.MidTurn, "통상 교대"), side => PursuitReturn(f, commands, r, rng, result, returnAway, returnTransfers, side), result.Log);
         flushUsed();
         flushActed();
@@ -536,7 +537,7 @@ namespace AABattle
             break;
           }
 
-          int damage = Mechanics.Ohko(m) ? b.HP : d.Rolls[Math.Min(15, (int)(rng() * 16))], bodyDamage = 0, subDealt = 0;
+          int damage = Mechanics.Ohko(m) ? b.HP : d.Rolls[Math.Min(15, (int)(rng() * 16))], bodyDamage = 0, subDealt = 0, deferredAmount = 0;
           bool sub = b.Conditions.Substitute > 0 && !Mechanics.BypassSub(a, m);
           if (sub)
           {
@@ -547,42 +548,14 @@ namespace AABattle
           else
           {
             int hpBefore = b.HP;
-            if (defendingForm.Contains("버텨라") && !PotentialProtection.PiercesTrainer(db, a, b, hitMove, r))
+            if (DeferredDamage.TryDefer(a, b, m, hitMove, defendingForm, multi, damage, r, rng, result.Log))
             {
-              if (!Mechanics.Ohko(m))
-                damage = (int)Math.Floor(damage / 2.0);
-              if (damage >= b.HP)
-                damage = Math.Max(0, b.HP - 1);
-              result.Log.Add(b.Data.name + "은 『" + defendingForm + "』로 대미지를 반감하고 버텼다!");
+              // 전투속행: 체력 감소만 자신의 행동 후로 미루고 나머지는 원래 시점에 처리한다
+              deferredAmount = damage;
+              damage = 0;
             }
-            else if ((multi || Mechanics.Ohko(m)) && damage >= b.HP && ItemRuntime.Name(b) == "기합의띠" && !b.Conditions.FocusSashUsed && b.HP == Stats(b, a.Data.level, r)[0])
-            {
-              damage = Math.Max(0, b.HP - 1);
-              b.Conditions.FocusSashUsed = true;
-              result.Log.Add(b.Data.name + "은 기합의띠를 소모해 HP 1을 남겼다!");
-            }
-            else if (damage >= b.HP && ItemRuntime.Holds(b, "기합의머리띠") && rng() < .1)
-            {
-              damage = Math.Max(0, b.HP - 1);
-              result.Log.Add(b.Data.name + "은 「기합의머리띠」로 HP 1을 남겼다!");
-            }
-            else if (damage >= b.HP && AbilityPhrases.Endures(b, a) && !Mechanics.BypassAbility(a))
-            {
-              damage = Math.Max(0, b.HP - 1);
-              result.Log.Add(b.Data.name + "은 「" + AbilityRuntime.Name(b) + "」으로 HP 1을 남겼다!");
-              AnsweredTriggers.AbilityActivated(b, AbilityRuntime.Name(b), result.Log.Add);
-            }
-            else if (damage >= b.HP && b.Conditions.Enduring)
-            {
-              damage = Math.Max(0, b.HP - 1);
-              result.Log.Add(b.Data.name + "은 「버티기」로 HP 1을 남겼다!");
-            }
-            else if (damage >= b.HP && AbilityRuntime.Endures(a, b, r))
-            {
-              damage = Math.Max(0, b.HP - 1);
-              result.Log.Add(b.Data.name + "은 「" + AbilityRuntime.Name(b) + "」으로 HP 1을 남겼다!");
-              AnsweredTriggers.AbilityActivated(b, AbilityRuntime.Name(b), result.Log.Add);
-            }
+            else
+              damage = ReduceByEndure(db, a, b, m, hitMove, r, rng, defendingForm, multi, damage, result.Log);
 
             b.HP = Math.Max(0, b.HP - damage);
             bodyDamage = hpBefore - b.HP;
@@ -597,10 +570,10 @@ namespace AABattle
             else if (hitMove.category == "특수")
               b.Conditions.TakenSpecial += bodyDamage;
             MoveMiscModules.Store(b, bodyDamage);
-            result.Log.Add(a.Data.name + "의 " + m.name + "! " + b.Data.name + "에게 " + damage + " 대미지." + ((hitRules.Critical && !AbilityRuntime.BlocksCritical(a, b)) ? " 급소!" : "") + (d.Type > 1 ? " 효과가 굉장했다!" : d.Type < 1 ? " 효과가 별로다." : ""));
-            RuntimeTriggers.Damaged(b, bodyDamage, a.Data.name + "의 " + m.name, result.Log.Add);
-            if (bodyDamage > 0)
-              FieldEffectRuntime.Fire(r, TriggerStructures.DamagedLabel, f, b.Data.name + "이 " + bodyDamage + " 대미지를 받음", rng, result.Log.Add);
+            result.Log.Add(a.Data.name + "의 " + m.name + "! " + b.Data.name + "에게 " + (deferredAmount > 0 ? deferredAmount + " 대미지(보류)." : damage + " 대미지.") + ((hitRules.Critical && !AbilityRuntime.BlocksCritical(a, b)) ? " 급소!" : "") + (d.Type > 1 ? " 효과가 굉장했다!" : d.Type < 1 ? " 효과가 별로다." : ""));
+            RuntimeTriggers.Damaged(b, bodyDamage + deferredAmount, a.Data.name + "의 " + m.name, result.Log.Add);
+            if (bodyDamage + deferredAmount > 0)
+              FieldEffectRuntime.Fire(r, TriggerStructures.DamagedLabel, f, b.Data.name + "이 " + (bodyDamage + deferredAmount) + " 대미지를 받음", rng, result.Log.Add);
             AnsweredTriggers.HpChanged(b, a, r, hpBefore, b.HP, a.Data.name + "의 " + m.name, result.Log.Add);
             if (b.HP == 0)
             {
@@ -614,7 +587,7 @@ namespace AABattle
           hits++;
           totalBody += bodyDamage;
           directDefeat |= bodyDamage > 0 && b.HP == 0;
-          if (damage > 0)
+          if (damage + deferredAmount > 0)
             Mechanics.AfterHit(a, b, hitMove, r, rng, result.Log, sub, i, bodyDamage);
           RuntimeTriggers.Received(b, a, hitMove, bodyDamage, result.Log.Add);
           if (bodyDamage > 0)
@@ -623,9 +596,9 @@ namespace AABattle
             if (!(sub && ReferenceEquals(holder, b)))
               ItemRuntime.Lose(holder, "소비", result.Log.Add);
           RuntimeTriggers.Hit(a, b, hitMove, bodyDamage, sub, hitRules.Critical && !AbilityRuntime.BlocksCritical(a, b), d.Type, result.Log.Add);
-          if (damage > 0 && !sub)
+          if (damage + deferredAmount > 0 && !sub)
             SecondaryEffects.Apply(a, b, hitMove, d.Type, r, rng, result.Log);
-          if (damage > 0 && !sub)
+          if (damage + deferredAmount > 0 && !sub)
             MoveRuntime.PerHit(a, b, hitMove, r, rng, result.Log);
           MoveModules.Drain(a, b, hitMove, r, sub ? subDealt : bodyDamage, result.Log);
           RuntimeTriggers.AttackSucceeded(a, b, hitMove, result.Log.Add);
@@ -668,6 +641,7 @@ namespace AABattle
 
       flushUsed();
       flushActed();
+      DeferredDamage.FlushAll(db, f, r, rng, result.Log);
       watch();
       for (int k = 0; k < 2; k++)
         commands[k] = originalCommands[k];

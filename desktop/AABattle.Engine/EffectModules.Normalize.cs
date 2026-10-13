@@ -136,6 +136,9 @@ namespace AABattle
       string secondary = SecondaryEffects.Normalize(text);
       if (secondary != null)
         return secondary;
+      string deferred = DeferredDamage.Normalize(text);
+      if (deferred != null)
+        return deferred;
       string misc = MiscModules.Normalize(text);
       if (misc != null)
         return misc;
