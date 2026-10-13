@@ -8,6 +8,9 @@ namespace AABattle {
  public static class TeamRules {
   // 통솔 A가 있어야 임명할 수 있는 추가임명·통솔 조건 역할. 『엠퍼러』는 통솔 S.
   public static readonly string[] LeadershipRoles={"양대간판","어벤저","인챈터","스카우터","체이서","톱 배터","선구의 에이스"};
+  // 전용 포텐셜: 포켓몬 편집에서 그 포켓몬에 달지만 트레이너 포텐셜이다(개수 제한은 파티 전체 합산).
+  // 옛 데이터의 트레이너 쪽 「전용」도 같은 제한으로 센다.
+  public const string ExclusiveSlot="전용";
   static string Rank(AptitudeRecord value){return value==null?"":(value.rank??"").Trim();}
   static bool Known(string rank){return TrainerAccessRules.RankAtLeast(rank,"E");}
   static bool At(string rank,string required){return TrainerAccessRules.RankAtLeast(rank,required);}
@@ -30,7 +33,7 @@ namespace AABattle {
     }
    }
    if(Known(ability)){
-    int unique=Active(t.potentials,s=>s=="고유").Count(),exclusive=Active(t.potentials,s=>s=="전용").Count();
+    int unique=Active(t.potentials,s=>s=="고유").Count(),exclusive=Active(t.potentials,s=>s==ExclusiveSlot).Count()+members.Sum(m=>Active(m.potentials,s=>s==ExclusiveSlot).Count());
     if(unique>UniqueLimit(ability))problems.Add("고유 포텐셜 "+unique+"개 — 능력 "+ability+"는 "+UniqueLimit(ability)+"개까지");
     if(exclusive>ExclusiveLimit(ability))problems.Add("전용 포텐셜 "+exclusive+"개 — 능력 "+ability+"는 "+ExclusiveLimit(ability)+"개까지");
    }

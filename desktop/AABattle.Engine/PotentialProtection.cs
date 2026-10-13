@@ -44,7 +44,13 @@ namespace AABattle {
 
   // 포켓몬 쪽: 계속 성립하는 포텐셜 문장 + 사건으로 걸린 것. 트레이너 쪽: 장소에 있는 동안 성립하는 트레이너 고유 포텐셜
   static IEnumerable<Line> Lines(Fighter owner, Fighter opponent, Rules rules, string keyword) {
-   foreach (string s in PotentialModifiers.Sentences(owner, opponent, rules, keyword)) yield return new Line { Text = s };
+   var all = owner.Data == null ? new Potential[0] : owner.Data.potentials ?? new Potential[0];
+   // 전용 포텐셜은 포켓몬에 달려 있어도 트레이너 포텐셜이다(트레이너 방호·관통)
+   var ordinary = all.Where(p => p == null || p.id != TeamRules.ExclusiveSlot).ToList();
+   var exclusive = all.Where(p => p != null && p.id == TeamRules.ExclusiveSlot).ToList();
+   foreach (string s in PotentialModifiers.Sentences(owner, opponent, rules, keyword, ordinary)) yield return new Line { Text = s };
+   if (exclusive.Count > 0)
+    foreach (string s in PotentialModifiers.Sentences(owner, opponent, rules, keyword, exclusive)) yield return new Line { Text = s, Trainer = true };
    foreach (var m in owner.Conditions.Modifiers ?? new List<ActiveModifier>()) if (m != null && (m.Text ?? "").Contains(keyword)) yield return new Line { Text = m.Text, Trainer = m.Trainer };
    var trainer = TrainerOf(owner);
    if (trainer == null) yield break;

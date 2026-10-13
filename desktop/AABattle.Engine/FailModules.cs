@@ -13,7 +13,22 @@ namespace AABattle {
  //  등장 T    「필드에 나온 후 최초」가 아니면 · 필드에 나온 후 NT째가 아니면
  //  이번 T    내보내기 전에 상대의 공격을 받으면 · 「물리」 기술을 받지 않으면 · 상대가 공격기술을 내보내지 않으면(나중이면)
  //            상대보다 먼저 내보내지 않으면 · 상대가 「방어」 기술을 내보내고 있지 않으면
- //  성별      성별 데이터가 없어 판정하지 않는다
+ //  성별      상대와 성별이 같거나 둘 중 하나라도 성별이 없으면 실패한다(실기와 같다)
+ // 포켓몬 성별: 수컷 · 암컷 · 없음. 비어 있거나 모르는 값은 없음으로 본다
+ public static class Genders {
+  public const string Male = "수컷", Female = "암컷", None = "없음";
+  public static readonly string[] All = { Male, Female, None };
+  public static string Normalize(string value) {
+   string v = (value ?? "").Trim();
+   return v == Male || v == Female ? v : None;
+  }
+  // 「상대와 성별이 같으면 실패한다」: 같거나, 둘 중 하나라도 성별이 없으면 막힌다
+  public static bool SameOrMissing(Pokemon a, Pokemon b) {
+   string x = Normalize(a == null ? null : a.gender), y = Normalize(b == null ? null : b.gender);
+   return x == None || y == None || x == y;
+  }
+ }
+
  public sealed class FailSpec {
   public string Kind = "", Subject = "상대";
   public string[] Names = new string[0];
@@ -57,7 +72,7 @@ namespace AABattle {
    if (Regex.IsMatch(s, @"^상대가 공격기술을 내보내지 않거나\s*,?\s*상대보다 나중에 내보내면 실패한다$")) { f = new FailSpec { Kind = "상대 공격 선택", Names = new[] { "먼저" } }; return true; }
    if (s == "상대보다 먼저 내보내지 않으면 실패한다") { f = new FailSpec { Kind = "먼저" }; return true; }
    if (s == "상대가 「방어」 기술을 내보내고 있지 않으면 실패한다") { f = new FailSpec { Kind = "방어 중" }; return true; }
-   if (s == "상대와 성별이 같으면 실패한다") { f = new FailSpec { Kind = "성별" }; return true; }
+   if (s == "상대와 성별이 같으면 실패한다") { f = new FailSpec { Kind = "성별", Negate = true }; return true; }
    return false;
   }
 
@@ -85,7 +100,7 @@ namespace AABattle {
     case "상대 공격 선택": return b != null && (b.Conditions.Selected == "물리" || b.Conditions.Selected == "특수") && (f.Names.Length == 0 || b.Conditions.ActionOrder == 0);
     case "먼저": return b != null && b.Conditions.ActionOrder == 0;
     case "방어 중": return b != null && b.Conditions.Protect;
-    case "성별": return false;
+    case "성별": return a != null && b != null && Genders.SameOrMissing(a.Data, b.Data);
    }
    return false;
   }
@@ -96,7 +111,7 @@ namespace AABattle {
    r = r ?? new Rules();
    foreach (string part in Parts(m)) {
     FailSpec f;
-    if (!TryParse(part, out f) || f.Kind == "성별") continue;
+    if (!TryParse(part, out f)) continue;
     bool holds = Holds(f, a, b, r);
     if (f.Negate ? holds : !holds) return part + ".";
    }

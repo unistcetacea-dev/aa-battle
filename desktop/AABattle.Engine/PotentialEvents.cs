@@ -66,11 +66,21 @@ namespace AABattle
       }
     }
 
+    // 트레이너 포텐셜이다: 트레이너 쪽 기록이거나, 포켓몬 편집에서 단 「전용」(작용 대상은 그 포켓몬).
+    // 트레이너 방호·관통과 로그 표기는 이쪽을 본다. 실행기 분담(IsTrainer)은 기록 출처만 본다
+    public bool IsTrainerPotential
+    {
+      get
+      {
+        return IsTrainer || Pokemon != null && Pokemon.id == TeamRules.ExclusiveSlot;
+      }
+    }
+
     public string Label
     {
       get
       {
-        return IsTrainer ? "TRAINER 『" + Name + "』" : Slot == AbilityModules.Slot ? "〔" + Name + "〕" : "『" + Name + "』";
+        return IsTrainerPotential ? "TRAINER 『" + Name + "』" : Slot == AbilityModules.Slot ? "〔" + Name + "〕" : "『" + Name + "』";
       }
     }
 

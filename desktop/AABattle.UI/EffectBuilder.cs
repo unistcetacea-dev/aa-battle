@@ -34,15 +34,10 @@ namespace AABattle {
   }
 
   void AppendConfiguredEffect() {
-   var row = SelectedPotentialRow();
-   if (row == null) { GameDialog.Show(this, "포텐셜 편집에서 입력할 행을 먼저 선택하세요."); return; }
+   if (editWindow == null) { GameDialog.Show(this, "표에서 포텐셜을 골라 「편집」으로 편집 창을 연 뒤 입력하세요."); return; }
    string effect = ConfiguredEffect();
    if (effect.Length == 0) return;
-   string current = Cell(row, "effect").Trim();
-   loading = true;
-   row.Cells["effect"].Value = current.Length == 0 ? effect : current + "\r\n" + effect;
-   loading = false;
-   GridChanged();
+   editWindow.AppendEffect(effect, effectSubject == null ? "" : effectSubject.Text);
   }
 
   // 화면의 효과 문장. 효과 주체가 자신이 아니면 앞머리의 「자신」을 바꿔 쓴다

@@ -136,7 +136,9 @@ namespace AABattle {
     builder.Select("trigger.hp.이하");
     Assert.That(builder.Editor("분모").Control, Is.TypeOf<PixelNumber>());
     builder.Select("trigger.move.False");
-    Assert.That(builder.Editor("기술조건").Control, Is.TypeOf<PixelTextBox>());
+    var condition = builder.Editor("기술조건");
+    Assert.That(condition, Is.TypeOf<MoveConditionSlotEditor>(), "기술 조건: 분류 선택 또는 기술 이름 검색");
+    Assert.That(condition.Control.Controls.OfType<PixelComboBox>().Any(), Is.True);
     builder.Select("trigger.state.상태");
     Assert.That(builder.Editor("이름").Control, Is.TypeOf<FlatButton>());
     Assert.That(builder.Editor("주체").Control.Controls.OfType<PixelComboBox>().Any(), Is.True);

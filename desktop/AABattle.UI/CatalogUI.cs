@@ -86,8 +86,8 @@ namespace AABattle {
  partial class DataEditorForm {
   DataGridView moveDex,abilityDex;PixelSearchBox dexMoveSearch,abilitySearch;PixelText dexMoveDetail,abilityDetail;PixelComboBox effectSubject;
   Label moveCount,abilityCount;
-  DataGridView DexGrid(){return new PixelDexGrid{Dock=DockStyle.Fill,ReadOnly=true,AllowUserToAddRows=false,AllowUserToDeleteRows=false,AllowUserToResizeRows=false,RowHeadersVisible=false,MultiSelect=false,SelectionMode=DataGridViewSelectionMode.FullRowSelect,BackgroundColor=Color.White,BorderStyle=BorderStyle.None,EnableHeadersVisualStyles=false,ColumnHeadersHeight=34,RowTemplate={Height=36},DefaultCellStyle=new DataGridViewCellStyle{Font=Theme.UI(10),SelectionBackColor=Color.Black,SelectionForeColor=Color.White},ColumnHeadersDefaultCellStyle=new DataGridViewCellStyle{BackColor=Color.Black,ForeColor=Color.White,Font=Theme.UI(8)}};}
-  void DexColumn(DataGridView grid,string title,int width){grid.Columns.Add(new DataGridViewTextBoxColumn{HeaderText=title,Width=width,MinimumWidth=width,AutoSizeMode=title.StartsWith("효과")?DataGridViewAutoSizeColumnMode.Fill:DataGridViewAutoSizeColumnMode.None,SortMode=DataGridViewColumnSortMode.NotSortable});}
+  DataGridView DexGrid(){return MoveDexSearch.CreateGrid();}
+  void DexColumn(DataGridView grid,string title,int width){MoveDexSearch.AddColumn(grid,title,width);}
   void BuildCatalogTab(){
    var page=Page("기술 도감");var header=new Panel{Dock=DockStyle.Top,Height=78};dexMoveSearch=new PixelSearchBox();dexMoveSearch.Font=Theme.UI(8);dexMoveSearch.Dock=DockStyle.Bottom;moveCount=Theme.Label("기술 도감",36);header.Controls.Add(dexMoveSearch);header.Controls.Add(moveCount);
    moveDex=DexGrid();foreach(var col in new[]{new[]{"기술", "125"},new[]{"타입","70"},new[]{"분류","60"},new[]{"위력","70"},new[]{"명중","70"},new[]{"대상","70"},new[]{"접촉","60"},new[]{"우선도","85"},new[]{"태그","160"},new[]{"효과 요약","220"}})DexColumn(moveDex,col[0],int.Parse(col[1]));
@@ -103,20 +103,7 @@ namespace AABattle {
   Panel BuildPartPanel(bool trigger){
    return trigger?BuildStructuredTriggerPanel():BuildStructuredEffectPanel();
   }
-  // 선택한 포텐셜 행의 트리거·효과 문장을 모듈 빈칸으로 다시 채운다
-  void LoadPotentialStructureSettings(){
-   if(loading)return;
-   var row=SelectedPotentialRow();
-   var record=row==null?null:row.Tag as PotentialRecord;
-   if(record==null)return;
-   loading=true;
-   if(triggerActivation!=null)triggerActivation.SelectedItem=triggerActivation.Items.Contains(record.activation)?record.activation:"자동";
-   if(effectSubject!=null)effectSubject.SelectedItem=effectSubject.Items.Contains(record.effectSubject)?record.effectSubject:"자신";
-   LoadTriggerModule(Cell(row,"trigger"));
-   LoadStructuredEffectSettings(Cell(row,"effect"),record.effectSubject);
-   loading=false;
-  }
-  void RefreshMoveDex(){string q=dexMoveSearch.Text.Trim();moveDex.Rows.Clear();foreach(var m in catalogDb.moves.Where(x=>(x.name+" "+string.Join(" ",x.types??new string[0])+" "+x.category+" "+x.target+" "+string.Join(" ",x.tags??new string[0])+" "+x.effect).IndexOf(q,StringComparison.OrdinalIgnoreCase)>=0).OrderBy(x=>x.name)){int i=moveDex.Rows.Add(m.name,string.Join("/",m.types??new string[0]),m.category,m.power,m.accuracy,m.target,Mechanics.Contact(m)?"○":"×",m.priority,string.Join(", ",m.tags??new string[0]),m.effect);moveDex.Rows[i].Tag=m;}if(moveDex.RowCount>0)moveDex.CurrentCell=moveDex.Rows[0].Cells[0];moveCount.Text="기술 도감 · "+moveDex.RowCount+"개 · 이름 / 타입 / 대상 / 태그 / 효과 검색";ShowDexMove();}
+  void RefreshMoveDex(){string q=dexMoveSearch.Text.Trim();moveDex.Rows.Clear();foreach(var m in MoveDexSearch.Filter(catalogDb.moves,q)){int i=moveDex.Rows.Add(m.name,string.Join("/",m.types??new string[0]),m.category,m.power,m.accuracy,m.target,Mechanics.Contact(m)?"○":"×",m.priority,string.Join(", ",m.tags??new string[0]),m.effect);moveDex.Rows[i].Tag=m;}if(moveDex.RowCount>0)moveDex.CurrentCell=moveDex.Rows[0].Cells[0];moveCount.Text="기술 도감 · "+moveDex.RowCount+"개 · 이름 / 타입 / 대상 / 태그 / 효과 검색";ShowDexMove();}
   Move SelectedDexMove(){return moveDex.CurrentRow==null?null:moveDex.CurrentRow.Tag as Move;}
   void ShowDexMove(){var m=SelectedDexMove();dexMoveDetail.Text=m==null?"검색 결과가 없습니다.":"【"+m.name+"】  "+string.Join(" / ",m.types??new string[0])+" · "+m.category+"\r\n위력 "+m.power+"   명중 "+m.accuracy+"   우선도 "+m.priority+"   대상 "+m.target+"\r\n판정 "+m.attack+" / "+m.defense+"   태그 "+string.Join(", ",m.tags??new string[0])+"\r\n효과: "+m.effect;}
   void AddDexMove(){var m=SelectedDexMove();if(m==null)return;if(!(Current is PokemonRecord)){GameDialog.Show(this,"포켓몬을 선택한 뒤 기술을 추가하세요.");return;}var names=pMoves.Lines.Where(x=>x.Trim().Length>0).Select(x=>x.Trim()).ToList();if(names.Contains(m.name))return;if(names.Count>=4){GameDialog.Show(this,"기술은 4개까지 넣을 수 있습니다.");return;}names.Add(m.name);pMoves.Text=string.Join("\r\n",names);}
@@ -124,18 +111,12 @@ namespace AABattle {
   AbilityDefinition SelectedDexAbility(){return abilityDex.CurrentRow==null?null:abilityDex.CurrentRow.Tag as AbilityDefinition;}
   void ShowDexAbility(){var ability=SelectedDexAbility();abilityDetail.Text=ability==null?"검색 결과가 없습니다.":"【"+ability.name+"】  "+ability.support+"\r\n트리거: "+(ability.triggers==null||ability.triggers.Length==0?"상시/원문 직접 효과":string.Join(" / ",ability.triggers))+"\r\n효과: "+(ability.effects==null||ability.effects.Length==0?ability.effect:string.Join(" ",ability.effects))+"\r\n"+(ability.blocker.Length==0?"전투 런타임 연결됨.":ability.support=="자동"?"전투 런타임 연결됨. "+ability.blocker:"수동 사유: "+ability.blocker)+"\r\n원문: "+ability.effect;}
   void AddDexAbility(){var ability=SelectedDexAbility();if(ability==null)return;if(!(Current is PokemonRecord)){GameDialog.Show(this,"포켓몬을 선택한 뒤 특성을 설정하세요.");return;}pAbility.Text=ability.name;SaveCurrent();ShowEditorPage(1);}
+  // 모듈 화면의 「구조 트리거/효과 입력」: 편집 창의 트리거·효과 칸에 문장을 넣는다(표는 확인할 때 바뀐다)
   void ApplyPart(bool trigger){
-   if(trigger&&string.IsNullOrWhiteSpace(ConfiguredTrigger())){GameDialog.Show(this,"빈칸을 모두 채우세요.");return;}
-   var row=SelectedPotentialRow();
-   if(row==null){GameDialog.Show(this,"포텐셜 편집에서 입력할 행을 먼저 선택하세요.");return;}
-   loading=true;
-   row.Cells[trigger?"trigger":"effect"].Value=trigger?ConfiguredTrigger():ConfiguredEffect();
-   var record=row.Tag as PotentialRecord??new PotentialRecord();
-   if(trigger){record.activation=triggerActivation==null?"자동":triggerActivation.Text;record.triggerSubject=TriggerSubjectText();}
-   else record.effectSubject=effectSubject==null?"":effectSubject.Text;
-   row.Tag=record;
-   loading=false;
-   GridChanged();
+   if(editWindow==null){GameDialog.Show(this,"표에서 포텐셜을 골라 「편집」으로 편집 창을 연 뒤 입력하세요.");return;}
+   string text=trigger?ConfiguredTrigger():ConfiguredEffect();
+   if(string.IsNullOrWhiteSpace(text)){GameDialog.Show(this,"빈칸을 모두 채우세요.");return;}
+   editWindow.SetPart(trigger,text,trigger&&triggerActivation!=null?triggerActivation.Text:"자동",trigger?TriggerSubjectText():(effectSubject==null?"":effectSubject.Text));
   }
   void ComposePotential(){AddPotential(new PotentialRecord{name="새 포텐셜",slot=Current is TrainerRecord?"고유":"종족 ①",activation="자동",triggerSubject=TriggerSubjectText(),effectSubject=effectSubject==null?"":effectSubject.Text,trigger=ConfiguredTrigger(),effect=ConfiguredEffect(),raw=""});}
   void Expect(bool ok,string message){if(!ok)throw new Exception(message);}
@@ -195,17 +176,23 @@ namespace AABattle {
    var row=potentials.Rows.Cast<DataGridViewRow>().First(r=>!r.IsNewRow&&Cell(r,"name")=="샘플의 전도");
    potentials.CurrentCell=row.Cells["effect"];
    string before=Cell(row,"raw");
+   var sample=OpenPotentialWindowForTest(DraftFromRow(row));
+   triggerBuilder.Select("trigger.defeat");
    ApplyPart(true);
-   string condition=Cell(row,"trigger");
+   string condition=sample.TriggerBox.Text;
    effectBuilder.Select("effect.hp.회복");
    ApplyPart(false);
-   Expect(condition==DefeatTriggers.Label&&Cell(row,"trigger")==condition&&Cell(row,"effect").Contains("최대 HP")&&Cell(row,"raw")==before,"Independent structured input corrupted data");
+   Expect(condition==DefeatTriggers.Label&&sample.TriggerBox.Text==condition&&sample.EffectBox.Text.Contains("최대 HP")&&sample.Collect().Raw==before,"Independent structured input corrupted data");
+   Expect(Cell(row,"trigger")!=condition,"Table must not change until the window is confirmed");
+   sample.Accept();var sampleResult=sample.Result;sample.Dispose();
+   CommitPotentialRow(row,DraftFromRow(row),sampleResult);
+   Expect(Cell(row,"trigger")==condition&&Cell(row,"effect").Contains("최대 HP")&&Cell(row,"raw")==before,"Confirmed structured input must reach the table");
    string legacyTrigger=Cell(row,"trigger");
-   row.Cells["trigger"].Value="공격기술을 내보낼 때";
-   LoadPotentialStructureSettings();
-   Expect(triggerBuilder.Module.Id=="trigger.move.False"&&triggerBuilder.GetValue("기술조건")=="「공격」"&&ConfiguredTrigger()==TriggerStructures.AttackMoveUseLabel,"Legacy attack move trigger loading failed: "+triggerBuilder.Module.Id+" / "+ConfiguredTrigger());
-   row.Cells["trigger"].Value=legacyTrigger;
-   LoadPotentialStructureSettings();
+   var legacy=DraftFromRow(row);legacy.Trigger="공격기술을 내보낼 때";
+   LoadBuilders(legacy);
+   Expect(triggerBuilder.Module.Id=="trigger.move.False"&&triggerBuilder.GetValue("기술조건")=="공격"&&((MoveConditionSlotEditor)triggerBuilder.Editor("기술조건")).Mode==MoveConditionSlotEditor.CategoryMode&&ConfiguredTrigger()==TriggerStructures.AttackMoveUseLabel,"Legacy attack move trigger loading failed: "+triggerBuilder.Module.Id+" / "+ConfiguredTrigger());
+   legacy.Trigger=legacyTrigger;
+   LoadBuilders(legacy);
    row.Cells["disabled"].Value=true;SaveCurrent();
    Expect(!CurrentPotentials().First(x=>x.name=="샘플의 전도").enabled,"Never activate toggle failed");
    Expect(triggerPreview.Font.FontFamily.Name==Theme.UI(10).FontFamily.Name&&dexMoveDetail.Font.FontFamily.Name==Theme.UI(10).FontFamily.Name,"Catalog font missing");
@@ -220,12 +207,14 @@ namespace AABattle {
    effectBuilder.SetValue("발동확률","중확률");
    string probabilistic=ConfiguredEffect();
    Expect(probabilistic=="중확률로 상대의 기술 우선도를 2 내린다.","Probability effect prefix failed: "+probabilistic);
-   row.Cells["effect"].Value=probabilistic;LoadPotentialStructureSettings();
+   var probabilityDraft=DraftFromRow(row);probabilityDraft.Effect=probabilistic;
+   var append=OpenPotentialWindowForTest(probabilityDraft);
    Expect(effectBuilder.GetValue("발동확률")=="중확률"&&ConfiguredEffect()==probabilistic,"Probability effect prefix loading failed");
    effectBuilder.SetValue("발동확률","없음");
-   string firstEffect=Cell(row,"effect");
+   string firstEffect=append.EffectBox.Text;
    AppendConfiguredEffect();
-   Expect(Cell(row,"effect")!=firstEffect&&Cell(row,"effect").Contains("\r\n"),"Multiple structured effects append failed");
+   Expect(append.EffectBox.Text!=firstEffect&&append.EffectBox.Text.Contains("\r\n"),"Multiple structured effects append failed");
+   append.Cancel();append.Dispose();
    triggerBuilder.Select("trigger.nullified",new Dictionary<string,string>{{"기술조건","「불꽃」「접촉」"}});
    effectBuilder.Select("effect.secondary.state");effectBuilder.SetValue("발동확률","없음");
   }

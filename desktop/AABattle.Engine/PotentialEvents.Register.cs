@@ -214,7 +214,7 @@ namespace AABattle
           if (owner == null || owner.HP <= 0)
             return EffectOutcome.Failed;
           bool action = turns == 0 && ActionEvent(c.Event);
-          PotentialModifiers.Add(owner, new ActiveModifier { Key = c.Source.Key, Text = body, Source = c.Source.Label, Turns = turns == 0 ? -1 : turns, Action = action, Trainer = c.Source.IsTrainer });
+          PotentialModifiers.Add(owner, new ActiveModifier { Key = c.Source.Key, Text = body, Source = c.Source.Label, Turns = turns == 0 ? -1 : turns, Action = action, Trainer = c.Source.IsTrainerPotential });
           c.Say(owner.Data.name + ": " + body + (action ? " (이번 행동)" : turns > 0 ? " (" + turns + "T)" : " (필드를 떠날 때까지)"));
           return EffectOutcome.Success;
         });

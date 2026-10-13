@@ -11,10 +11,8 @@ namespace AABattle {
   protected override void OnPaint(PaintEventArgs e){base.OnPaint(e);Theme.Frame(e.Graphics,ClientRectangle,false);}
  }
  partial class DataEditorForm {
-  PixelTextBox inlineTrigger,inlineEffect;
-  Label inlineTitle;PixelComboBox inlineTemplateType;
-  bool inlineLoading;PixelScrollPanel pokemonWorkspace;
-  SplitContainer inlineSplit;bool responsiveLayoutPending;
+  PixelScrollPanel pokemonWorkspace;
+  bool responsiveLayoutPending;
   Panel pokemonInfo,trainerInfo;TableLayoutPanel workspaceStack,inlineCatalog;
   ListBox editorMenu;
   int[] editorPages={7,0,1,4,6,3,8,9};
@@ -59,21 +57,16 @@ namespace AABattle {
    }
   }
   void BuildInlinePotentials(){
-   var page=tabs.TabPages[2];var oldControls=page.Controls.Cast<Control>().ToArray();
-   var split=new SplitContainer{Dock=DockStyle.Fill,Orientation=Orientation.Vertical,Size=new Size(950,820),SplitterDistance=420,Panel1MinSize=360,Panel2MinSize=430,SplitterWidth=8};inlineSplit=split;
-   foreach(var control in oldControls)split.Panel1.Controls.Add(control);
-   page.Controls.Add(split);split.BringToFront();
-   potentials.Columns["raw"].Visible=false;potentials.Columns["targetType"].Visible=false;potentials.Columns["trigger"].Width=220;potentials.Columns["effect"].Width=270;
-   var lower=new RetroFrame{Dock=DockStyle.Fill};split.Panel2.Controls.Add(lower);
-   var titleBar=new TableLayoutPanel{Dock=DockStyle.Top,Height=38,ColumnCount=2};titleBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,65));titleBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,35));inlineTitle=Theme.Label("포텐셜 선택 → 아래에서 조건과 효과 편집",30);inlineTemplateType=Theme.Combo(EditorTemplate.CounterTypeNames(),"불꽃");inlineTemplateType.Visible=false;titleBar.Controls.Add(inlineTitle,0,0);titleBar.Controls.Add(inlineTemplateType,1,0);lower.Controls.Add(titleBar);
-   var inputs=new TableLayoutPanel{Dock=DockStyle.Top,Height=118,ColumnCount=2,RowCount=2};inputs.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));inputs.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));inputs.RowStyles.Add(new RowStyle(SizeType.Absolute,28));inputs.RowStyles.Add(new RowStyle(SizeType.Percent,100));
-   inlineTrigger=Box(true);inlineEffect=Box(true);inputs.Controls.Add(Theme.Label("트리거 조건",26),0,0);inputs.Controls.Add(Theme.Label("효과",26),1,0);inputs.Controls.Add(inlineTrigger,0,1);inputs.Controls.Add(inlineEffect,1,1);
-   lower.Controls.Add(inputs);inputs.BringToFront();
-   var scroll=new PixelScrollPanel{Dock=DockStyle.Fill};lower.Controls.Add(scroll);scroll.BringToFront();
-    var catalog=tabs.TabPages[5];foreach(var c in catalog.Controls.Cast<Control>().ToArray()){if(c is TableLayoutPanel){inlineCatalog=c as TableLayoutPanel;c.Height=690;scroll.Content=c;foreach(Control panel in c.Controls)foreach(Control table in panel.Controls){var layout=table as TableLayoutPanel;if(layout!=null&&layout.ColumnStyles.Count>0){layout.Padding=new Padding(4);layout.ColumnStyles[0].Width=105;}}}else{c.Visible=false;}}
-   inlineTrigger.TextChanged+=(s,e)=>WriteInline("trigger",inlineTrigger.Text);inlineEffect.TextChanged+=(s,e)=>WriteInline("effect",inlineEffect.Text);
-   potentials.SelectionChanged+=(s,e)=>RefreshInline();potentials.CellValueChanged+=(s,e)=>RefreshInline();
-   inlineTemplateType.SelectedIndexChanged+=(s,e)=>ApplyInlineTemplateType();
+   // 포텐셜 탭에는 표만 남긴다. 트리거·효과 빈칸 채우기 화면은 「포텐셜 도감」 탭에 보관해 두었다가
+   // 포텐셜 편집 창이 열릴 때 그 창으로 옮겨 쓰고, 닫으면 돌려놓는다
+   potentials.Columns["raw"].Visible=false;potentials.Columns["targetType"].Visible=false;
+   var catalog=tabs.TabPages[5];
+   foreach(var c in catalog.Controls.Cast<Control>().ToArray()){
+    if(c is TableLayoutPanel){
+     inlineCatalog=c as TableLayoutPanel;
+     foreach(Control panel in c.Controls)foreach(Control table in panel.Controls){var layout=table as TableLayoutPanel;if(layout!=null&&layout.ColumnStyles.Count>0){layout.Padding=new Padding(4);layout.ColumnStyles[0].Width=105;}}
+    }else{c.Visible=false;}
+   }
   }
   bool navigating;
   void EmbedPotentialsInPokemon(){
@@ -129,31 +122,12 @@ namespace AABattle {
    int potentialRows=potentials==null?0:potentials.Rows.Cast<DataGridViewRow>().Count(x=>!x.IsNewRow);
    if(workspaceStack!=null){
     int infoHeight=Math.Min(1200,Math.Max(900,800+moveLines*30));
-    int potentialHeight=Math.Min(1700,Math.Max(900,620+potentialRows*38));
+    int potentialHeight=Math.Min(1500,Math.Max(620,170+potentialRows*56));
     workspaceStack.RowStyles[0].Height=infoHeight;
     workspaceStack.RowStyles[1].Height=potentialHeight;
     workspaceStack.Height=workspaceStack.Padding.Vertical+infoHeight+potentialHeight;
-    if(inlineSplit!=null&&inlineSplit.Orientation==Orientation.Vertical&&inlineSplit.Width>=inlineSplit.Panel1MinSize+inlineSplit.Panel2MinSize+inlineSplit.SplitterWidth){
-     int maxLeft=Math.Max(inlineSplit.Panel1MinSize,inlineSplit.Width-inlineSplit.Panel2MinSize-inlineSplit.SplitterWidth);
-     int desiredLeft=Math.Min(maxLeft,Math.Max(inlineSplit.Panel1MinSize,420));
-     inlineSplit.SplitterDistance=desiredLeft;
-    }
-    ArrangeInlineCatalog();
    }
    GrowEditorWindow();
-  }
-
-  const int PartHeight=800;
-  void ArrangeInlineCatalog(){
-   if(inlineCatalog==null||inlineSplit==null||inlineSplit.Panel2.ClientSize.Width<=0)return;
-   var panels=inlineCatalog.Controls.Cast<Control>().ToArray();
-   inlineCatalog.SuspendLayout();
-   inlineCatalog.ColumnStyles.Clear();inlineCatalog.RowStyles.Clear();
-   inlineCatalog.ColumnCount=1;inlineCatalog.RowCount=Math.Max(1,panels.Length);
-   inlineCatalog.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
-   for(int i=0;i<panels.Length;i++){inlineCatalog.RowStyles.Add(new RowStyle(SizeType.Absolute,PartHeight));inlineCatalog.SetCellPosition(panels[i],new TableLayoutPanelCellPosition(0,i));}
-   inlineCatalog.ResumeLayout(true);
-   inlineCatalog.Height=panels.Length*PartHeight+8;
   }
 
   void GrowEditorWindow(){
@@ -174,37 +148,52 @@ namespace AABattle {
    object target=pokemon?project.pokemon.Cast<object>().FirstOrDefault():project.trainers.Cast<object>().FirstOrDefault();if(target==null)return;
    SaveCurrent();TreeNode node=tree.Nodes.Cast<TreeNode>().SelectMany(x=>x.Nodes.Cast<TreeNode>()).FirstOrDefault(x=>Object.ReferenceEquals(x.Tag,target));if(node!=null)tree.SelectedNode=node;
   }
-  void RefreshInline(){if(inlineTrigger==null||inlineLoading)return;var row=SelectedPotentialRow();inlineLoading=true;inlineTrigger.Enabled=inlineEffect.Enabled=row!=null;string slot=row==null?"":Cell(row,"slot");inlineTitle.Text=row==null?"위 목록에서 포텐셜을 선택하세요":"『"+Cell(row,"name")+"』 · "+slot;inlineTrigger.Text=row==null?"":Cell(row,"trigger");inlineEffect.Text=row==null?"":Cell(row,"effect");bool typed=row!=null&&(EditorTemplate.IsCounterSlot(slot)||EditorTemplate.IsTypedPotential(slot,Cell(row,"name")));inlineTemplateType.Visible=typed;if(typed&&inlineTemplateType.Items.Contains(Cell(row,"targetType")))inlineTemplateType.SelectedItem=Cell(row,"targetType");inlineLoading=false;}
-  void ApplyInlineTemplateType(){if(inlineLoading||!inlineTemplateType.Visible)return;var row=SelectedPotentialRow();if(row==null)return;inlineLoading=true;row.Cells["targetType"].Value=inlineTemplateType.Text;inlineLoading=false;RefreshInline();}
-  void WriteInline(string column,string text){if(inlineLoading||loading)return;var row=SelectedPotentialRow();if(row==null)return;inlineLoading=true;row.Cells[column].Value=text;GridChanged();inlineLoading=false;}
   void TestRetroEditor(){
-    ShowEditorPage(1);Application.DoEvents();if(!pokemonWorkspace.Visible||!potentials.Visible||!inlineEffect.Visible)throw new Exception("Pokemon and potential editors must be visible together");
-    var trainerNode=tree.Nodes.Cast<TreeNode>().SelectMany(x=>x.Nodes.Cast<TreeNode>()).First(x=>x.Tag is TrainerRecord);tree.SelectedNode=trainerNode;Application.DoEvents();ShowEditorPage(1);Application.DoEvents();var slotColumn=(DataGridViewComboBoxColumn)potentials.Columns["slot"];if(!(Current is PokemonRecord)||!slotColumn.Items.Contains("역할"))throw new Exception("Pokemon potential slots must follow Pokemon navigation");
-    triggerBuilder.Select("trigger.weather");triggerBuilder.SetValue("장소","쾌청");if(ConfiguredTrigger()!="날씨가 「쾌청」일 때")throw new Exception("Weather slot editing");
-    triggerBuilder.Select("trigger.hpchange.이하",new Dictionary<string,string>{{"분자","1"},{"분모","4"}});if(ConfiguredTrigger()!="자신의 체력이 1/4 이하가 되었을 때")throw new Exception("HP threshold slot editing");
+   ShowEditorPage(1);Application.DoEvents();
+   if(!pokemonWorkspace.Visible||!potentials.Visible)throw new Exception("Pokemon editor and potential table must be visible together");
+   var trainerNode=tree.Nodes.Cast<TreeNode>().SelectMany(x=>x.Nodes.Cast<TreeNode>()).First(x=>x.Tag is TrainerRecord);
+   tree.SelectedNode=trainerNode;Application.DoEvents();ShowEditorPage(1);Application.DoEvents();
+   if(!(Current is PokemonRecord)||!EditorTemplate.PokemonEditSlotNames.Contains("역할")||!EditorTemplate.PokemonEditSlotNames.Contains(TeamRules.ExclusiveSlot))throw new Exception("Pokemon potential slots must follow Pokemon navigation");
+   triggerBuilder.Select("trigger.weather");triggerBuilder.SetValue("장소","쾌청");if(ConfiguredTrigger()!="날씨가 「쾌청」일 때")throw new Exception("Weather slot editing");
+   triggerBuilder.Select("trigger.hpchange.이하",new Dictionary<string,string>{{"분자","1"},{"분모","4"}});if(ConfiguredTrigger()!="자신의 체력이 1/4 이하가 되었을 때")throw new Exception("HP threshold slot editing");
    var row=potentials.Rows.Cast<DataGridViewRow>().First(x=>!x.IsNewRow&&Cell(x,"slot")=="역할");potentials.CurrentCell=row.Cells["name"];
-   string name=Cell(row,"name");row.Cells["name"].Value="귀인";RefreshInline();
-   if(!inlineEffect.Text.Contains("공격")||inlineTrigger.Text.Length==0)throw new Exception("Template must populate inline trigger and effect");
-   inlineEffect.Text="한글 입력 검증";if(Cell(row,"effect")!="한글 입력 검증")throw new Exception("Inline Korean text must persist");
-   row.Cells["name"].Value=name;RefreshInline();if(inlineEffect.Text!=Cell(row,"effect")||inlineTrigger.Text!=Cell(row,"trigger"))throw new Exception("Template and inline editor synchronization");
-    row.Cells["name"].Value="탐사대원";RefreshInline();LoadPotentialStructureSettings();
-    string explorerEffect=EffectNormalizer.CanonicalRank("자신의 임의의 능력",1);
-    if(Cell(row,"trigger")!=TriggerStructures.EntryLabel||Cell(row,"effect")!=explorerEffect||triggerBuilder.Module.Expected!="등장"||ConfiguredTrigger()!=TriggerStructures.EntryLabel||effectBuilder.Module.Id!="effect.rank.raise1"||effectBuilder.GetValue("대상")!="자신의 임의의 능력")throw new Exception("Structured explorer role template loading");
-    row.Cells["name"].Value="추적대원";RefreshInline();LoadPotentialStructureSettings();
-    string trackerEffect=EffectNormalizer.CanonicalSwitchRestriction()+" (필요 「통솔：A」 이상)";
-    if(Cell(row,"trigger")!=TriggerStructures.FieldLabel||Cell(row,"effect")!=trackerEffect||ConfiguredTrigger()!=TriggerStructures.FieldLabel||effectBuilder.Module.Id!="effect.switch.restrict"||ConfiguredEffect()!=EffectNormalizer.CanonicalSwitchRestriction())throw new Exception("Structured tracker role template loading");
-    row.Cells["name"].Value="야생 포켓몬";RefreshInline();LoadPotentialStructureSettings();
-    if(Cell(row,"trigger")!=TriggerStructures.EntryLabel||Cell(row,"effect")!=EffectNormalizer.CanonicalRank("자신의 임의의 능력",2)||effectBuilder.Module.Id!="effect.rank.raise2"||effectBuilder.GetValue("대상")!="자신의 임의의 능력")throw new Exception("Structured wild random role template loading");
-    row.Cells["name"].Value="야생의 두목";RefreshInline();LoadPotentialStructureSettings();
-    if(Cell(row,"trigger")!=TriggerStructures.EntryLabel||Cell(row,"effect")!=EffectNormalizer.CanonicalRank("자신의 전능력치",2)||effectBuilder.Module.Id!="effect.rank.raise2"||effectBuilder.GetValue("대상")!="자신의 전능력치")throw new Exception("Structured wild boss role template loading");
-    row.Cells["name"].Value="수렵대원";RefreshInline();LoadPotentialStructureSettings();
-    string hunterEffect=EffectNormalizer.CanonicalStatIgnore("『야생의 두목』","능력","상승(강화)")+" (필요 「통솔：A」 이상)";
-    if(Cell(row,"trigger")!=TriggerStructures.FieldLabel||Cell(row,"effect")!=hunterEffect||effectBuilder.Module.Id!="effect.stat.ignore.상승(강화)"||effectBuilder.GetValue("대상")!="『야생의 두목』"||effectBuilder.GetValue("능력")!="능력"||ConfiguredEffect()!=EffectNormalizer.CanonicalStatIgnore("『야생의 두목』","능력","상승(강화)"))throw new Exception("Structured hunter stat-ignore template loading");
-    row.Cells["name"].Value="조사대원";RefreshInline();LoadPotentialStructureSettings();
-    string researcherEffect=EffectNormalizer.CanonicalAnalysisPermission()+" (필요 「통솔：A」 이상)";
-    if(Cell(row,"trigger")!=TriggerStructures.SelfAndOpponentEntryLabel||Cell(row,"effect")!=researcherEffect||triggerBuilder.Module.Id!="trigger.entry.both"||effectBuilder.Module.Id!="effect.analysis.permission"||ConfiguredEffect()!=EffectNormalizer.CanonicalAnalysisPermission())throw new Exception("Structured researcher analysis template loading");
-   row.Cells["name"].Value=name;RefreshInline();
-   if(editorMenu.Items.Count!=8||inlineEffect.ImeMode==ImeMode.Disable||potentials.Columns["targetType"].Visible)throw new Exception("Integrated menu and IME configuration");
+   string name=Cell(row,"name");var original=DraftFromRow(row);
+   // 편집 창: 입력은 창 안에서만 일어나고, 취소하면 표는 그대로다
+   var window=OpenPotentialWindowForTest(original);
+   window.ChooseName("귀인");
+   if(!window.EffectBox.Text.Contains("공격")||window.TriggerBox.Text.Length==0)throw new Exception("Template must populate trigger and effect in the window");
+   window.EffectBox.Text="한글 입력 검증";
+   if(Cell(row,"name")!=name||Cell(row,"effect")!=original.Effect)throw new Exception("Table must not change while the window is open");
+   window.Cancel();window.Dispose();
+   if(Cell(row,"name")!=name||Cell(row,"effect")!=original.Effect)throw new Exception("Cancel must discard window edits");
+   window=OpenPotentialWindowForTest(DraftFromRow(row));
+   window.ChooseName("탐사대원");
+   string explorerEffect=EffectNormalizer.CanonicalRank("자신의 임의의 능력",1);
+   if(window.TriggerBox.Text!=TriggerStructures.EntryLabel||window.EffectBox.Text!=explorerEffect||triggerBuilder.Module.Expected!="등장"||ConfiguredTrigger()!=TriggerStructures.EntryLabel||effectBuilder.Module.Id!="effect.rank.raise1"||effectBuilder.GetValue("대상")!="자신의 임의의 능력")throw new Exception("Structured explorer role template loading: ["+window.TriggerBox.Text+"] ["+window.EffectBox.Text+"] ["+triggerBuilder.Module.Expected+"] ["+ConfiguredTrigger()+"] ["+effectBuilder.Module.Id+"] ["+effectBuilder.GetValue("대상")+"]");
+   window.ChooseName("추적대원");
+   string trackerEffect=EffectNormalizer.CanonicalSwitchRestriction()+" (필요 「통솔：A」 이상)";
+   if(window.TriggerBox.Text!=TriggerStructures.FieldLabel||window.EffectBox.Text!=trackerEffect||ConfiguredTrigger()!=TriggerStructures.FieldLabel||effectBuilder.Module.Id!="effect.switch.restrict"||ConfiguredEffect()!=EffectNormalizer.CanonicalSwitchRestriction())throw new Exception("Structured tracker role template loading");
+   window.ChooseName("야생 포켓몬");
+   if(window.TriggerBox.Text!=TriggerStructures.EntryLabel||window.EffectBox.Text!=EffectNormalizer.CanonicalRank("자신의 임의의 능력",2)||effectBuilder.Module.Id!="effect.rank.raise2"||effectBuilder.GetValue("대상")!="자신의 임의의 능력")throw new Exception("Structured wild random role template loading");
+   window.ChooseName("야생의 두목");
+   if(window.TriggerBox.Text!=TriggerStructures.EntryLabel||window.EffectBox.Text!=EffectNormalizer.CanonicalRank("자신의 전능력치",2)||effectBuilder.Module.Id!="effect.rank.raise2"||effectBuilder.GetValue("대상")!="자신의 전능력치")throw new Exception("Structured wild boss role template loading");
+   window.ChooseName("수렵대원");
+   string hunterEffect=EffectNormalizer.CanonicalStatIgnore("『야생의 두목』","능력","상승(강화)")+" (필요 「통솔：A」 이상)";
+   if(window.TriggerBox.Text!=TriggerStructures.FieldLabel||window.EffectBox.Text!=hunterEffect||effectBuilder.Module.Id!="effect.stat.ignore.상승(강화)"||effectBuilder.GetValue("대상")!="『야생의 두목』"||effectBuilder.GetValue("능력")!="능력"||ConfiguredEffect()!=EffectNormalizer.CanonicalStatIgnore("『야생의 두목』","능력","상승(강화)"))throw new Exception("Structured hunter stat-ignore template loading");
+   window.ChooseName("조사대원");
+   string researcherEffect=EffectNormalizer.CanonicalAnalysisPermission()+" (필요 「통솔：A」 이상)";
+   if(window.TriggerBox.Text!=TriggerStructures.SelfAndOpponentEntryLabel||window.EffectBox.Text!=researcherEffect||triggerBuilder.Module.Id!="trigger.entry.both"||effectBuilder.Module.Id!="effect.analysis.permission"||ConfiguredEffect()!=EffectNormalizer.CanonicalAnalysisPermission())throw new Exception("Structured researcher analysis template loading");
+   window.Cancel();window.Dispose();
+   // 확인하면 표에 한 번 반영되고, 원래 이름으로 되돌리면 짝이 되는 부수 포텐셜도 맞춰진다
+   window=OpenPotentialWindowForTest(DraftFromRow(row));
+   window.ChooseName("탐사대원");window.Accept();
+   var confirmed=window.Result;window.Dispose();
+   if(confirmed==null)throw new Exception("Confirmed window must return its result");
+   CommitPotentialRow(row,original,confirmed);
+   if(Cell(row,"name")!="탐사대원"||Cell(row,"effect")!=explorerEffect)throw new Exception("Confirm must write the window result to the table");
+   CommitPotentialRow(row,DraftFromRow(row),original);
+   if(Cell(row,"name")!=name||EffectNormalizer.NormalizeLines(Cell(row,"effect"))!=EffectNormalizer.NormalizeLines(original.Effect))throw new Exception("Restoring the original potential failed");
+   if(editorMenu.Items.Count!=8||potentials.Columns["targetType"].Visible||editWindow!=null)throw new Exception("Integrated menu configuration");
   }
   protected override bool ProcessCmdKey(ref Message msg,Keys keyData){
    if(keyData==Keys.F6){editorMenu.Focus();return true;}
