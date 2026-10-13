@@ -17,6 +17,8 @@ namespace AABattle.Tests
     [TestCase("자신의 기술의 우선도를 +1한다")]
     [TestCase("T종료시까지 자신의 방어(특방)을 강화(1.5배)한다.")]
     [TestCase("T종료시까지 자신의 「공」을 배화한다")]
+    [TestCase("상대로부터의 「상태이상」을 무효화한다")]
+    [TestCase("자신의 소지품이 파괴(약탈)되지 않는다")]
     [TestCase("상대는 「통상교대」이외의 수단으로 교대할 수 없다")]
     public void EffectVariantsBecomeExecutableModules(string sentence)
     {

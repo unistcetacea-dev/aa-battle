@@ -878,3 +878,8 @@ Codex 공유 링크는 특정 시점의 읽기 전용 대화 스냅샷이다. �
 - 슬롯은 시트 순서가 `PokemonSlotNames` 순서와 같음을 이용해 배정(역할·분류·이명·종족 ①~④·속별·유대·선·회피·내성·격·범용·부수·특권). 무위전변은 특권, 도살자는 발동 금지로 저장.
 - 수정: ① `EditorBridge.ToPokemon`이 기술을 4개로 자르던 것 제거(4개 제한 해제가 누락되어 있었다). ② 포텐셜 편집 창이 상대 타입이 빈 회피·내성·격 행을 열 때 이름(대투회피 등)에서 타입을 알아내 템플릿 이름 선택지를 불러온다. ③ `EffectModules.Normalize`: 「기술의 우선도를 +N한다」 → 「기술 우선도를 N 올린다.」(대의 선).
 - 검사: `AbaddonSampleTests`(불러오기·변환·`TeamRules` 위반 없음, 템플릿 편집 창 불러오기, 6명 선봉 1턴), `PotentialEditorWindowTests.SavedCounterPotentialsReload…`, `EffectModuleTests.PriorityPlusVariant…`.
+## 2026-10-14 피니스 칼데아 포텐셜 판정 (task/chaldea-potentials)
+- 자료: `research/samples/chaldea/POTENTIALS.tsv`(30개 시트의 포텐셜·특성·기술 3010줄과 엔진 판정), `MODULE_GAPS.md`(남은 묶음). 지시서 `research/tasks/2026-10-14-chaldea-potentials.md`.
+- 판정 도구: `PotentialJudge`(Engine, 트리거 모듈 + 효과 실행기/모듈 존재 여부), `SheetJudge`(특성은 도감·`AbilityModules.Runnable`, 기술은 `MoveRuntime.Plan`), `ChaldeaJudgeTool`(Tests, Explicit: 환경변수 CHALDEA_IN/OUT으로 시트 TSV를 판정).
+- 정규화: `ChaldeaModules`(효과: 필중·추격+필중·위력 강화+추격/방어 관통·방어 등의 기술 관통·방호 한꺼번에 관통·우선도 +N·공격 이외 대미지·상태이상/소지품 보호·기합·배화/반감/능력 괄호쌍), `ChaldeaTriggers`(명중·급소·교대·빈사로 했을 때·죽어내밀기·속도 비교·트레이너 이름·공격하지 않음). 새 모듈은 없고 기존 표준 문장으로 바꾼다.
+- 한계: 판정은 표준 문장·실행기 존재 기준이다. 상태 조건 + 확률 효과는 발동 사건이 없어 실제로는 돌지 않는다(MODULE_GAPS 상단).
