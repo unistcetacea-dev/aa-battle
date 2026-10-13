@@ -166,6 +166,7 @@ namespace AABattle
       BondModules.Register();
       RoleModules.Register();
       PotentialQueue.BuiltIn.RegisterExclusive();
+      PotentialQueue.BuiltIn.RegisterExclusiveMore();
     }
 
     public static PotentialExecutor Register(string name, Func<EffectCall, bool> canRun, Func<EffectCall, EffectOutcome> run)

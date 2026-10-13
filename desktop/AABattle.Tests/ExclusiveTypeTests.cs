@@ -151,10 +151,18 @@ namespace AABattle {
 
   [Test] public void BerserkHalvesHpAndGrantsAnImmediateFollowUp() {
    var user = F(100, Exclusive("버서크")); var target = F(50);
+   user.HP = 77;
    int hp = user.HP;
    var t = Run(user, target, Use(Hit(), "검사전용"), Use(Idle()));
    Assert.That(Hits(t, user), Is.EqualTo(2), string.Join("\n", t.Log));
    Assert.That(t.Fighters[0].HP, Is.EqualTo(hp - hp / 2).Within(1));
+  }
+
+  [Test] public void BerserkCostUsesCurrentHpAndRoundsDown() {
+   var user = F(100, Exclusive("버서크")); var target = F(50);
+   user.HP = 81;
+   var t = Run(user, target, Use(Hit(), "검사전용"), Use(Idle()));
+   Assert.That(t.Fighters[0].HP, Is.EqualTo(41), string.Join("\n", t.Log));
   }
 
   [Test] public void BerserkCannotBeUsedAtOneHp() {
