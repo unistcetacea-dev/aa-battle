@@ -360,6 +360,9 @@ namespace AABattle
         usage.Use(source.Key, source.Uses);
       RecordTrainerUse(scope, source);
       Say(log, head + " · 효과 적용: " + source.Effect);
+      // 사용 제한이 있는 선행입력은 한 번 발동하면 이번 T의 선언이 끝난다(추가행동 등으로 같은 사건이 다시 와도 또 발동하지 않는다)
+      if (declared && usage != null && !string.IsNullOrWhiteSpace(source.Uses))
+        usage.Declared.Remove(source.Key);
       if (source.Slot == AbilityModules.Slot && source.Owner != null)
         AnsweredTriggers.AbilityActivated(source.Owner, Regex.Replace(source.Name, @" \(\d+\)$", ""), x => Say(log, x));
       chainFired.Add(source.Key);

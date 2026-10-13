@@ -22,12 +22,13 @@ namespace AABattle {
   readonly Database db;
   readonly PotentialDraft draft;
   readonly bool trainerRecord;
-  readonly ChoiceSlotEditor slotEditor, typeEditor;
+  readonly ChoiceSlotEditor slotEditor, typeEditor, exclusiveEditor;
   readonly Panel nameHost = new Panel { Dock = DockStyle.Fill };
   readonly PixelTextBox nameText = new PixelTextBox { Dock = DockStyle.Fill, Font = Theme.Input() };
   readonly PixelTextBox unlocks = new PixelTextBox { Dock = DockStyle.Fill, Font = Theme.Input() };
   readonly PixelCheckBox disabled = new PixelCheckBox { Text = "발동 금지", Dock = DockStyle.Fill, Font = Theme.UI(8) };
-  readonly Label typeLabel, notice, status;
+  readonly Label typeLabel, exclusiveLabel, notice, status;
+  ExclusiveType exclusiveType;   // 고른 범용 유형(템플릿일 뿐 저장하지 않는다)
   readonly Panel builderHost = new Panel { Dock = DockStyle.Fill };
   ChoiceSlotEditor nameChoice;
   bool loading, released;
@@ -55,13 +56,15 @@ namespace AABattle {
    slotEditor = new ChoiceSlotEditor(new ModuleSlot("종류", ModuleSlotKind.Text, ""), new[] { "" }.Concat(slotChoices.Where(x => x.Length > 0)).ToArray(), "포텐셜 종류");
    typeEditor = new ChoiceSlotEditor(new ModuleSlot("상대 타입", ModuleSlotKind.Type, ""), new[] { "" }, "상대 타입");
    typeLabel = Caption("상대 타입");
+   exclusiveEditor = new ChoiceSlotEditor(new ModuleSlot("범용 유형", ModuleSlotKind.Text, ""), new[] { "" }.Concat(ExclusiveTypes.Names).ToArray(), "전용 포텐셜 유형");
+   exclusiveLabel = Caption("범용 유형");
    notice = Caption("");
    notice.ForeColor = Theme.Muted;
    status = Caption("확인을 눌러야 표에 반영됩니다.");
    status.ForeColor = Theme.Muted;
 
    // 한 줄: 종류 · 이름 · (필요할 때만) 상대 타입 / 둘째 줄: 해제 권한 · 발동 금지 / 셋째 줄: 안내
-   var fields = new TableLayoutPanel { Dock = DockStyle.Top, Height = 150, ColumnCount = 6, RowCount = 3, Padding = new Padding(10, 8, 10, 4) };
+   var fields = new TableLayoutPanel { Dock = DockStyle.Top, Height = 200, ColumnCount = 6, RowCount = 3, Padding = new Padding(10, 8, 10, 4) };
    fields.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110));
    fields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22));
    fields.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100));
@@ -70,13 +73,15 @@ namespace AABattle {
    fields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22));
    fields.RowStyles.Add(new RowStyle(SizeType.Absolute, 46));
    fields.RowStyles.Add(new RowStyle(SizeType.Absolute, 46));
-   fields.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
+   fields.RowStyles.Add(new RowStyle(SizeType.Absolute, 86));
    fields.Controls.Add(Caption("종류"), 0, 0);
    fields.Controls.Add(slotEditor.Control, 1, 0);
    fields.Controls.Add(Caption("이름"), 2, 0);
    fields.Controls.Add(nameHost, 3, 0);
    fields.Controls.Add(typeLabel, 4, 0);
    fields.Controls.Add(typeEditor.Control, 5, 0);
+   fields.Controls.Add(exclusiveLabel, 4, 0);
+   fields.Controls.Add(exclusiveEditor.Control, 5, 0);
    fields.Controls.Add(Caption("해제 권한"), 0, 1);
    fields.Controls.Add(unlocks, 1, 1);
    fields.SetColumnSpan(unlocks, 3);
@@ -119,6 +124,7 @@ namespace AABattle {
 
    slotEditor.Changed += (s, e) => { if (!loading) SlotChanged(); };
    typeEditor.Changed += (s, e) => { if (!loading) TypeChanged(); };
+   exclusiveEditor.Changed += (s, e) => { if (!loading) ExclusiveChosen(); };
    nameText.TextChanged += (s, e) => { };   // 이름 입력은 읽어 두기만 한다(다시 그리거나 불러오지 않음)
    LoadFromDraft();
   }
@@ -166,6 +172,8 @@ namespace AABattle {
       draft.TargetType = EditorTemplate.InferCounterType(draft.Name);
     RefreshTypeChoices(draft.TargetType);
     RebuildName(draft.Name);
+    exclusiveType = null;
+    exclusiveEditor.Value = "";
     UpdateNotice();
    } finally { loading = false; }
    PushToBuilders();
@@ -207,8 +215,32 @@ namespace AABattle {
 
   void UpdateNotice() {
    string slot = slotEditor.Value;
-   if (slot == TeamRules.ExclusiveSlot) notice.Text = "전용: 트레이너 포텐셜입니다. 개수 제한은 파티 전체에서 셉니다.";
-   else notice.Text = "";
+   bool exclusive = slot == TeamRules.ExclusiveSlot;
+   exclusiveEditor.Control.Visible = exclusiveLabel.Visible = exclusive;
+   if (!exclusive) { notice.Text = ""; return; }
+   string text = "전용: 트레이너 포텐셜입니다. 개수 제한은 파티 전체에서 셉니다. 「범용 유형」을 고르면 사용 제한·트리거·효과를 불러옵니다(이름은 직접 입력).";
+   if (exclusiveType != null) {
+    text = "【" + exclusiveType.Name + "】 " + exclusiveType.Help;
+    if (exclusiveType.HasPlaceholder) text += " 채워야 할 칸: 「○」를 실제 타입·기술·설치물로 바꾸세요.";
+    if (exclusiveType.Pending.Length > 0) text += " (미구현: " + exclusiveType.Pending + ")";
+   }
+   notice.Text = text;
+  }
+
+  // 범용 유형을 고르면 사용 제한·발동 방식·트리거·효과를 불러온다. 이름 칸은 건드리지 않는다
+  void ExclusiveChosen() {
+   exclusiveType = ExclusiveTypes.Find(exclusiveEditor.Value);
+   if (exclusiveType == null) { UpdateNotice(); return; }
+   loading = true;
+   try {
+    TriggerBox.Text = exclusiveType.Trigger;
+    EffectBox.Text = exclusiveType.Effect;
+    draft.Activation = exclusiveType.Activation;
+    draft.Uses = exclusiveType.Uses;
+    draft.Raw = exclusiveType.Trigger.Length == 0 ? exclusiveType.Effect : exclusiveType.Trigger.Replace("\r\n", ", ") + ", " + exclusiveType.Effect;
+    UpdateNotice();
+   } finally { loading = false; }
+   PushToBuilders();
   }
 
   // 종류를 바꾸면 이름·타입·내용을 비운다(템플릿이 다르다)
@@ -216,6 +248,8 @@ namespace AABattle {
    loading = true;
    try {
     draft.Raw = ""; draft.Activation = ""; draft.Uses = ""; draft.TargetType = "";
+    exclusiveType = null;
+    exclusiveEditor.Value = "";
     TriggerBox.Text = ""; EffectBox.Text = "";
     typeEditor.SetItems(new[] { "" });
     typeEditor.Value = "";
@@ -304,6 +338,9 @@ namespace AABattle {
   public string[] NameChoices { get { return NameIsChoice ? nameChoice.Items : new string[0]; } }
   public bool TypeRowVisible { get { return typeEditor.Control.Visible; } }
   public string NoticeText { get { return notice.Text; } }
+  public string[] ExclusiveTypeChoices { get { return exclusiveEditor.Items; } }
+  public bool ExclusiveRowVisible { get { return exclusiveEditor.Control.Visible; } }
+  public void ChooseExclusiveType(string name) { exclusiveEditor.Value = name; ExclusiveChosen(); }
   public bool Disabled { get { return disabled.Checked; } set { disabled.Checked = value; } }
   public string UnlockText { get { return unlocks.Text; } set { unlocks.Text = value; } }
 
@@ -311,6 +348,11 @@ namespace AABattle {
    var value = Collect();
    if (value.Slot.Length == 0 && value.Name.Length == 0) {
     GameDialog.Show(this, "종류나 이름을 입력하세요.", "포텐셜 편집");
+    return;
+   }
+   // 전용 유형의 자리 표시(○)가 남아 있으면 확인하지 않는다
+   if (value.Slot == TeamRules.ExclusiveSlot && (ExclusiveTypes.HasPlaceholder(value.Trigger) || ExclusiveTypes.HasPlaceholder(value.Effect))) {
+    GameDialog.Show(this, "채워야 할 칸이 있습니다. 트리거·효과의 「○」를 실제 타입·기술·설치물로 바꾸세요.", "포텐셜 편집");
     return;
    }
    Result = value;

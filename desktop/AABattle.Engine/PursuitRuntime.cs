@@ -11,6 +11,7 @@ namespace AABattle {
   readonly Rules rules;
   readonly bool[] chase=new bool[2], deferred=new bool[2], attempted=new bool[2], finished=new bool[2];
   Fighter boostedUser,boostedTarget;
+  double boostRate=1;
   public PursuitTurn(Fighter[] fighters,BattleCommand[] orders,Rules r,Database db,TrainerBattleState[] states) {
    original=fighters.ToArray();commands=orders;rules=r;
    for(int side=0;side<2;side++) {
@@ -51,10 +52,14 @@ namespace AABattle {
    if(!ReferenceEquals(original[side],fighters[side]) || !ReferenceEquals(original[1-side],fighters[1-side]) ||
     fighters[side].HP<=0 || fighters[1-side].HP<=0 || PursuitModules.ImmuneTo(fighters[1-side],fighters[side],rules))return;
    boostedUser=fighters[side];boostedTarget=fighters[1-side];
-   log.Add(boostedUser.Data.name+": 교대보다 먼저 추격이 끼어들었다 (위력 2배)");
+   boostRate=ExclusiveModules.PursuitRate(boostedUser,commands[side].PreInputs);
+   log.Add(boostedUser.Data.name+": 교대보다 먼저 추격이 끼어들었다"+(boostRate!=1?" (대미지 "+boostRate+"배)":""));
   }
   public void Boost(Rules hitRules,Fighter user,Fighter target,Move move) {
-   if(ReferenceEquals(user,boostedUser)&&ReferenceEquals(target,boostedTarget)&&PursuitModules.IsPursuit(move))hitRules.PowerMultiplier*=2;
+   if(!ReferenceEquals(user,boostedUser)||!ReferenceEquals(target,boostedTarget))return;
+   // 「추격」 기술 자체는 위력 2배. 포텐셜로 얻은 추격은 2배가 없고, 『강화추미』 같은 배율 문장이 있을 때만 대미지가 늘어난다
+   if(PursuitModules.IsPursuit(move))hitRules.PowerMultiplier*=2;
+   hitRules.DamageMultiplier*=boostRate;
   }
   // 이전 행동의 유턴까지 끝낸 뒤 원래 교대를 이어간다. 실패한 추격도 행동권은 소모된다.
   public void Complete(Fighter[] fighters,Action<int> normalSwitch,Action<int> returnSwitch,List<string> log) {
@@ -87,6 +92,9 @@ namespace AABattle {
    }
    return true;
   }
+  static bool Declared(Potential potential,BattleCommand command) {
+   return (potential.activation??"")=="선행" && (command.PreInputs??new string[0]).Contains(potential.name);
+  }
   static bool PositivePursuitGrant(string description,Fighter owner,Move move) {
    string condition,effect;PotentialLibrary.Split(description??"",out condition,out effect);
    return Regex.Split(EffectNormalizer.NormalizeLines(effect.Length>0?effect:description??""),@"\r?\n|(?<=[.。])\s+")
@@ -95,7 +103,7 @@ namespace AABattle {
   public static bool WantsPursuit(Fighter owner,Fighter other,BattleCommand command,Move move,Rules rules,TrainerBattleState state) {
    if(PursuitModules.IsPursuit(move))return true;
    foreach(var potential in owner.Data.potentials??new Potential[0])if(GrantApplies(potential,owner,other,move,rules,command,true)&&
-    (state==null || state.Usage.CanUse(PotentialKeys.For(owner.Data,potential),potential.uses)))return true;
+    (Declared(potential,command) || state==null || state.Usage.CanUse(PotentialKeys.For(owner.Data,potential),potential.uses)))return true;
    if(state==null || state.Trainer==null)return false;
    foreach(var record in state.Trainer.potentials??new List<PotentialRecord>()) {
     if(record==null || !record.enabled || record.slot!="고유" || !state.Usage.CanUse(PotentialKeys.For(state.Trainer,record),record.uses))continue;
@@ -115,7 +123,7 @@ namespace AABattle {
    var move=Mechanics.ActionMove(db,owner,command.Move);
    if(SwitchEffectRuntime.IsPivotMove(move))return true;
    foreach(var potential in owner.Data.potentials??new Potential[0])if(GrantApplies(potential,owner,other,move,rules,command)&&
-    (state==null || state.Usage.CanUse(PotentialKeys.For(owner.Data,potential),potential.uses)))return true;
+    (Declared(potential,command) || state==null || state.Usage.CanUse(PotentialKeys.For(owner.Data,potential),potential.uses)))return true;
    if(state==null || state.Trainer==null)return false;
    foreach(var record in state.Trainer.potentials??new List<PotentialRecord>()) {
     if(record==null || !record.enabled || record.slot!="고유" || !state.Usage.CanUse(PotentialKeys.For(state.Trainer,record),record.uses))continue;

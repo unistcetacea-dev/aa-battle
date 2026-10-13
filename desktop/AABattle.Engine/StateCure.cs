@@ -82,6 +82,23 @@ namespace AABattle {
     case "동면": c.Hibernate = 0; break;
     case "죽음의 카운트": c.DeathCount = 0; break;
     case "먹이를 문": c.Gulping = false; break;
+    case "방어": c.Protect = false; break;
+    case "버티기": c.Enduring = false; break;
+    case "저주": c.Curse = false; break;
+    case "작아지기": c.Minimized = false; break;
+    case "꿰뚫어보기": c.Foresight = ""; break;
+    case "하품": c.Yawn = 0; break;
+    case "기충전": c.FocusEnergy = false; break;
+    case "매직코트": c.MagicCoat = false; break;
+    case "악몽": c.Nightmare = false; break;
+    case "분진": c.Powder = false; break;
+    case "전자부유": c.MagnetRise = 0; break;
+    case "텔레키네시스": c.Telekinesis = 0; break;
+    case "금제": c.Embargo = 0; break;
+    case "예민해지기": c.LaserFocus = 0; break;
+    case "날따름": c.FollowMe = false; break;
+    case "순서미루기": c.Quash = false; break;
+    case "봉인": c.Sealed = ""; break;
    }
   }
  }

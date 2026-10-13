@@ -154,6 +154,13 @@ namespace AABattle {
    return factor;
   }
 
+  // 사건으로 걸린 문장(ActiveModifier.Text) 가운데 낱말을 포함한 것. 기술 판정 모듈(필중·관통)이 사건으로 얻은 효과를 읽을 때 쓴다
+  public static IEnumerable<string> EventSentences(Fighter owner, string keyword) {
+   if (owner == null || owner.Conditions == null || owner.Conditions.Modifiers == null) yield break;
+   foreach (var m in owner.Conditions.Modifiers.ToList())
+    if (m != null && (m.Text ?? "").Length > 0 && (keyword == null || m.Text.IndexOf(keyword, StringComparison.Ordinal) >= 0)) yield return m.Text;
+  }
+
   // 계속 성립하는 포텐셜의 표준 문장(확률·기간 없는 것)
   static readonly Dictionary<string, List<string>> sentenceCache = new Dictionary<string, List<string>>();
   static IEnumerable<string> ContinuousSentences(Fighter owner, Fighter opponent, Rules rules, string keyword = null, IEnumerable<Potential> potentials = null, bool ignoreAbilityBypass = false) {
@@ -226,7 +233,7 @@ namespace AABattle {
   }
 
   public static void Add(Fighter f, ActiveModifier modifier) {
-   f.Conditions.Modifiers.RemoveAll(x => x.Key == modifier.Key);   // 같은 포텐셜은 겹치지 않고 새로 건다
+   f.Conditions.Modifiers.RemoveAll(x => x.Key == modifier.Key && x.Text == modifier.Text);   // 같은 포텐셜은 겹치지 않고 새로 건다
    f.Conditions.Modifiers.Add(modifier);
   }
  }

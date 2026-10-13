@@ -95,7 +95,7 @@ namespace AABattle {
 
   // ===== 판정 =====
   static IEnumerable<string> Own(Fighter a, Fighter b, Rules rules, string keyword) {
-   return a == null ? new string[0] : PotentialModifiers.Sentences(a, b, rules ?? new Rules(), keyword).Select(Clean);
+   return a == null ? new string[0] : PotentialModifiers.Sentences(a, b, rules ?? new Rules(), keyword).Concat(PotentialModifiers.EventSentences(a, keyword)).Select(Clean);
   }
   static IEnumerable<string> Field(Fighter a, Fighter b, Rules rules, string keyword) {
    return Own(a, b, rules, keyword).Concat(Own(b, a, rules, keyword));
@@ -155,6 +155,12 @@ namespace AABattle {
     if (m.Success && (copy ?? move).accuracy > 0) { copy = copy ?? move.Copy(); copy.accuracy = int.Parse(m.Groups["n"].Value); }
    }
    return copy ?? move;
+  }
+
+  // 사건으로 얻을 수 있는 기술 판정 문장(필중·방어 관통·방호 특성 관통)
+  public static bool IsEventGrant(string sentence) {
+   string s = Clean(sentence);
+   return SureHit.IsMatch(s) || PierceProtect.IsMatch(s) || PierceAbilityMove.IsMatch(s) || s == AbilityPhrases.Pierce;
   }
 
   public static bool PiercesProtect(Fighter a, Fighter b, Move move, Rules rules) {

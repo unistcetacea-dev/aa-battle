@@ -23,16 +23,29 @@ namespace AABattle {
   }
   public static void PrimeTurn(Fighter[] fighters,BattleCommand[] commands,TrainerBattleState[] states,Action<string> log){
    if(fighters==null||commands==null)return;
-   for(int i=0;i<Math.Min(2,commands.Length);i++){var command=commands[i];var move=command==null?null:command.Move;if(command==null||command.IsSwitch||move==null||fighters[i]==null||fighters[i].HP<=0)continue;var other=fighters[1-i];string context=fighters[i].Data.name+"이 "+move.name+"을 선택";ActivateDirect(fighters[i],other,TriggerStructures.MoveUseLabel,context,log);ActivateDirect(fighters[i],other,move.category=="변화"?TriggerStructures.StatusMoveUseLabel:TriggerStructures.AttackMoveUseLabel,context,log);ActivateDirect(fighters[i],other,TriggerStructures.MoveName(move.name),context,log);foreach(string type in move.types??new string[0])ActivateDirect(fighters[i],other,TriggerStructures.MoveType(type),context,log);var trainer=states!=null&&i<states.Length&&states[i]!=null?states[i].Trainer:null;ActivateTrainerEvent(trainer,fighters[i],other,TriggerStructures.MoveUseLabel,context,log);ActivateTrainerEvent(trainer,fighters[i],other,move.category=="변화"?TriggerStructures.StatusMoveUseLabel:TriggerStructures.AttackMoveUseLabel,context,log);}
+   for(int i=0;i<Math.Min(2,commands.Length);i++){var command=commands[i];var move=command==null?null:command.Move;if(command==null||command.IsSwitch||move==null||fighters[i]==null||fighters[i].HP<=0)continue;var other=fighters[1-i];string context=fighters[i].Data.name+"이 "+move.name+"을 선택";primeUsage=states!=null&&i<states.Length&&states[i]!=null?states[i].Usage:null;ActivateDirect(fighters[i],other,TriggerStructures.MoveUseLabel,context,log);ActivateDirect(fighters[i],other,move.category=="변화"?TriggerStructures.StatusMoveUseLabel:TriggerStructures.AttackMoveUseLabel,context,log);ActivateDirect(fighters[i],other,TriggerStructures.MoveName(move.name),context,log);foreach(string type in move.types??new string[0])ActivateDirect(fighters[i],other,TriggerStructures.MoveType(type),context,log);var trainer=states!=null&&i<states.Length&&states[i]!=null?states[i].Trainer:null;ActivateTrainerEvent(trainer,fighters[i],other,TriggerStructures.MoveUseLabel,context,log);ActivateTrainerEvent(trainer,fighters[i],other,move.category=="변화"?TriggerStructures.StatusMoveUseLabel:TriggerStructures.AttackMoveUseLabel,context,log);}
+   primeUsage=null;
   }
   // 효과 실행 범위 안에서는 공통 효과 큐의 「우선도」 실행기가 처리한다. 기술 선택 단계(PrimeTurn)는 ActivateDirect를 쓴다
   public static void ActivateEvent(Fighter source,Fighter other,string label,string context,Action<string> log){
    if(PotentialQueue.Active)return;
    ActivateDirect(source,other,label,context,log);
   }
+  // 기술 선택 단계에서만 쓴다: 선행입력은 선언한 것만, 사건 절과 함께 쓴 상태 절은 모두 성립해야 한다
+  [ThreadStatic] static PotentialUsage primeUsage;
+  static bool Allowed(Potential p,Fighter source,Fighter other,string label){
+   if((p.activation??"").Trim()=="선행"&&primeUsage!=null&&!primeUsage.Declared.Contains(PotentialKeys.For(source.Data,p)))return false;
+   foreach(string clause in TriggerStructures.Clauses(p)){
+    if(TriggerStructures.Normalize(clause)==label)continue;
+    var spec=TriggerModules.Parse(clause);
+    if(spec.IsEvent)continue;
+    if(spec.Module.Length>0&&!TriggerModules.Holds(clause,source,other,new Rules()))return false;
+   }
+   return true;
+  }
   static void ActivateDirect(Fighter source,Fighter other,string label,string context,Action<string> log){
    if(source==null||source.HP<=0)return;
-   foreach(var p in (source.Data.potentials??new Potential[0]).Where(x=>x!=null&&MatchesEvent(x,label)))Apply(p.description,source,other,label,context,log);
+   foreach(var p in (source.Data.potentials??new Potential[0]).Where(x=>x!=null&&MatchesEvent(x,label)&&Allowed(x,source,other,label)))Apply(p.description,source,other,label,context,log);
   }
   public static void ActivateTrainerEvent(TrainerRecord trainer,Fighter owner,Fighter other,string label,string context,Action<string> log){
    if(trainer==null||owner==null||owner.HP<=0)return;

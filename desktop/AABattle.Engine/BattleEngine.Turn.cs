@@ -514,6 +514,8 @@ namespace AABattle
           var hitRules = r.Copy();
           hitRules.Critical = Mechanics.HitCritical(a, hitMove, r, rng, b) && !StateTicks.NoCrit(b, r) && !(AbilityPhrases.NoCrit(b, a) && !Mechanics.BypassAbility(a));
           pursuit.Boost(hitRules, a, b, hitMove);
+          if (target && hitMove.category != "변화")
+            TriggerModules.Raise(new TriggerFact { Kind = "명중 확정", Move = hitMove, User = a }, a, b, a.Data.name + "의 " + hitMove.name + "이 명중했다", result.Log.Add);
           var d = Calculate(db, a, b, hitMove, hitRules, i, false, true);
           var onceItems = ItemRuntime.OnceScalars(a, b, hitMove, d.Type, hitRules);
           if (!d.Supported)

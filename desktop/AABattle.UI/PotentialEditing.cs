@@ -187,6 +187,22 @@ namespace AABattle {
    window.Dispose();
   }
 
+  // 검사 화면용: 슬롯 「전용」에서 범용 유형을 골라 불러온 모습을 그림으로 저장한다
+  public void RenderExclusiveWindow(string path, string typeName) {
+   var row = potentials.Rows.Cast<DataGridViewRow>().First(x => !x.IsNewRow);
+   var window = OpenPotentialWindowForTest(DraftFromRow(row));
+   window.ChooseSlot(TeamRules.ExclusiveSlot);
+   window.TypeName("샘플의 전용");
+   window.ChooseExclusiveType(typeName);
+   Application.DoEvents();
+   using (var bitmap = new System.Drawing.Bitmap(window.Width, window.Height)) {
+    window.DrawToBitmap(bitmap, new System.Drawing.Rectangle(System.Drawing.Point.Empty, bitmap.Size));
+    bitmap.Save(path, System.Drawing.Imaging.ImageFormat.Png);
+   }
+   window.Cancel();
+   window.Dispose();
+  }
+
   internal PotentialEditWindow OpenPotentialWindowForTest(PotentialDraft draft) {
    var window = CreatePotentialWindow(draft);
    window.Show(this);

@@ -179,10 +179,10 @@ namespace AABattle {
   static IEnumerable<string> Lines(Fighter f, Fighter other, string keyword) {
    if (f == null) return new string[0];
    var rules = EffectScope.Current == null ? new Rules() : EffectScope.Current.Rules;
-   return PotentialModifiers.Sentences(f, other, rules, keyword).Select(Clean);
+   return PotentialModifiers.Sentences(f, other, rules, keyword).Concat(PotentialModifiers.EventSentences(f, keyword)).Select(Clean);
   }
   static bool HasRule(Fighter owner, Fighter other, Rules rules, string text, bool global = false) {
-   return PotentialModifiers.Sentences(owner, other, rules, text, null, global).Any(x => Clean(x) == text);
+   return PotentialModifiers.Sentences(owner, other, rules, text, null, global).Concat(PotentialModifiers.EventSentences(owner, text)).Any(x => Clean(x) == text);
   }
   public static int StageAmount(Fighter target, Fighter source, Rules rules, int amount) {
    if (HasRule(target, source, rules, ReverseStage)) amount = -amount;

@@ -883,3 +883,10 @@ Codex 공유 링크는 특정 시점의 읽기 전용 대화 스냅샷이다. �
 - 판정 도구: `PotentialJudge`(Engine, 트리거 모듈 + 효과 실행기/모듈 존재 여부), `SheetJudge`(특성은 도감·`AbilityModules.Runnable`, 기술은 `MoveRuntime.Plan`), `ChaldeaJudgeTool`(Tests, Explicit: 환경변수 CHALDEA_IN/OUT으로 시트 TSV를 판정).
 - 정규화: `ChaldeaModules`(효과: 필중·추격+필중·위력 강화+추격/방어 관통·방어 등의 기술 관통·방호 한꺼번에 관통·우선도 +N·공격 이외 대미지·상태이상/소지품 보호·기합·배화/반감/능력 괄호쌍), `ChaldeaTriggers`(명중·급소·교대·빈사로 했을 때·죽어내밀기·속도 비교·트레이너 이름·공격하지 않음). 새 모듈은 없고 기존 표준 문장으로 바꾼다.
 - 한계: 판정은 표준 문장·실행기 존재 기준이다. 상태 조건 + 확률 효과는 발동 사건이 없어 실제로는 돌지 않는다(MODULE_GAPS 상단).
+## 2026-10-14 전용 포텐셜 유형 템플릿
+- 지시서 `research/tasks/2026-10-14-exclusive-templates.md`, 브랜치 `task/exclusive-templates`. 원문 `research/potentials/oremas-exclusive-potentials.txt`, 판정 표 `research/potentials/EXCLUSIVE_TYPES.md`.
+- 편집 창(`PotentialEditWindow`)에서 슬롯 「전용」을 고르면 「범용 유형」 선택 칸(`ExclusiveTypes.All`, 25개)이 나온다. 유형을 고르면 사용 제한·발동 방식·트리거·효과가 채워지고 해설·습득 조건은 안내 줄에만 보인다. 이름 칸은 건드리지 않으며 유형은 저장하지 않는다. 자리 표시(○)가 남은 채 확인하면 「채워야 할 칸」 대화창이 뜨고 확인되지 않는다.
+- 새 모듈(`ExclusiveModules.cs`, `PotentialEvents.Exclusive.cs`): 사건으로 얻는 필중·방어 관통·방호 특성 관통(이번 행동 동안), 추격 발동 배율, 상태변화 전체 해제, 트리거 「명중 확정」(`Turn.cs`가 명중 직후·대미지 계산 전에 냄). 표준 문장과 `ModuleCatalog` 등록은 표 문서 참고.
+- 엔진 수정: 기술 선택 단계 우선도가 선행입력 선언과 AND 상태 절을 보게 했고, 선언한 `1/시` 포텐셜은 첫 발동 뒤 선언이 소진되며(추가행동 재발동 방지), 선언 포텐셜의 추격·유턴 부여가 사용 횟수로 막히지 않게 했다. `ActiveModifier`는 키+글자로 구분하고 `ClearCondition`은 방어 계열까지 푼다. 이름에 괄호가 있는 기능확장 표준화 버그도 고쳤다.
+- 구현하지 않은 유형: 페이스메이커(역할 발동), 메가진화(폼 변경), 스토킹·삼점방호(원문 모호). 마검의 통상교대 최후 타이밍·영격 우선도 -7·범프업 디메리트도 남겼다.
+- 검사: `ExclusiveTypeTests`(템플릿 문장 판독, 정규화, 모듈 분류·등록, 필중/관통/추격 배율/우선도/상태변화 해제/버서크/영격/역선회/범프업/추가반동/강체술 실제 배틀), `PotentialEditorWindowTests.ExclusiveTypeTemplateFillsRulesButNeverTheName`. 캡처 `catalog.png.window-exclusive.png`.

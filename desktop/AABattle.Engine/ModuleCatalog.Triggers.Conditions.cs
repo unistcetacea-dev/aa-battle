@@ -18,6 +18,7 @@ namespace AABattle {
    TF(modules, "receivedornullified", "피격·무효화", "공격 피격 또는 무효화", "기술·대미지", TriggerStructures.ReceivedOrNullifiedLabel);
    TF(modules, "damaged", "대미지", "대미지를 받음", "기술·대미지", TriggerStructures.DamagedLabel);
    TF(modules, "missed", "빗나감", "기술이 빗나감", "기술·대미지", "자신의 기술이 빗나갔을 때");
+   TF(modules, "hitconfirm", "명중 확정", "공격 명중 확정(대미지 전)", "기술·대미지", "자신의 공격이 명중하면");
    TF(modules, "indirect", "간접 대미지", "상대가 간접 대미지를 받음", "기술·대미지", "상대가 공격 이외의 대미지를 받았을 때");
    TF(modules, "drain", "드레인", "상대 체력 드레인", "기술·대미지", "상대의 체력을 드레인했을 때");
    TF(modules, "faint.any", "필드 빈사", "필드의 누군가 빈사", "체력·상태", "필드의 누군가가 「빈사」 상태가 되었을 때");

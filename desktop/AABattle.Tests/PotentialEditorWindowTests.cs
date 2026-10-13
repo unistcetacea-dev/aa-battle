@@ -173,6 +173,32 @@ namespace AABattle {
     Assert.That(withoutType.Collect().Name, Is.EqualTo(name));
     withoutType.Cancel();
     withoutType.Dispose();
+  // 전용 슬롯: 범용 유형을 고르면 사용 제한·트리거·효과가 채워지고 이름 칸은 그대로다
+  [Test] public void ExclusiveTypeTemplateFillsRulesButNeverTheName() {
+   using (var form = OpenPokemonEditor()) {
+    var row = RowOf(form, "종족 ④");
+    var window = form.OpenPotentialWindowForTest(form.DraftFromRow(row));
+    Assert.That(window.ExclusiveRowVisible, Is.False, "전용이 아니면 유형 칸이 없다");
+    window.ChooseSlot(TeamRules.ExclusiveSlot);
+    Assert.That(window.ExclusiveRowVisible, Is.True);
+    Assert.That(window.NameIsFixedChoice, Is.False, "이름은 직접 입력");
+    Assert.That(window.ExclusiveTypeChoices, Is.SupersetOf(new[] { "필중추미", "삼각효과", "버서크" }));
+    window.TypeName("나만의 이름");
+    window.ChooseExclusiveType("필중추미");
+    Assert.That(window.Collect().Name, Is.EqualTo("나만의 이름"));
+    Assert.That(window.TriggerBox.Text, Is.Not.Empty);
+    Assert.That(window.EffectBox.Text, Does.Contain("추격").And.Contain("필중"));
+    var value = window.Collect();
+    Assert.That(value.Uses, Is.EqualTo("1/시"));
+    Assert.That(value.Activation, Is.EqualTo("선행"));
+    window.ChooseExclusiveType("대삼각");
+    Assert.That(window.EffectBox.Text, Does.Contain("○"), "자리 표시가 남는다");
+    Assert.That(window.NoticeText, Does.Contain("채워야 할 칸"));
+    Assert.That(window.Collect().Name, Is.EqualTo("나만의 이름"));
+    window.ChooseSlot("종족 ①");
+    Assert.That(window.ExclusiveRowVisible, Is.False);
+    window.Cancel();
+    window.Dispose();
     form.CloseForTest();
    }
   }

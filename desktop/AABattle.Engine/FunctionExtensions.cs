@@ -16,6 +16,9 @@ namespace AABattle {
   public static string Normalize(string text) {
    string t = Clean(text);
    if (!Regex.IsMatch(t, @"기능\s*확장")) return null;
+   // 이미 표준 문장이면(이름에 괄호가 있어도: 「기능확장:아라가미탄(불꽃)」) 그대로 다시 만든다
+   string standardSubject; string[] standardMoves;
+   if (TryGrant(t, out standardSubject, out standardMoves)) return Canonical(standardSubject, standardMoves);
    var m = Regex.Match(t, @"^(?:(?<s>자신|아군\s*전원|아군|PT\s*전원|PT의\s*아군\s*전원|PT의\s*전원)(?:이|가)\s*)?(?<body>.+?)\s*(?:을|를)\s*(?:내보낼|사용할)\s*수\s*있다$");
    if (!m.Success) return null;
    var names = new List<string>();
