@@ -48,7 +48,7 @@ namespace AABattle {
 
   // 악몽은 잠듦일 때만 걸린다
   static IEnumerable<string> TableStates() { return StateEffects.Table.Select(x => x.Name).Where(x => x != "악몽"); }
-  static string Sides(Rules r) { return string.Join(",", r.Sides.Select(x => x.Safeguard + "/" + x.Mist + "/" + x.LuckyChant + "/" + x.WishTurns + "/" + x.QuickGuard + "/" + x.SeaOfFire + "/" + x.Swamp + "/" + x.Rainbow)); }
+  static string Sides(Rules r) { return string.Join(",", r.Sides.Select(x => x.Safeguard + "/" + x.Mist + "/" + x.LuckyChant + "/" + x.Tailwind + "/" + x.Reflect + "/" + x.LightScreen + "/" + x.WishTurns + "/" + x.QuickGuard + "/" + x.SeaOfFire + "/" + x.Swamp + "/" + x.Rainbow)); }
 
   // 표의 모든 상태가 실제로 걸리는지 확인한다. 표에 상태를 추가하면 이 검사도 자동으로 늘어난다
   [TestCaseSource(nameof(TableStates))]

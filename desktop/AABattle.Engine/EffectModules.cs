@@ -15,14 +15,15 @@ namespace AABattle {
   public List<string> Types = new List<string>();
   public string Category = "";       // 물리 · 특수 · 변화 · 공격(물리+특수)
   public string Stab = "";           // 타입 일치 · 타입 불일치
-  public string Effectiveness = "";  // 효과가 굉장(매우 포함) · 효과가 별로(매우 포함) · 효과 보통
+  public string Effectiveness = "";  // 효과가 굉장(매우 포함) · 효과가 별로(매우 포함) · 효과 보통 · 효과가 굉장 이외
   public string Range = "";          // 단일 · 전체
   public int PowerMax = -1, PowerMin = -1;
   public bool PriorityPositive;      // 「우선도 +」 선공기
+  public bool PriorityZero;          // 「우선도 ±0」 (기술의 원래 우선도가 0)
   public List<string> Tags = new List<string>();
   public List<string> Names = new List<string>();
   public bool Placeholder;           // 빈 괄호 「」·「○」: 타입 자리 표시(실행하지 않음)
-  public bool Empty { get { return Types.Count == 0 && Category == "" && Stab == "" && Effectiveness == "" && Range == "" && PowerMax < 0 && PowerMin < 0 && !PriorityPositive && Tags.Count == 0 && Names.Count == 0 && !Placeholder; } }
+  public bool Empty { get { return Types.Count == 0 && Category == "" && Stab == "" && Effectiveness == "" && Range == "" && PowerMax < 0 && PowerMin < 0 && !PriorityPositive && !PriorityZero && Tags.Count == 0 && Names.Count == 0 && !Placeholder; } }
 
   public string Text {
    get {
@@ -36,6 +37,7 @@ namespace AABattle {
     if (PowerMax >= 0) parts.Add("「위력 " + PowerMax + " 이하」");
     if (PowerMin >= 0) parts.Add("「위력 " + PowerMin + " 이상」");
     if (PriorityPositive) parts.Add("「우선도 +」");
+    if (PriorityZero) parts.Add("「우선도 ±0」");
     parts.AddRange(Tags.Select(x => "「" + x + "」"));
     parts.AddRange(Names.Select(x => "「기술:" + x + "」"));
     return string.Concat(parts);
@@ -80,6 +82,7 @@ namespace AABattle {
    if (core == "타입일치") { Stab = "타입 일치"; return true; }
    if (core == "타입불일치") { Stab = "타입 불일치"; return true; }
    if (core.StartsWith("효과")) {
+    if (core.Contains("굉장") && core.EndsWith("이외")) { Effectiveness = "효과가 굉장 이외"; return true; }
     if (core.Contains("굉장")) { Effectiveness = "효과가 굉장"; return true; }
     if (core.Contains("별로")) { Effectiveness = "효과가 별로"; return true; }
     if (core.Contains("보통")) { Effectiveness = "효과 보통"; return true; }
@@ -89,6 +92,7 @@ namespace AABattle {
    var power = Regex.Match(core, @"^위력:?(?<n>\d+)(?<dir>이하|이상)$");
    if (power.Success) { int n = int.Parse(power.Groups["n"].Value); if (power.Groups["dir"].Value == "이하") PowerMax = n; else PowerMin = n; return true; }
    if (core == "우선도+" || core == "우선도가+" || core == "선공") { PriorityPositive = true; return true; }
+   if (core == "우선도±0" || core == "우선도0" || core == "우선도+-0") { PriorityZero = true; return true; }
    if (!bracketed) return false;
    Tags.Add(core);
    return true;
@@ -106,6 +110,7 @@ namespace AABattle {
    if (Stab == "타입 불일치" && stab) return false;
    if (Effectiveness == "효과가 굉장" && !(typeEffect > 1)) return false;
    if (Effectiveness == "효과가 별로" && !(typeEffect > 0 && typeEffect < 1)) return false;
+   if (Effectiveness == "효과가 굉장 이외" && typeEffect > 1) return false;
    if (Effectiveness == "효과 보통" && typeEffect != 1) return false;
    bool spread = (move.target ?? "").Contains("전체") || (move.tags ?? new string[0]).Contains("전체");
    if (Range == "전체" && !spread) return false;
@@ -113,8 +118,9 @@ namespace AABattle {
    if (PowerMax >= 0 && !(move.power > 0 && move.power <= PowerMax)) return false;
    if (PowerMin >= 0 && move.power < PowerMin) return false;
    if (PriorityPositive && move.priority <= 0) return false;
+   if (PriorityZero && move.priority != 0) return false;
    // 「물기」「엄니」처럼 계통·이름 괄호가 여럿이면 하나라도 맞으면 된다. 「접촉」은 최종 접촉 판정
-   if (Tags.Count > 0 && !Tags.Any(tag => tag == "접촉" ? Mechanics.Contact(move) : tag == "기능확장" ? move.extension : (move.tags ?? new string[0]).Contains(tag) || (move.effect ?? "").Contains(tag) || move.name == tag)) return false;
+   if (Tags.Count > 0 && !Tags.Any(tag => tag == "접촉" ? Mechanics.Contact(move) : tag == "비접촉" ? !Mechanics.Contact(move) : tag == "기능확장" ? move.extension : (move.tags ?? new string[0]).Contains(tag) || (move.effect ?? "").Contains(tag) || move.name == tag)) return false;
    if (Names.Count > 0 && !Names.Contains(move.name)) return false;
    return true;
   }
@@ -259,6 +265,14 @@ namespace AABattle {
    if (criticalModule != null) return criticalModule;
    string itemAbility = AbilityItemModules.Normalize(text);
    if (itemAbility != null) return itemAbility;
+   string noEffect = AbilityNoEffectModules.Normalize(text);
+   if (noEffect != null) return noEffect;
+   string abilityMove = AbilityMoveModules.Normalize(text);
+   if (abilityMove != null) return abilityMove;
+   string abilityState = AbilityStateModules.Normalize(text);
+   if (abilityState != null) return abilityState;
+   string abilityEvent = AbilityEventModules.Normalize(text);
+   if (abilityEvent != null) return abilityEvent;
    string changeModule = AbilityChangeModules.Normalize(text);
    if (changeModule != null) return changeModule;
    string abilityModule = AbilityPhrases.Normalize(text);
@@ -453,7 +467,7 @@ namespace AABattle {
   public static int ActFirstTier(string text) { var m = Regex.Match(Clean(text), @"^자신은 (?<w>가장|상대보다) 먼저 행동(?:한다|할 수 있다)$"); return !m.Success ? 0 : m.Groups["w"].Value == "가장" ? 2 : 1; }
   public static bool IsActFirst(string text) { return ActFirstTier(text) > 0; }
   public static bool IsFloating(string text) { return Clean(text) == "자신은 공중에 떠오른다"; }
-  static bool IsImmunityName(string name) { return name.Trim() == "상태변화" || MajorStatuses.Contains(name.Trim()) || StateEffects.Find(name.Trim()) != null; }
+  static bool IsImmunityName(string name) { return name.Trim() == "상태변화" || name.Trim() == "상태이상" || MajorStatuses.Contains(name.Trim()) || StateEffects.Find(name.Trim()) != null; }
   public static bool TryStatusImmunity(string text, out string[] statuses) { bool opponentOnly; return TryStatusImmunity(text, out statuses, out opponentOnly); }
   public static bool TryStatusImmunity(string text, out string[] statuses, out bool opponentOnly) {
    var m = Regex.Match(Clean(text), @"^(?<o>상대의 기술에 의해 |상대에 의해 )?자신은 「(?<s>[^」]+)」\s*상태가 되지 않는다$");
@@ -485,6 +499,9 @@ namespace AABattle {
    if (m.Success) return SpeciesTarget(m.Groups["s"].Value, m.Groups["st"].Value) + " 종족치를 " + m.Groups["n"].Value + "랭크 올린다.";
    m = Regex.Match(text, "^" + Who + @"(?<st>「[^」]+」)(?:의\s*종족치)?(?:을|를)\s*가장\s*(?<h>높은|낮은)\s*종족치(?:와\s*동랭크)?로\s*한다$");
    if (m.Success) return SpeciesTarget(m.Groups["s"].Value, m.Groups["st"].Value) + " 종족치를 가장 " + m.Groups["h"].Value + " 종족치로 한다.";
+   // 「동랭크까지 올린다」는 더 높은 쪽에 맞춘다(낮추지 않는다)
+   m = Regex.Match(text, "^" + Who + What + @"(?:의)?\s*종족치(?:를|을)\s*(?:자신의\s*)?(?<src>「[^」]+」)(?:의)?\s*종족치(?:와\s*동랭크|와\s*같은\s*랭크)까지\s*올린다$");
+   if (m.Success) return SpeciesTarget(m.Groups["s"].Value, m.Groups["st"].Value) + " 종족치를 자신의 " + m.Groups["src"].Value + " 종족치까지 올린다.";
    m = Regex.Match(text, "^" + Who + What + @"(?:의)?\s*종족치(?:를|을)\s*(?:자신의\s*)?(?<src>「[^」]+」)(?:의)?\s*종족치와\s*(?:동랭크까지\s*올린다|같게\s*한다|동랭크로\s*한다)$");
    if (m.Success) return SpeciesTarget(m.Groups["s"].Value, m.Groups["st"].Value) + " 종족치를 자신의 " + m.Groups["src"].Value + " 종족치와 같게 한다.";
    m = Regex.Match(text, "^" + Who + What + @"(?:의)?\s*종족치(?:를|을|가)\s*(?:아군\s*)?트레이너의?\s*「(?<a>지시|육성|통솔|능력)」(?:과|와)\s*(?:같은\s*랭크|동랭크)(?:까지\s*올린다|로\s*한다|가\s*된다)$");
@@ -553,6 +570,7 @@ namespace AABattle {
    else if ((r = Regex.Match(rest, @"^「(?<v>\d+)」로 한다$")).Success) { e.Operation = "수치"; e.Value = int.Parse(r.Groups["v"].Value); }
    else if ((r = Regex.Match(rest, @"^가장 (?<h>높은|낮은) 종족치로 한다$")).Success) e.Operation = r.Groups["h"].Value == "높은" ? "최고 복사" : "최저 복사";
    else if ((r = Regex.Match(rest, @"^자신의 「(?<src>[^」]+)」 종족치와 같게 한다$")).Success) { e.Operation = "복사"; e.Source = StatIndex(r.Groups["src"].Value); if (e.Source < 0 || e.Source > 5) return false; }
+   else if ((r = Regex.Match(rest, @"^자신의 「(?<src>[^」]+)」 종족치까지 올린다$")).Success) { e.Operation = "복사 상승"; e.Source = StatIndex(r.Groups["src"].Value); if (e.Source < 0 || e.Source > 5) return false; }
    else if ((r = Regex.Match(rest, @"^트레이너 「(?<a>지시|육성|통솔|능력)」 등급까지 올린다$")).Success) { e.Operation = "트레이너"; e.Aptitude = r.Groups["a"].Value; }
    else return false;
    if (e.Grade.Length > 0) { try { SpeciesStatRanks.LabelRange(e.Grade); } catch { return false; } }
@@ -623,6 +641,14 @@ namespace AABattle {
    if (criticalKind.Length > 0) return criticalKind;
    string itemAbility = AbilityItemModules.Classify(s);
    if (itemAbility.Length > 0) return itemAbility;
+   string noEffectKind = AbilityNoEffectModules.Classify(s);
+   if (noEffectKind.Length > 0) return noEffectKind;
+   string abilityMoveKind = AbilityMoveModules.Classify(s);
+   if (abilityMoveKind.Length > 0) return abilityMoveKind;
+   string abilityStateKind = AbilityStateModules.Classify(s);
+   if (abilityStateKind.Length > 0) return abilityStateKind;
+   string abilityEventKind = AbilityEventModules.Classify(s);
+   if (abilityEventKind.Length > 0) return abilityEventKind;
    string changeKind = AbilityChangeModules.Classify(s);
    if (changeKind.Length > 0) return changeKind;
    string abilityKind = AbilityPhrases.Classify(s);

@@ -22,7 +22,8 @@ namespace AABattle {
   static readonly Regex Immune = new Regex(@"^자신의 (?<c>(?:「[^」]+」)*)\s*기술이 타입 상성에 의한 무효를 관통한다$");
   static readonly Regex ImmuneTaken = new Regex(@"^상대의 (?<c>(?:「[^」]+」)*)\s*기술이 타입 상성에 의한 무효를 관통한다$");
   static readonly Regex Stab = new Regex(@"^자신의 (?<c>(?:「[^」]+」)*)\s*기술의 타입 일치 배율을 「(?<v>[0-9.]+)배」로 한다$");
-  static readonly Regex GhostImmune = new Regex(@"^자신의 (?<c>(?:「[^」]+」)*)\s*기술이 「고스트」 타입의 무효를 관통한다$");
+  // 특정 방어 타입의 무효만 관통한다(배짱의 「고스트」, 통전의 「땅」, 붉은녹의 「강철」 …)
+  static readonly Regex GhostImmune = new Regex(@"^자신의 (?<c>(?:「[^」]+」)*)\s*기술이 「(?<vs>[^」]+)」 타입의 무효를 관통한다$");
   static readonly Regex AddType = new Regex(@"^자신의 (?<c>(?:「[^」]+」)*)\s*기술에 「(?<t>[^」]+)」 타입을 추가해 유리한 상성으로 판정(?:한다|할 수 있다)$");
   static readonly Regex Rating = new Regex(@"^(?:「(?<vs>[^」]+)」 타입에게 )?(?<s>자신|상대)의 (?<c>(?:「[^」]+」)*)\s*기술의 상성을 「(?<r>효과가 굉장|효과가 별로|효과 보통)」(?:으로|로) 한다$");
   static readonly Regex TypeChange = new Regex(@"^(?<s>자신|상대)의 타입을 「(?<t>[^」]+)」(?:으로|로) (?:한다|할 수 있다)$");
@@ -107,7 +108,7 @@ namespace AABattle {
    if (Resist.IsMatch(s)) return "타입 내성 관통";
    if (IgnoreAll.IsMatch(s)) return "타입 상성 무시";
    if (Immune.IsMatch(s) || ImmuneTaken.IsMatch(s)) return "상성 무효 관통";
-   if (GhostImmune.IsMatch(s)) return "고스트 타입 무효 관통";
+   if (GhostImmune.IsMatch(s) && Types(GhostImmune.Match(s).Groups["vs"].Value)) return "타입 무효 관통";
    if (Stab.IsMatch(s)) return "자속 배율";
    if (AddType.IsMatch(s) && Types(AddType.Match(s).Groups["t"].Value)) return "타입 추가";
    if (s == Favorable) return "유리한 상성";
@@ -137,7 +138,8 @@ namespace AABattle {
   // 공격 측 포텐셜이 바꾸는 상성 계산 방식
   public sealed class Profile {
    public List<string> Added = new List<string>();
-   public bool Favorable, IgnoreAll, PierceImmune, PierceAll, IgnoreGhostImmune, Inverse;
+   public bool Favorable, IgnoreAll, PierceImmune, PierceAll, Inverse;
+   public List<string> PierceImmuneTypes = new List<string>();
    public List<string> PierceTypes = new List<string>();
   }
 
@@ -152,7 +154,7 @@ namespace AABattle {
    foreach (string line in Lines(a, b, r)) {
     Match x;
     if ((x = AddType.Match(line)).Success && Applies(x, m, a)) { foreach (string t in x.Groups["t"].Value.Split('/')) if (!p.Added.Contains(t)) p.Added.Add(t); p.Favorable = true; }
-    else if (GhostImmune.IsMatch(line) && Applies(GhostImmune.Match(line), m, a)) p.IgnoreGhostImmune = true;
+    else if (GhostImmune.IsMatch(line) && Applies(GhostImmune.Match(line), m, a)) p.PierceImmuneTypes.AddRange(GhostImmune.Match(line).Groups["vs"].Value.Split('/'));
     else if (line == Favorable) p.Favorable = true;
     else if ((x = IgnoreAll.Match(line)).Success && Applies(x, m, a)) p.IgnoreAll = true;
     else if ((x = Immune.Match(line)).Success && Applies(x, m, a)) p.PierceImmune = true;

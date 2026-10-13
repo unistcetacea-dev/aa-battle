@@ -113,7 +113,8 @@ namespace AABattle {
     bool fromAttacker = ReferenceEquals(e.Owner, a);
     if (AppliesTo(s, e.Owner, a)) {
      if (!fromAttacker && rules != null && rules.Critical && s.Rate < 1) continue;   // 급소: 방어 측 방호 무시
-     factor *= s.Rate;
+     // 오라 반전: 필드 전원의 위력 강화는 약화로(역수)
+     factor *= s.Subject == AbilityCriticalFieldModules.FieldAll && AbilityStateModules.AurasReversed(a, b, rules) ? 1 / s.Rate : s.Rate;
     }
    }
    var scope = EffectScope.Current;
@@ -195,7 +196,7 @@ namespace AABattle {
     string[] list; bool opponentOnly;
     if (!EffectModules.TryStatusImmunity(s, out list, out opponentOnly)) continue;
     var definition = StateEffects.Find(status);
-    bool matches = list.Contains(status) || list.Contains("상태변화") && definition != null && definition.Category == "상태변화";
+    bool matches = list.Contains(status) || list.Contains("상태변화") && definition != null && definition.Category == "상태변화" || list.Contains("상태이상") && Mechanics.Statuses.Contains(status) && status != "정상";
     if (matches && (!opponentOnly || source != null && !ReferenceEquals(source, target))) return true;
    }
    return false;

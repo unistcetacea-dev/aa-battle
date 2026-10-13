@@ -56,6 +56,22 @@ namespace AABattle {
      return true;
     }, true));
    }
+   // 특성·포텐셜로 거는 진영 상태(기술은 Mechanics.StatusMove가 따로 처리한다): 순풍 4T · 리플렉터/빛의장막 5T(기간 연장 소지품 적용)
+   foreach (string wall in new[] { "순풍", "리플렉터", "빛의장막" }) {
+    string name = wall;
+    rules.Add(Rule(name, c => {
+     var s = StateTicks.Side(c.Target, c.Rules);
+     if (s == null) return false;
+     int turns = MiscModules.ExtendTurns(c.Source, name, c.Turns > 0 ? c.Turns : name == "순풍" ? 4 : 5);
+     if (name == "순풍") { if (s.Tailwind > 0) return Fail(c, name); s.Tailwind = turns; }
+     else if (name == "리플렉터") { if (s.Reflect > 0) return Fail(c, name); s.Reflect = turns; }
+     else { if (s.LightScreen > 0) return Fail(c, name); s.LightScreen = turns; }
+     c.Say((StateTicks.SideIndex(c.Target, c.Rules) + 1) + "팀 진영: " + name + " " + turns + "턴");
+     return true;
+    }, true));
+   }
+   // 먹이를 문 상태(그대로꿀꺽미사일): 효과는 특성 문장이 정한다
+   rules.Add(Rule("먹이를 문", c => Flag(c, "먹이를 문", c.Target.Conditions.Gulping, () => c.Target.Conditions.Gulping = true), true));
    rules.Add(Rule("패스트가드", c => { var s = StateTicks.Side(c.Target, c.Rules); if (s == null) return false; s.QuickGuard = true; return true; }, true));
    rules.Add(Rule("전자부유", c => Flag(c, "전자부유", c.Target.Conditions.MagnetRise > 0, () => c.Target.Conditions.MagnetRise = c.Turns > 0 ? c.Turns : 5), true));
    rules.Add(Rule("텔레키네시스", c => Flag(c, "텔레키네시스", c.Target.Conditions.Telekinesis > 0, () => c.Target.Conditions.Telekinesis = c.Turns > 0 ? c.Turns : 3)));
@@ -100,6 +116,7 @@ namespace AABattle {
  // 새 상태의 기간·턴 끝 처리와 판정 지점
  public static class StateTicks {
   public const string Reflected = "매직코트가 기술을 되돌려 보냈다";
+  public static int SideIndex(Fighter f, Rules r) { return f == null || r == null ? -1 : Mechanics.PartySide(f, r); }
   public static SideFieldState Side(Fighter f, Rules r) {
    if (f == null || r == null) return null;
    int side = Mechanics.PartySide(f, r);

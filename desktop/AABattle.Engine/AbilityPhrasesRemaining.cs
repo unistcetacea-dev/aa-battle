@@ -52,8 +52,8 @@ namespace AABattle {
   public static bool UsesMoveType(Fighter a, Fighter b, Rules rules) {
    return PotentialModifiers.Sentences(a, b, rules, "내보내는 기술의 타입").Any(x => Clean(x) == MatchMoveType);
   }
-  public static bool IgnoresMoveRecoil(Fighter a, Rules rules) {
-   return PotentialModifiers.Sentences(a, null, rules, "반동").Any(x => Clean(x) == NoRecoil);
+  public static bool IgnoresMoveRecoil(Fighter a, Rules rules, Move move = null) {
+   return PotentialModifiers.Sentences(a, null, rules, "반동").Any(x => Clean(x) == NoRecoil) || AbilityMoveModules.IgnoresRecoil(a, move, rules);
   }
   public static bool HasWeatherLock(Fighter a, Fighter b, Rules rules) {
    return PotentialModifiers.Sentences(a, b, rules, "고정", null, true).Concat(PotentialModifiers.Sentences(b, a, rules, "고정", null, true)).Any(x => WeatherLock.IsMatch(Clean(x)));

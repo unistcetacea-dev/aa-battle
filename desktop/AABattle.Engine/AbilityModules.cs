@@ -12,7 +12,7 @@ namespace AABattle {
   // 모듈로 표현할 수 없는 전용 규칙만 남긴다
   public static readonly HashSet<string> Dedicated = new HashSet<string>();
   // 해석하지 않은 문장은 보류하고 검증된 나머지 문장만 연결한다.
-  public static readonly Dictionary<string, string> Pending = new Dictionary<string, string>();
+  public static readonly Dictionary<string, string> Pending = new Dictionary<string, string>(AbilityRewrites3.PendingReasons);
   // 도감 문장의 모듈 표현
   public static readonly Dictionary<string, string> Rewrites = new Dictionary<string, string> {
    { "나쁜손버릇", "상대의 공격을 받았을 때, 상대의 소지품을 빼앗는다." },
@@ -96,7 +96,15 @@ namespace AABattle {
    t = Regex.Replace(t, @"\.(?=[^\s.\d)])", ". ");
    return Regex.Replace(t, @"\s+", " ").Trim();
   }
-  static string Text(AbilityDefinition d) { string r; return Rewrites.TryGetValue(d.name, out r) ? r : AbilityPhrases.Fold(AbilityPhrases.Rewrite(Clean(d.effect))); }
+  static string Text(AbilityDefinition d) {
+   string r;
+   if (Rewrites.TryGetValue(d.name, out r) || AbilityRewrites3.Table.TryGetValue(d.name, out r)) return r;
+   return AbilityPhrases.Fold(AbilityPhrases.Rewrite(Clean(d.effect)));
+  }
+  // 도감 표시와 효과 없음 집계용: 특성 문장 전체(효과 없음 문장 포함)
+  public static string[] Sentences(AbilityDefinition d) {
+   return Regex.Split(Text(d), @"(?<=[.。])\s+").Select(x => x.Trim()).Where(x => x.Length > 0).ToArray();
+  }
 
   // 한 특성이 계속 효과와 사건 효과를 함께 가지면 「…때,」 절 단위로 포텐셜 하나씩
   public static Potential[] ToPotentials(AbilityDefinition d) {
@@ -108,7 +116,12 @@ namespace AABattle {
   }
   // 조건이 없는 문장(계속)과 「…때,」로 시작하는 문장(사건)을 나눈다
   static List<string> Split(string text) {
-   var sentences = Regex.Split(text, @"(?<=[.。])\s+").Select(x => x.Trim()).Where(x => x.Length > 0).ToList();
+   var sentences = new List<string>();
+   foreach (string raw in Regex.Split(text, @"(?<=[.。])\s+").Select(x => x.Trim()).Where(x => x.Length > 0 && !AbilityNoEffectModules.IsNoEffect(x))) {
+    // 「이 대미지로는 빈사로 할 수 없다」는 앞 문장의 대미지에 붙는 보충이다
+    if (raw.StartsWith("이 대미지로는 빈사로 할 수 없다") && sentences.Count > 0) sentences[sentences.Count - 1] += " " + raw;
+    else sentences.Add(raw);
+   }
    var result = new List<string>();
    string always = "";
    foreach (string s in sentences) {
@@ -125,6 +138,12 @@ namespace AABattle {
     string condition, effect; PotentialLibrary.Split(p.description, out condition, out effect);
     bool trigger = TriggerStructures.Clauses(p).All(c => c == TriggerStructures.AlwaysLabel || TriggerModules.IsModule(c));
     var sentences = Regex.Split(EffectNormalizer.NormalizeLines(effect.Length > 0 ? effect : p.description).Replace("\r", ""), @"\n|(?<=[.．。])\s+").Where(x => x.Trim().Length > 0).ToList();
+    // 「이 대미지로는 빈사로 할 수 없다」는 앞 대미지 문장에 붙는 보충이다
+    for (int i = sentences.Count - 1; i > 0; i--) {
+     if (!sentences[i].Trim().StartsWith("이 대미지로는 빈사로 할 수 없다")) continue;
+     sentences[i - 1] += " " + sentences[i].Trim();
+     sentences.RemoveAt(i);
+    }
     return trigger && sentences.Count > 0 && sentences.All(x => EffectModules.Classify(x).Length > 0);
    });
   }
@@ -146,6 +165,7 @@ namespace AABattle {
    }
    f.Data.potentials = list.ToArray();
    AbilityPhrases.SyncTypes(f);
+   ItemRuntime.Sync(f);   // 숙성·플레이트 타입처럼 특성에 따라 소지품 효과·타입이 달라진다
   }
   // 틀깨기: 상대가 기술을 내는 동안 자신의 특성 계속 효과는 무시된다
   public static bool Ignored(Potential p, Fighter owner, Fighter opponent, string sentence = null) {

@@ -29,7 +29,7 @@ namespace AABattle {
    if (AbilityModules.Pending.TryGetValue(ability.name, out pending)) {
     ability.support = auto ? "부분 자동" : "수동"; ability.blocker = pending; return ability;
    }
-   if(auto){ability.support="자동";return ability;}
+   if(auto){ability.support="자동";ability.blocker=AbilityNoEffectModules.Describe(AbilityModules.Sentences(ability));return ability;}
    ability.support="수동";
    string text = AbilityModules.Clean(ability.effect).Replace(" ", "");
    if(text.Contains("더블배틀")||text.Contains("인접")||text.Contains("아군전체"))ability.blocker="다인전 대상/범위 엔진 필요";
@@ -46,6 +46,6 @@ namespace AABattle {
    return ability;
   }
   public static IEnumerable<AbilityDefinition> Gaps {get{return All.Where(x=>x.support!="자동");}}
-  public static void Test(){var drought=Find("가뭄");var speed=Find("가속");var trouble=Find("트러블메이커");if(All.Length<580||drought==null||!drought.effect.Contains("쾌청")||drought.support!="자동"||drought.triggers.Length==0||speed==null||speed.support!="자동"||trouble==null||trouble.blocker.Length==0)throw new Exception("Ability catalog import and classification");}
+  public static void Test(){var drought=Find("가뭄");var speed=Find("가속");var trouble=Find("일루전");if(All.Length<580||drought==null||!drought.effect.Contains("쾌청")||drought.support!="자동"||drought.triggers.Length==0||speed==null||speed.support!="자동"||trouble==null||trouble.blocker.Length==0)throw new Exception("Ability catalog import and classification");}
  }
 }

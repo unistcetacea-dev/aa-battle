@@ -29,6 +29,8 @@ namespace AABattle {
   public Fighter Other;                     // 상대(없으면 장소의 상대)
   public string Message = "";               // 사건 문맥(로그용)
   public Move Move;
+  public TriggerFact Fact;                  // 트리거 모듈 사건이면 그 사건(랭크 변화량·상태 이름 등을 읽는 효과용)
+  public string SlotOnly = "";              // 지정하면 그 슬롯의 포텐셜만 대상(나무열매를 강제로 사용할 때 소지품 슬롯)
   public int Damage, Hit;
   public Action<string> Log;                // 호출한 쪽의 로그
   public bool Announce;                     // 처리 직전에 Message를 로그에 남긴다(TriggerStructures.Fire 형식)
@@ -81,7 +83,7 @@ namespace AABattle {
  public static class PotentialExecutors {
   static readonly List<PotentialExecutor> all = new List<PotentialExecutor>();
   public static IEnumerable<PotentialExecutor> All { get { return all; } }
-  static PotentialExecutors() { PotentialQueue.BuiltIn.Register(); MoveModules.RegisterExecutors(); AbilityChangeModules.Register(); AbilityItemModules.Register(); }
+  static PotentialExecutors() { PotentialQueue.BuiltIn.Register(); MoveModules.RegisterExecutors(); AbilityChangeModules.Register(); AbilityItemModules.Register(); AbilityEventModules.Register(); }
   public static PotentialExecutor Register(string name, Func<EffectCall, bool> canRun, Func<EffectCall, EffectOutcome> run) {
    var executor = new PotentialExecutor { Name = name, CanRun = canRun, Run = run };
    all.Add(executor);
@@ -126,6 +128,11 @@ namespace AABattle {
    table[key] = used + 1;
   }
   public bool Used(string key) { return Battle.ContainsKey(key) || Turn.ContainsKey(key); }
+  // 소지품을 되돌려받으면 그 소지품의 사용 이력도 지운다(다시 쓸 수 있다)
+  public void Forget(string prefix) {
+   foreach (string key in Battle.Keys.Where(x => x.StartsWith(prefix, StringComparison.Ordinal)).ToList()) Battle.Remove(key);
+   foreach (string key in Turn.Keys.Where(x => x.StartsWith(prefix, StringComparison.Ordinal)).ToList()) Turn.Remove(key);
+  }
   public void EndTurn() { Turn.Clear(); Declared.Clear(); }
  }
 
@@ -145,6 +152,8 @@ namespace AABattle {
    string owner = trainer == null ? "" : !string.IsNullOrEmpty(trainer.id) ? trainer.id : trainer.name;
    return "T:" + owner + "|" + slot + "|" + Math.Max(0, ordinal);
   }
+  // 같은 슬롯의 모든 키가 공유하는 앞부분(사용 이력 초기화용)
+  public static string SlotPrefix(Pokemon owner, string slot) { return Owner(owner) + "|" + slot + "|"; }
   // 선행입력 선언처럼 이름만 아는 경우
   public static string ForName(Pokemon owner, string name) {
    var potential = (owner == null ? null : owner.potentials ?? new Potential[0]).FirstOrDefault(x => x != null && x.name == name);
@@ -197,7 +206,7 @@ namespace AABattle {
     }
     return result;
    }
-   foreach (var p in (e.Owner.Data.potentials ?? new Potential[0]).Where(x => x != null)) {
+   foreach (var p in (e.Owner.Data.potentials ?? new Potential[0]).Where(x => x != null && (e.SlotOnly.Length == 0 || x.id == e.SlotOnly))) {
     var clauses = TriggerStructures.Clauses(p).ToArray();
     if (!clauses.Any(e.Matches)) continue;
     string condition, effect;
@@ -682,6 +691,7 @@ namespace AABattle {
       case "최고 복사": next = PotentialStatRules.CopyBase(target.Data, EffectModules.StatIndex(PotentialStatRules.ChooseExtremeBase(target.Data, true, c.Rng ?? (() => .5)))); break;
       case "최저 복사": next = PotentialStatRules.CopyBase(target.Data, EffectModules.StatIndex(PotentialStatRules.ChooseExtremeBase(target.Data, false, c.Rng ?? (() => .5)))); break;
       case "복사": next = b[s.Source]; break;
+      case "복사 상승": next = Math.Max(current, b[s.Source]); break;
       case "트레이너": next = Math.Max(current, trainerFloor < 0 ? current : GradeValue(c, target, i, current, trainerGrade, -1)); break;
      }
      if (next == current) continue;

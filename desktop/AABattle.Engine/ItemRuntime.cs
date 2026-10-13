@@ -113,8 +113,14 @@ namespace AABattle {
    if (f == null || f.Data == null) return;
    var list = (f.Data.potentials ?? new Potential[0]).Where(p => p == null || p.id != Slot).ToList();
    var d = ItemCatalog.Find(f.Data.item);
-   if (Runnable(d) && AbilityItemModules.CanUseItem(f)) list.AddRange(ToPotentials(d));
+   if (Runnable(d) && AbilityItemModules.CanUseItem(f)) {
+    var item = ToPotentials(d);
+    // 숙성: 소모하는 나무열매의 효과가 2배
+    if (IsBerry(d.Name) && AbilityItemModules.Ripens(f)) foreach (var p in item) p.description = AbilityItemModules.Ripen(p.description);
+    list.AddRange(item);
+   }
    f.Data.potentials = list.ToArray();
+   AbilityItemModules.SyncItemType(f);
   }
 
   // 전용 코드로 처리하는 소지품(효과 안내 표시용)
@@ -127,7 +133,8 @@ namespace AABattle {
   }
   public static string Name(Fighter f) { if (!AbilityItemModules.CanUseItem(f)) return ""; var d = ItemCatalog.Find(f.Data.item); return d != null ? d.Name : f.Data.item ?? ""; }
   public static bool Holds(Fighter f, params string[] names) { string n = Name(f); return n.Length > 0 && names.Contains(n); }
-  public static bool Choice(Fighter f) { return Holds(f, "구애머리띠", "구애안경", "구애스카프"); }
+  public static bool Choice(Fighter f) { return Holds(f, "구애머리띠", "구애안경", "구애스카프") || AbilityStateModules.MoveLocked(f); }
+  public static bool IsBerry(string item) { var d = ItemCatalog.Find(item); return d != null && d.Category == "나무열매"; }
 
   // 「1번만」인 계속 배율(반감열매·보코/마쥬 등)이 이번 타격에 걸리는가. 맞기 전에 판정하고 맞은 뒤 소비한다
   public static List<Fighter> OnceScalars(Fighter a, Fighter b, Move m, double typeEffect, Rules r) {
@@ -155,11 +162,12 @@ namespace AABattle {
    if (f == null || f.Data == null || string.IsNullOrEmpty(f.Data.item)) return;
    string item = f.Data.item;
    f.LostItem = item;
+   if (reason == "소비" && IsBerry(item)) f.LostBerry = item;   // 되돌려받기(수확·풍작)·되새김질용: 소모한 나무열매
    f.Data.item = "";
    Sync(f);
    if (log != null) log(f.Data.name + ": 「" + item + "」" + (reason == "소비" ? "을 사용했다" : " — " + reason));
    string method = reason == "소비" ? "소모" : reason == "파괴" || reason == "부서졌다" ? "파괴" : "";
-   if (method.Length > 0) TriggerModules.Raise(new TriggerFact { Kind = "소지품 소실", Method = method }, f,
+   if (method.Length > 0) TriggerModules.Raise(new TriggerFact { Kind = "소지품 소실", Method = method, Item = item }, f,
     f.FieldOpponent ?? PotentialQueue.OpponentOf(f), f.Data.name + "의 「" + item + "」 소실", log);
   }
   // 이동은 소모·파괴 사건과 구분한다.

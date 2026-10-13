@@ -95,7 +95,10 @@ namespace AABattle {
    string family = Mechanics.Sunny(weather) ? "쾌청" : Mechanics.Rain(weather) ? "비" : weather;
    return Lines(f, null, rules, "영향").Any(line => { var m = Ignore.Match(line); return m.Success && Names(m.Groups["n"].Value).Contains(family); });
   }
-  public static bool Lags(Fighter f, Fighter other, Rules rules) { return f != null && f.HP > 0 && Lines(f, other, rules, "우선도").Any(x => x == Lag); }
+  public static bool Lags(Fighter f, Fighter other, Rules rules, Move move = null) {
+   if (f == null || f.HP <= 0) return false;
+   return Lines(f, other, rules, "우선도").Any(x => x == Lag || move != null && AbilityMoveModules.LagsMove(x, f, move));
+  }
 
   // ===== 특성 변경(교대하면·기간이 끝나면 원래대로) =====
   public static bool ChangeAbility(Fighter target, string ability, int turns, List<string> log, string source, bool refresh = true) {

@@ -20,6 +20,7 @@ namespace AABattle {
   public string[] Types = new string[0];               // 쓰러뜨린 상대 / 교대 상대 아군의 타입
   public int Every, FieldTurn;                         // 「N」배수 T / 장소에 나와 「N」T째
   public string Inner = "";                            // 「…」가 성립한 T 종료 시
+  public bool NextTurn;                                // 「…」가 성립한 다음 T 종료 시(지난 T의 사건)
   // 2단계(TriggerStates): 상태 이름 · 체력 비교 · 날씨/장소 이름 · 랭크
   public string Subject = "자신";                      // 자신 · 상대 · 아군(출전 = 자신) · 자신과 상대
   public string[] Names = new string[0];
@@ -41,6 +42,7 @@ namespace AABattle {
   public Move Move;
   public Fighter User;            // 기술을 쓴 쪽(자속 판정)
   public bool Damaged, Substitute, Critical, After;
+  public string Item = "";        // 소지품 소실 사건의 소지품 이름
   public double TypeEffect = 1;
   public string[] OtherTypes = new string[0];   // 쓰러뜨린 상대의 타입
   public string[] PartnerTypes = new string[0]; // 교대한 상대 아군의 타입
@@ -51,8 +53,8 @@ namespace AABattle {
  }
 
  public static partial class TriggerModules {
-  public static readonly string[] EventModules = { "등장", "교대", "퇴장", "타이밍", "피격", "명중", "급소", "쓰러뜨림", "기술 사용", "상태 됨", "상태 해제", "체력 변화", "회복", "날씨 변화", "장소 변화", "랭크", "특성 발동", "빗나감", "먼저 행동함", "무효화", "배틀 시작", "지령", "해석", "피격·무효화", "대미지", "행동 선택", "방어 성공", "간접 대미지", "드레인", "해석당함", "소지품 소실" };
-  public static readonly string[] StateModules = { "행동 선후", "상태", "체력", "날씨", "장소", "상시", "PT 참가", "적진 타입", "트레이너 자질", "플레이버", "여기다", "해석 상태", "부여", "포텐셜 보유", "소지품", "특성", "생존", "빈사 수", "진영", "공격하지 않음", "능력 변화 합", "능력치 비교" };
+  public static readonly string[] EventModules = { "등장", "교대", "퇴장", "타이밍", "피격", "명중", "급소", "쓰러뜨림", "기술 사용", "상태 됨", "상태 해제", "체력 변화", "회복", "날씨 변화", "장소 변화", "랭크", "특성 발동", "빗나감", "먼저 행동함", "무효화", "배틀 시작", "지령", "해석", "피격·무효화", "대미지", "행동 선택", "방어 성공", "간접 대미지", "드레인", "해석당함", "소지품 소실", "급소 받음", "필드 빈사", "나무열매 사용" };
+  public static readonly string[] StateModules = { "행동 선후", "상태", "체력", "날씨", "장소", "상시", "PT 참가", "적진 타입", "트레이너 자질", "플레이버", "여기다", "해석 상태", "부여", "포텐셜 보유", "소지품", "특성", "생존", "빈사 수", "진영", "공격하지 않음", "능력 변화 합", "능력치 비교", "또는", "속도 비교", "첫 행동 전", "공중", "같은 타입", "최후 아님", "PT 특성" };
   public static readonly string[] EntryMethods = { "선발", "죽어내밀기", "임의교대", "통상교대", "강제교대", "선발 또는 죽어내밀기" };
   static readonly ConcurrentDictionary<string, TriggerSpec> specs = new ConcurrentDictionary<string, TriggerSpec>();
   static readonly TriggerSpec None = new TriggerSpec();
@@ -97,7 +99,7 @@ namespace AABattle {
      return s.Types.Length > 0 ? "「" + string.Join("/", s.Types) + "」 타입 아군과 교대할 때" : TriggerStructures.SwitchLabel;
     case "퇴장": return (s.Opponent ? "상대가 " : "") + (s.IncludeForced ? "강제교대를 포함해 " : "") + "장소를 떠날 때";
     case "타이밍":
-     if (s.Inner.Length > 0) return "「" + s.Inner + "」가 성립한 T 종료 시";
+     if (s.Inner.Length > 0) return "「" + s.Inner + "」가 성립한 " + (s.NextTurn ? "다음 " : "") + "T 종료 시";
      if (s.FieldTurn > 0) return "장소에 나와 「" + s.FieldTurn + "」T째 종료 시";
      return (s.Every > 0 ? "「" + s.Every + "」배수 " : "") + s.Method;
     case "피격": return (s.Ain ? "아인종 " : "") + "상대의 " + CondText(s.Condition) + (s.Attack ? "공격을" : "기술을") + " 받았을 때";
@@ -118,6 +120,7 @@ namespace AABattle {
    string t = Clean(text);
    if (t.Length == 0) return false;
    if (TryParseItemLoss(t, out spec)) return true;
+   if (TryParseAbilityState(t, out spec)) return true;
    if (TryParseState(t, out spec)) return true;
    if (TryParseCondition(t, out spec)) return true;
    Match m; MoveCondition c;
@@ -130,8 +133,8 @@ namespace AABattle {
    }
    m = Regex.Match(t, @"^(?:자신이\s*)?(?:필드|장소)에\s*(?:나와|나온)\s*(?:「?(?<n>\d+)」?\s*(?:T|턴)\s*째\s*(?:의\s*)?|(?:T|턴)\s*(?:의\s*)?)?종료\s*시(?:에)?$");
    if (m.Success) { spec = new TriggerSpec { Module = "타이밍", Method = TriggerStructures.TurnEndLabel, FieldTurn = m.Groups["n"].Success ? int.Parse(m.Groups["n"].Value) : 1 }; return spec.FieldTurn > 0; }
-   m = Regex.Match(t, @"^「(?<inner>.+)」가\s*성립한\s*T\s*종료\s*시$");
-   if (m.Success) { TriggerSpec inner; if (!TryParse(m.Groups["inner"].Value, out inner) || !inner.IsEvent || inner.Module == "타이밍") return false; spec = new TriggerSpec { Module = "타이밍", Method = TriggerStructures.TurnEndLabel, Inner = Canonical(inner) }; return true; }
+   m = Regex.Match(t, @"^「(?<inner>.+)」가\s*성립한\s*(?<next>다음\s*)?T\s*종료\s*시$");
+   if (m.Success) { TriggerSpec inner; if (!TryParse(m.Groups["inner"].Value, out inner) || !inner.IsEvent || inner.Module == "타이밍") return false; spec = new TriggerSpec { Module = "타이밍", Method = TriggerStructures.TurnEndLabel, Inner = Canonical(inner), NextTurn = m.Groups["next"].Success }; return true; }
    m = Regex.Match(t, @"^(?<inner>.+?)\s*(?:T|턴)\s*(?:의\s*)?종료\s*시(?:에)?$");
    if (m.Success) {
     string inner = InnerEvent(m.Groups["inner"].Value.Trim().TrimEnd(','));
@@ -276,7 +279,7 @@ namespace AABattle {
      var rules = EffectScope.Current == null ? null : EffectScope.Current.Rules;
      if (s.Every > 0 && (rules == null || rules.Turn <= 0 || rules.Turn % s.Every != 0)) return false;
      if (s.FieldTurn > 0 && (owner == null || owner.Conditions.FieldTurn != s.FieldTurn)) return false;
-     if (s.Inner.Length > 0) { var inner = Parse(s.Inner); return owner != null && (owner.Conditions.TurnFacts ?? new List<TriggerFact>()).Any(x => Matches(inner, x, owner)); }
+     if (s.Inner.Length > 0) { var inner = Parse(s.Inner); return owner != null && ((s.NextTurn ? owner.Conditions.PrevTurnFacts : owner.Conditions.TurnFacts) ?? new List<TriggerFact>()).Any(x => Matches(inner, x, owner)); }
      return true;
     case "피격":
      if (f.Kind != "명중" || !f.Received || move == null) return false;
@@ -328,7 +331,7 @@ namespace AABattle {
    Func<string, bool> spec = clause => Matches(Parse(TriggerStructures.Normalize(clause)), fact, owner);
    string label = (owner.Data.potentials ?? new Potential[0]).Where(p => p != null).SelectMany(TriggerStructures.Clauses).FirstOrDefault(spec);
    if (label == null) return null;
-   return new PotentialEvent { Owner = owner, Spec = spec, Label = TriggerStructures.Normalize(label), Move = fact.Move, Message = message ?? "", Log = log, Announce = true, PendingText = (source, extra) => "『" + source.Name + "』 " + TriggerStructures.Normalize(label) + " 트리거 충족" + (extra ? " · 추가 조건 확인 필요" : "") + " · 효과 판정 대기: " + source.Description };
+   return new PotentialEvent { Owner = owner, Spec = spec, Label = TriggerStructures.Normalize(label), Move = fact.Move, Fact = fact, Message = message ?? "", Log = log, Announce = true, PendingText = (source, extra) => "『" + source.Name + "』 " + TriggerStructures.Normalize(label) + " 트리거 충족" + (extra ? " · 추가 조건 확인 필요" : "") + " · 효과 판정 대기: " + source.Description };
   }
   // 효과 실행 범위 밖: 예전처럼 사건과 대기 중인 포텐셜만 기록
   public static void LogPending(PotentialEvent e) {

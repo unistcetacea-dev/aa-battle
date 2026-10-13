@@ -59,7 +59,7 @@ namespace AABattle {
   public static double Power(Fighter attacker,Move move){return 1;}
   public static double Damage(Fighter attacker,Fighter defender,Rules rules){return 1;}
   public static bool BlocksCritical(Fighter attacker,Fighter defender){return defender!=null&&!Mechanics.BypassAbility(attacker)&&AbilityPhrases.NoCrit(defender,attacker);}
-  public static bool Endures(Fighter attacker,Fighter defender,Rules rules){return false;}
+  public static bool Endures(Fighter attacker,Fighter defender,Rules rules){return AbilityStateModules.EndureChance(defender,attacker,rules,EffectScope.Current==null?(Func<double>)null:EffectScope.Current.Rng);}
   public static double Evasion(Fighter attacker,Fighter defender){return 1;}
 
   public static void Test(){

@@ -128,7 +128,7 @@ namespace AABattle {
     case "공격하지 않음": return Owner(s.Subject) + " 공격하지 않을 때";
     case "능력 변화 합": return "자신의 능력 변화가 " + (s.Top > 0 ? "+" + s.Top + " 이상" : s.Top + " 이하") + "일 때";
    }
-   return "";
+   return CanonicalAbilityState(s);
   }
 
   static int SideOf(Fighter f) { return f == null ? -1 : f.FieldSide; }
@@ -203,7 +203,7 @@ namespace AABattle {
      return s.Top > 0 ? total >= s.Top : total <= s.Top;
     }
    }
-   return false;
+   return HoldsAbilityState(s, owner, opponent, rules);
   }
 
   static bool MatchesCondition(TriggerSpec s, TriggerFact f) {
@@ -212,7 +212,7 @@ namespace AABattle {
    if (s.Module == "빗나감") return f.Kind == "빗나감" && f.Self;
    if (s.Module == "무효화") return f.Kind == "무효화" && f.Self && f.Move != null && s.Condition.Matches(f.Move, f.User, 1);
    if (s.Module == "먼저 행동함") return f.Kind == "먼저 행동함" && f.Self != s.Opponent;
-   return false;
+   return MatchesAbilityEvent(s, f);
   }
  }
 }

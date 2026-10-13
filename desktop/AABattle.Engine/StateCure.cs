@@ -81,6 +81,7 @@ namespace AABattle {
     case "헤롱헤롱": c.AttractSide = -1; break;
     case "동면": c.Hibernate = 0; break;
     case "죽음의 카운트": c.DeathCount = 0; break;
+    case "먹이를 문": c.Gulping = false; break;
    }
   }
  }

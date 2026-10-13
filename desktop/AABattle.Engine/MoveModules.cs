@@ -131,13 +131,14 @@ namespace AABattle {
    double boost = 1;
    foreach (string line in Lines(a, b, "회복량")) { var x = DrainBoost.Match(line); if (x.Success) boost *= double.Parse(x.Groups["n"].Value); }
    int amount = Math.Max(1, (int)Math.Floor(dealt * top / (double)bottom * boost + 1e-9));
+   if (AbilityStateModules.ReversesDrain(b, a, r)) { Mechanics.Hurt(a, b, r, amount, m.name + " 흡수 반전", log); return; }
    int gain = Mechanics.Heal(a, b, r, amount, m.name + " 흡수" + (boost != 1 ? " ×" + boost : ""), log);
    if (gain > 0) AnsweredTriggers.Drained(a, b, dealt, gain, log.Add);
   }
 
   // ===== 반동: 「준 대미지의 N/M만큼 반동 대미지를 받는다」(돌머리·매직가드는 받지 않는다) =====
   public static void Recoil(Fighter a, Fighter b, Move m, Rules r, int dealt, List<string> log) {
-   if (a == null || a.HP <= 0 || dealt <= 0 || AbilityPhrases.IgnoresMoveRecoil(a, r)) return;
+   if (a == null || a.HP <= 0 || dealt <= 0 || AbilityPhrases.IgnoresMoveRecoil(a, r, m)) return;
    var x = Regex.Match(Plain(m), @"준 대미지의 (\d+)/(\d+)만큼 반동 대미지를 받는다");
    if (!x.Success) return;
    Mechanics.Hurt(a, b, r, Math.Max(1, dealt * int.Parse(x.Groups[1].Value) / int.Parse(x.Groups[2].Value)), m.name + " 반동", log);
@@ -170,7 +171,11 @@ namespace AABattle {
   }
 
   // ===== 실패 조건 =====
-  public static string FailReason(Fighter a, Fighter b, Move m) { return FailModules.Reason(a, b, m, EffectScope.Current == null ? new Rules() : EffectScope.Current.Rules); }
+  public static string FailReason(Fighter a, Fighter b, Move m) {
+   var rules = EffectScope.Current == null ? new Rules() : EffectScope.Current.Rules;
+   string reason = FailModules.Reason(a, b, m, rules);
+   return reason.Length > 0 ? reason : AbilityMoveModules.FailReason(a, b, m, rules);
+  }
 
   // ===== 모으기 =====
   public static bool Charges(Move m) { return Tagged(m, "모으기"); }
@@ -246,6 +251,7 @@ namespace AABattle {
   public static bool PiercesProtect(Move m) { return m != null && (Plain(m).Contains("「방어」 기술을 관통한다") || Tagged(m, "방어관통")); }
   public static bool SureHit(Fighter a, Fighter b, Move m, Rules r) {
    if (a == null || m == null) return false;
+   if (AbilityMoveModules.GrantsSureHit(a, b, m, r)) return true;
    string w = ActiveWeather(a, b, r);
    if (WeatherParts(m).Any(x => x.Key == w && x.Value.Contains("「필중」"))) return true;
    foreach (string part in Parts(m)) {

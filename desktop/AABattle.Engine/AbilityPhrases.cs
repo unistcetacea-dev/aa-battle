@@ -110,7 +110,7 @@ namespace AABattle {
    c = c.Trim();
    Match m;
    if (Regex.IsMatch(c, @"^(?:「?접촉\s*기술」?|「접촉」 기술)을 (?:받으면|받았을 때)$")) return "상대의 「접촉」 기술을 받았을 때";
-   if (Regex.IsMatch(c, @"^「비접촉」 기술을 받았을 때$")) return null;
+   if (Regex.IsMatch(c, @"^「비접촉」 기술을 받았을 때$")) return "상대의 「비접촉」 기술을 받았을 때";
    if ((m = Regex.Match(c, @"^(?:자신의 )?(?:HP|체력)가 1/(?<n>\d) ?이하가 (?:됐을 때|되었을 때|되면)$")).Success) return "자신의 체력이 1/" + m.Groups["n"].Value + " 이하가 되었을 때";
    if ((m = Regex.Match(c, @"^(?:자신의 )?(?:HP|체력)이? ?가? ?1/(?<n>\d) ?(?<o>이하|이상)일 때$")).Success) return "자신의 체력이 1/" + m.Groups["n"].Value + " " + m.Groups["o"].Value + "일 때";
    if (Regex.IsMatch(c, @"^(?:자신의 )?(?:체력이 가득일 때|체력이 가득할 때|HP가 「가득」일 때)$")) return "자신의 체력이 가득일 때";
@@ -208,7 +208,7 @@ namespace AABattle {
    finally { checkingWeather = false; }
   }
   public static bool PiercesProtect(Fighter a, Fighter b, Move move, Rules rules) {
-   return move != null && move.category == "변화" && HasRule(a, b, rules, StatusProtectPierce);
+   return move != null && (move.category == "변화" && HasRule(a, b, rules, StatusProtectPierce) || AbilityMoveModules.PiercesProtect(a, b, move, rules));
   }
   public static bool PiercesStatusType(Fighter source, Fighter target, string status, Rules rules) {
    return (status == "독" || status == "맹독") && HasRule(source, target, rules, PoisonPierce);
@@ -240,7 +240,7 @@ namespace AABattle {
   public static bool PiercesAbility(Fighter f) {
    if (f == null || piercing) return false;
    piercing = true;
-   try { return Lines(f, null, "관통").Any(x => x == Pierce); } finally { piercing = false; }
+   try { return Lines(f, null, "관통").Any(x => x == Pierce || AbilityMoveModules.PiercesAbilityFor(x, f)); } finally { piercing = false; }
   }
   public static bool BlocksDrop(Fighter target, int stat) {
    string[] names = { "", "공격", "방어", "특공", "특방", "속도", "명중", "회피" };
