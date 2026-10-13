@@ -246,6 +246,8 @@ namespace AABattle {
   // 수집 원문의 같은 뜻 변형 → 표준 문장. 모듈이 아니면 null
   public static string Normalize(string text) {
    string t = Clean(text);
+   string chaldea = ChaldeaTriggers.Normalize(t);
+   if (chaldea != null) t = chaldea;
    if (Regex.IsMatch(t, @"^서로\s*(?:「)?필중(?:」)?\s*기술을\s*(?:내보낼|선택했을)\s*때$")) return "서로 필중 기술을 선택했을 때";
    if (Regex.IsMatch(t, @"^서로\s*공격(?:기)?을\s*(?:내보낼|선택했을)\s*때$")) return "서로 공격기를 선택했을 때";
    if (Regex.IsMatch(t, @"^서로\s*(?:「)?변화(?:기술)?(?:」)?(?:을)?\s*(?:내보낼|선택했을|내보내고\s*있을)\s*때$")) return "서로 변화기술을 선택했을 때";

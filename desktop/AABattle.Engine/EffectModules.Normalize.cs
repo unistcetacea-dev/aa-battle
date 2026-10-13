@@ -15,6 +15,9 @@ namespace AABattle
       string action;
       double rate;
       MoveCondition c;
+      string chaldea = ChaldeaModules.Normalize(text);
+      if (chaldea != null)
+        return chaldea;
       m = Regex.Match(text, @"^자신은\s*「(?<s>[^」]+)」\s*상태가\s*된다$");
       if (m.Success && StateEffects.Find(m.Groups["s"].Value) != null)
         return "자신을 「" + m.Groups["s"].Value + "」 상태로 한다";
