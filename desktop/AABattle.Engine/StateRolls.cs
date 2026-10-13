@@ -266,6 +266,9 @@ namespace AABattle
       int every;
       if (scope == null || !ExtraActionRuntime.TryParse(c.Body, out grant, out every))
         return;
+      // 상태 조건 확률 효과의 추가행동은 명시적으로 마지막을 요구한 경우를 제외하고 즉시 삽입한다.
+      if (c.Body.IndexOf("가장 마지막에", StringComparison.Ordinal) < 0)
+        grant.First = true;
       grant.Side = side;
       grant.Owner = owner;
       grant.Source = LabelOf(owner, c.Potential);

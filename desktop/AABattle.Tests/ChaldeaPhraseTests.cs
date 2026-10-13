@@ -20,6 +20,7 @@ namespace AABattle.Tests
     [TestCase("상대로부터의 「상태이상」을 무효화한다")]
     [TestCase("자신의 소지품이 파괴(약탈)되지 않는다")]
     [TestCase("상대는 「통상교대」이외의 수단으로 교대할 수 없다")]
+    [TestCase("자신의 「모으기기술」의 모으기를 생략하고 내보낼 수 있다")]
     public void EffectVariantsBecomeExecutableModules(string sentence)
     {
       var steps = PotentialQueue.JudgeSteps(sentence, false);
@@ -41,6 +42,7 @@ namespace AABattle.Tests
     [TestCase("아군과 교대로 장소에 나올 때", "임의교대로 장소에 나올 때")]
     [TestCase("상대를 빈사로 했을때", "상대를 쓰러뜨렸을 때")]
     [TestCase("「죽어내밀기」로 상대가 나왔을 때", "상대가 죽어내밀기로 장소에 나왔을 때")]
+    [TestCase("자신이 나무열매를 소모했을 때", "자신이 「나무열매」를 사용했을 때")]
     [TestCase("트레이너가 「유키나리」일 때", "「유키나리」가 트레이너일 때")]
     [TestCase("상대보다 속도가 높을 때", "자신의 「속도」가 상대보다 높을 때")]
     public void TriggerVariantsUseTheStandardSentence(string raw, string expected)

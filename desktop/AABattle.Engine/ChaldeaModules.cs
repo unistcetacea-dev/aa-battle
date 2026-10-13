@@ -21,6 +21,8 @@ namespace AABattle
       string text = clean ?? "";
       if (text.Length == 0)
         return text;
+      // 칼데아 시트의 「모으기기술」 표기를 기존 모으기 생략 실행문으로 연결한다.
+      text = Regex.Replace(text, @"^자신의\s*「모으기\s*기술」의\s*모으기를\s*생략하고\s*내보낼\s*수\s*있다$", "자신의 「모으기」 기술의 모으기를 생략한다");
       // 「노멀」은 「노말」의 표기 흔들림
       text = text.Replace("노멀", "노말");
       // 자신(아군)의 → 자신의 (싱글에서 아군은 자신)

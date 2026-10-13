@@ -56,6 +56,25 @@ namespace AABattle {
    Assert.DoesNotThrow(() => Engine.Effective(user, other, 5, rules));
    Assert.That(Engine.Effective(user, other, 5, rules), Is.GreaterThan(Engine.Effective(F(), other, 5, rules)), "느리면 1.33배");
   }
+  [Test] public void SpeciesGradeComparisonUsesDocumentedBaseStatBands() {
+   var owner = F(); var opponent = F();
+   opponent.Data.@base = new[] { 100, 100, 100, 100, 100, 109 };
+   Assert.That(TriggerModules.Normalize("상대의 「속도」 종족치가 「B」 이하일 때"), Is.EqualTo("상대의 「속도」 종족치가 「B」 이하일 때"));
+   Assert.That(TriggerModules.Holds("상대의 「속도」 종족치가 「B」 이하일 때", owner, opponent, new Rules()), Is.True);
+   opponent.Data.@base[5] = 110;
+   Assert.That(TriggerModules.Holds("상대의 「속도」 종족치가 「B」 이하일 때", owner, opponent, new Rules()), Is.False);
+   Assert.That(TriggerModules.Holds("상대의 「속도」 종족치가 「A」 이상일 때", owner, opponent, new Rules()), Is.True);
+  }
+  [Test] public void TurnConditionsAreStateChecksRatherThanTimingEvents() {
+   var owner = F(); var opponent = F(); var rules = new Rules { Turn = 4 };
+   Assert.That(TriggerModules.Parse("장소에 나와 「2」T째일 때").IsEvent, Is.False);
+   Assert.That(TriggerModules.Parse("「2」배수의 T일 때").IsEvent, Is.False);
+   owner.Conditions.FieldTurn = 2;
+   Assert.That(TriggerModules.Holds("장소에 나와 「2」T째일 때", owner, opponent, rules), Is.True);
+   Assert.That(TriggerModules.Holds("「2」배수의 T일 때", owner, opponent, rules), Is.True);
+   rules.Turn = 3;
+   Assert.That(TriggerModules.Holds("「2」배수의 T일 때", owner, opponent, rules), Is.False);
+  }
   [Test] public void SpeedComparisonModuleChangesPowerOnBothSides() {
    var fast = F("고압적"); fast.Data.@base = new[] { 100, 100, 100, 100, 100, 200 };
    var slow = F("고압적");

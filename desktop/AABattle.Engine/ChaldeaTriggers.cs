@@ -42,6 +42,8 @@ namespace AABattle
       // 상대를 빈사로 했을 때 = 쓰러뜨렸을 때
       if (Regex.IsMatch(t, @"^상대를 빈사로 했을 ?때$"))
         return "상대를 쓰러뜨렸을 때";
+      if (Regex.IsMatch(t, @"^자신(?:이|은)? 나무열매를 소모했을 때$"))
+        return "자신이 「나무열매」를 사용했을 때";
       m = Regex.Match(t, @"^「(?<m>[^」]+)」로 상대를 빈사로 했을 ?때$");
       if (m.Success)
         return "자신의 「" + m.Groups["m"].Value + "」 기술로 상대를 쓰러뜨렸을 때";

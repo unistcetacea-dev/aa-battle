@@ -143,6 +143,8 @@ namespace AABattle {
   // ===== 표준 문장 =====
   static string CanonicalState(TriggerSpec s) {
    switch (s.Module) {
+    case "종족치 등급": return Of(s.Subject) + " 「" + s.Names[0] + "」 종족치가 「" + s.Names[1] + "」 " + s.Op + "일 때";
+    case "턴 조건": return TurnConditions.Canonical(s);
     case "능력치 비교": return Of(s.Subject) + " 「" + StatNames[s.Stats[0]] + "」" + Particle(StatNames[s.Stats[0]], "이", "가") + " 「" + StatNames[s.Stats[1]] + "」" + (s.Op == "높음" ? "보다 높을 때" : " 이하일 때");
     case "상태": return Owner(s.Subject) + " " + Bracket(s.Names) + (Category(s.Names).Length > 0 ? " " + Category(s.Names) : "") + "일 때";
     case "상태 됨":
@@ -200,6 +202,8 @@ namespace AABattle {
    if (owner == null || rules == null) return false;
    var target = s.Subject == "상대" ? opponent : owner;
    switch (s.Module) {
+    case "종족치 등급": return SpeciesGradeTrigger.Holds(s, target);
+    case "턴 조건": return TurnConditions.Holds(s, owner, rules);
     case "능력치 비교":
      if (target == null || !target.OnField || target.HP <= 0) return false;
      var other = ReferenceEquals(target, owner) ? opponent ?? target : owner;

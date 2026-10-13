@@ -114,12 +114,15 @@ namespace AABattle {
   static partial void RegisterTriggers(List<ModuleDefinition> modules) {
    RegisterTriggerEvents(modules);
    RegisterTriggerStates(modules);
+   RegisterTriggerSpeciesGrades(modules);
+   RegisterTurnConditions(modules);
    RegisterTriggerConditions(modules);
    RegisterExclusiveTriggers(modules);
   }
 
   static void RegisterTriggerEvents(List<ModuleDefinition> modules) {
    TX(modules, "role.changed", RoleModules.EventModule, "역할이 됨", "역할·트레이너", "자신이 {역할} 되었을 때", "역할", RoleModules.Choices.Select(RoleModules.TriggerChoice).ToArray());
+   TF(modules, "item.stolen", "소지품 소실", "소지품을 빼앗김", "소지품·특성", "자신의 소지품을 빼앗겼을 때");
    T(modules, "entry", "등장", "장소에 등장", "등장·교대", "{주체}가 장소에 나올 때",
     () => new TriggerSpec { Module = "등장" }, TS("자신", "상대"));
    T(modules, "entry.method", "등장", "방식을 지정해 등장", "등장·교대", "{주체}가 {방식}로 장소에 나올 때",

@@ -36,6 +36,19 @@ namespace AABattle {
    using (EffectScope.Begin(new[] { a, b }, new Rules(), () => .5)) ItemRuntime.Lose(a, reason, _ => { });
    Assert.That(PotentialModifiers.Stat(a,b,5,new Rules()), Is.EqualTo(factor));
   }
+  [Test] public void ItemStolenTriggerFiresForTheFormerHolder() {
+   var owner = F("", "먹다남은음식"); var thief = F();
+   Rule(owner, "자신의 소지품을 빼앗겼을 때");
+   var log = new List<string>();
+   using (EffectScope.Begin(new[] { owner, thief }, new Rules(), () => .5))
+    ItemRuntime.Transfer(owner, thief, log.Add, true);
+   var trigger = TriggerModules.Parse("자신의 소지품을 빼앗겼을 때");
+   Assert.That(trigger.Module, Is.EqualTo("소지품 소실"));
+   Assert.That(trigger.Method, Is.EqualTo("약탈"));
+   Assert.That(TriggerModules.Matches(trigger, new TriggerFact { Kind = "소지품 소실", Method = "약탈", Self = true }, owner), Is.True);
+   Assert.That(owner.Data.item, Is.Empty);
+   Assert.That(thief.Data.item, Is.EqualTo("먹다남은음식"));
+  }
   [Test] public void UnburdenConsumesAndResetsOnLeavingField() {
    var a = F("곡예", "먹다남은음식"); var b = F(); var r = new Rules();
    using (EffectScope.Begin(new[] { a, b }, r, () => .5)) ItemRuntime.Lose(a, "소비", _ => { });

@@ -168,7 +168,7 @@ namespace AABattle {
    f.Data.item = "";
    Sync(f);
    if (log != null) log(f.Data.name + ": 「" + item + "」" + (reason == "소비" ? "을 사용했다" : " — " + reason));
-   string method = reason == "소비" ? "소모" : reason == "파괴" || reason == "부서졌다" ? "파괴" : "";
+   string method = reason == "소비" ? "소모" : reason == "파괴" || reason == "부서졌다" ? "파괴" : reason == "약탈" ? "약탈" : "";
    if (method.Length > 0) TriggerModules.Raise(new TriggerFact { Kind = "소지품 소실", Method = method, Item = item }, f,
     f.FieldOpponent ?? PotentialQueue.OpponentOf(f), f.Data.name + "의 「" + item + "」 소실", log);
   }

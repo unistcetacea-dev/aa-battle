@@ -91,6 +91,7 @@ namespace AABattle {
   // ===== 표준 문장 =====
   public static string Canonical(TriggerSpec s) {
    if (RoleModules.IsRoleSpec(s)) return RoleModules.Canonical(s);
+   if (TriggerTheft.IsTheft(s)) return TriggerTheft.Canonical(s);
    if (s.Module == "소지품 소실") return CanonicalItemLoss(s);
    if (ExclusiveTriggerModules.IsNormalSwitchLast(s)) return ExclusiveTriggerModules.NormalSwitchLastSentence;
    switch (s.Module) {
@@ -124,7 +125,10 @@ namespace AABattle {
    if (t.Length == 0) return false;
    if (RoleModules.TryParse(t, out spec)) return true;
    if (ExclusiveTriggerModules.TryParse(t, out spec)) return true;
+   if (TriggerTheft.TryParse(t, out spec)) return true;
    if (TryParseItemLoss(t, out spec)) return true;
+   if (SpeciesGradeTrigger.TryParseSpeciesGrade(t, out spec)) return true;
+   if (TurnConditions.TryParse(t, out spec)) return true;
    if (TryParseAbilityState(t, out spec)) return true;
    if (TryParseState(t, out spec)) return true;
    if (TryParseCondition(t, out spec)) return true;
@@ -274,6 +278,8 @@ namespace AABattle {
    if (s == null || f == null || s.Module.Length == 0) return false;
    if (RoleModules.IsRoleSpec(s)) return RoleModules.Matches(s, f);
    if (ExclusiveTriggerModules.IsNormalSwitchLast(s)) return ExclusiveTriggerModules.MatchesNormalSwitchLast(f, owner);
+   if (TriggerTheft.IsTheft(s)) return TriggerTheft.Matches(s, f);
+   if (s.Module == "소지품 소실" && f.Kind == "소지품 소실" && f.Method == "약탈") return false;
    if (s.Module == "소지품 소실") return MatchesItemLoss(s, f);
    var move = f.Move;
    switch (s.Module) {
@@ -359,6 +365,7 @@ namespace AABattle {
    if (normalized == TriggerStructures.FieldLabel) return owner != null && owner.HP > 0 && owner.OnField;
    var spec = Parse(normalized);
    if (spec.IsEvent) return false;
+   if (spec.Module == "종족치 등급" || spec.Module == "턴 조건") return Holds(spec, owner, opponent, rules ?? new Rules());
    if (StateModules.Contains(spec.Module)) return Holds(spec, owner, opponent, rules ?? new Rules());
    return AnsweredTriggers.StateHolds(clause, owner, opponent, rules ?? new Rules());
   }
