@@ -18,7 +18,7 @@ namespace AABattle
       string chaldea = PhrasePipeline.ChaldeaEffect(text);
       if (chaldea != null)
         return chaldea;
-      string abaddon = AbaddonModules.Normalize(text);
+      string abaddon = PhrasePipeline.AbaddonEffect(text);
       if (abaddon != null)
         return abaddon;
       m = Regex.Match(text, @"^자신은\s*「(?<s>[^」]+)」\s*상태가\s*된다$");

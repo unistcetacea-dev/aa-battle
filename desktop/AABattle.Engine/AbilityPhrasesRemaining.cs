@@ -10,19 +10,7 @@ namespace AABattle {
   static readonly Regex MoveType = new Regex(@"^자신의 (?<c>(?:「[^」]+」)*)\s*기술의 타입을 「(?<t>[^」]+)」(?:으로|로) 한다$");
   static readonly Regex WeatherLock = new Regex(@"^날씨를 「(?<w>큰가뭄|강한 비|난기류)」(?:으로|로) 고정한다$");
   static string RewriteRemaining(string s) {
-   Match m;
-   m = Regex.Match(s, @"^(?<s>자신|상대)의 〔특성〕을 〔(?<a>[^〕]+)〕(?:으로|로) 변경한다$");
-   if (m.Success) return m.Groups["s"].Value + "의 특성을 「" + m.Groups["a"].Value + "」" + EffectModules.Ro(m.Groups["a"].Value) + " 한다";
-   m = Regex.Match(s, @"^(?<n>헤롱헤롱이나 도발) 상태가 되지 않는다$");
-   if (m.Success) return "자신은 「헤롱헤롱/도발」 상태가 되지 않는다";
-   if (s == "자신이 기술을 내보낼 때,자신의 타입이 내보내는 기술과 같은 타입으로 변화한다" ||
-       Regex.IsMatch(s, @"^자신이 기술을 내보낼 때,\s*자신의 타입이 내보내는 기술과 같은 타입으로 변화한다$")) return MatchMoveType;
-   m = Regex.Match(s, @"^자신의\s*(?<c>(?:「[^」]+」\s*)*)\s*(?:타입\s*)?기술(?:을|이)\s*「(?<t>[^」]+)」\s*타입(?:으로|로|이)\s*(?:변경한다|된다)$");
-   MoveCondition condition;
-   if (m.Success && MoveCondition.TryParse(m.Groups["c"].Value, out condition) && MoveCondition.TypeNames.Contains(m.Groups["t"].Value))
-    return "자신의 " + (condition.Empty ? "" : condition.Text + " ") + "기술의 타입을 「" + m.Groups["t"].Value + "」" + EffectModules.Ro(m.Groups["t"].Value) + " 한다";
-   if (s == "자신의 기술의 반동 대미지를 무효화한다") return NoRecoil;
-   return null;
+   return PhrasePipeline.AbilityTypeSentence(s);
   }
   static string ClassifyRemaining(string s) {
    if (s == MatchMoveType) return "기술 타입으로 변화";

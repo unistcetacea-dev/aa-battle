@@ -36,8 +36,8 @@ namespace AABattle {
   static readonly Regex Priority = new Regex(@"^자신의 (?<c>(?:「[^」]+」)+) 기술의 우선도를 \+(?<n>\d)한다$");
   static readonly Regex WeatherDamage = new Regex(@"^자신은 (?<w>(?:「[^」]+」)+)의 대미지를 받지 않는다$");
   static readonly Regex StatusPower = new Regex(@"^(?<s>(?:「[^」]+」)+)의 기술 위력 저하 효과를 무효화한다$");
-  static readonly string[] WeatherNames = { "쾌청", "큰가뭄", "비", "강한 비", "모래바람", "싸라기눈", "눈", "난기류" };
-  static string[] QuotedNames(string text) {
+  internal static readonly string[] WeatherNames = { "쾌청", "큰가뭄", "비", "강한 비", "모래바람", "싸라기눈", "눈", "난기류" };
+  internal static string[] QuotedNames(string text) {
    return Regex.Matches(text, "「([^」]+)」").Cast<Match>().SelectMany(x => x.Groups[1].Value.Split('/')).Select(x => x.Trim()).ToArray();
   }
   static bool WeatherDamageRule(string text) {
@@ -46,19 +46,13 @@ namespace AABattle {
   }
 
   static string Clean(string text) { return Regex.Replace(PotentialParts.Clean(text ?? ""), @"\s+", " ").Trim().TrimEnd('.', '。', '．').Trim(); }
-  static string Stat(string s) { return s == "공" ? "공격" : s == "방" ? "방어" : s == "속" ? "속도" : s; }
+  internal static string Stat(string s) { return s == "공" ? "공격" : s == "방" ? "방어" : s == "속" ? "속도" : s; }
 
   // ===== 도감 문장 → 표준 문장(문장 하나씩) =====
   public static string Rewrite(string text) {
    string t = (text ?? "").Trim();
-   // 「쾌청(큰가뭄)」「비(강한 비)」 → 「쾌청」「비」, 날씨 이름
-   t = Regex.Replace(t, @"「(쾌청|비)\([^)]*\)」", "「$1」");
-   t = Regex.Replace(t, @"날씨가 (맑음|싸라기눈|모래바람)일 때", m => "날씨가 「" + (m.Groups[1].Value == "맑음" ? "쾌청" : m.Groups[1].Value) + "」일 때");
-   t = Regex.Replace(t, @"필드가 「([^」]+)」 상태일 때", "「$1」일 때");
-   t = Regex.Replace(t, @"상대의\s*「접촉기술」을 받았을 때,?\s*1/8의 (?:대미지|데미지)를 입는다", "상대의 「접촉」 기술을 받았을 때, 자신에게 최대 HP의 1/8 대미지를 준다.");
-   t = Regex.Replace(t, @"(?:자신은\s*)?(?<s>「[^」]+」)\s*상태가\s*되지\s*않고,\s*", "자신은 ${s}상태가 되지 않는다. ");
-   // 급소 보정: 「…급소에 맞기 쉬워진다. (C+N)」
-   t = Regex.Replace(t, @"급소에 맞기 쉬워진다\.?\s*\(\s*[CＣ]\s*\+\s*(\d)\s*\)\.?", "급소에 맞기 쉬워진다(C+$1).");
+   // 표기 통일 규칙은 Phrases/*.cs, 적용 순서는 PhrasePipeline.AbilityRewritePre
+   t = PhrasePipeline.AbilityRewritePre(t);
    var result = new List<string>();
    foreach (string raw in Regex.Split(t, @"(?<=[.。])\s+").Select(x => x.Trim()).Where(x => x.Length > 0)) result.AddRange(Sentence(raw));
    return string.Join(" ", result);
@@ -109,18 +103,7 @@ namespace AABattle {
   }
   static string Trigger(string c) {
    c = c.Trim();
-   Match m;
-   if (Regex.IsMatch(c, @"^(?:「?접촉\s*기술」?|「접촉」 기술)을 (?:받으면|받았을 때)$")) return "상대의 「접촉」 기술을 받았을 때";
-   if (Regex.IsMatch(c, @"^「비접촉」 기술을 받았을 때$")) return "상대의 「비접촉」 기술을 받았을 때";
-   if ((m = Regex.Match(c, @"^(?:자신의 )?(?:HP|체력)가 1/(?<n>\d) ?이하가 (?:됐을 때|되었을 때|되면)$")).Success) return "자신의 체력이 1/" + m.Groups["n"].Value + " 이하가 되었을 때";
-   if ((m = Regex.Match(c, @"^(?:자신의 )?(?:HP|체력)이? ?가? ?1/(?<n>\d) ?(?<o>이하|이상)일 때$")).Success) return "자신의 체력이 1/" + m.Groups["n"].Value + " " + m.Groups["o"].Value + "일 때";
-   if (Regex.IsMatch(c, @"^(?:자신의 )?(?:체력이 가득일 때|체력이 가득할 때|HP가 「가득」일 때)$")) return "자신의 체력이 가득일 때";
-   if (Regex.IsMatch(c, @"^(?:상대의 공격기술을 받으면|「공격」 기술을 받았을 때|상대의 공격을 받았을 때)$")) return "상대의 공격을 받았을 때";
-   if ((m = Regex.Match(c, @"^「(?<x>물리|특수)\s*(?:기술)?」\s*(?:기술)?을 (?:받으면|받았을 때)$")).Success) return "상대의 「" + m.Groups["x"].Value + "」 기술을 받았을 때";
-   if ((m = Regex.Match(c, @"^「(?<x>물리|특수)기술」을 명중시키면$")).Success) return "자신의 「" + m.Groups["x"].Value + "」 기술이 명중했을 때";
-   if (c == "상대를 쓰러트리면" || c == "상대를 쓰러뜨리면") return "상대를 쓰러뜨렸을 때";
-   if ((m = Regex.Match(c, @"^(?<s>혼란|화상)상태일 때$")).Success) return "자신이 「" + m.Groups["s"].Value + "」 상태일 때";
-   return c;
+   return PhrasePipeline.AbilityTrigger(c);
   }
   static string Effect(string r) {
    string shared = AbilityCriticalFieldModules.Normalize(r) ?? AbilityChangeModules.Normalize(r) ?? AbilityItemModules.Normalize(r) ?? BatonModules.Normalize(r) ?? PursuitModules.Normalize(r);
@@ -128,28 +111,7 @@ namespace AABattle {
    string s = r.Trim().TrimEnd('.', '。').Trim();
    string remaining = RewriteRemaining(s);
    if (remaining != null) return remaining;
-   Match m;
-   m = Regex.Match(s, @"^(?:자신은\s*)?(?<w>(?:「[^」]+」\s*)+)의\s*대미지를\s*받지\s*않는다$");
-   if (m.Success && QuotedNames(m.Groups["w"].Value).All(WeatherNames.Contains)) return "자신은 " + string.Concat(QuotedNames(m.Groups["w"].Value).Select(x => "「" + x + "」")) + "의 대미지를 받지 않는다";
-   if (Regex.IsMatch(s, @"^(?:상대의 기술이 급소에 맞지 않게 된다|상대의 공격이 급소에 맞지 않는다|급소 ?무효)$")) return NoCritical;
-   if (Regex.IsMatch(s, @"^(?:반드시 버틴다|「빈사」 상태가 되지 않는다)$")) return Sturdy;
-   if (Regex.IsMatch(s, @"^(?:상대의 공격 이외의 대미지를 (?:무효화한다|무시한다)|상대의 공격 이외로 대미지를 받지 않는다)$")) return MagicGuard;
-   if (Regex.IsMatch(s, @"^(?:자신의 능력이 감소\(저하\)하지 않는다|상대에 의해 능력이 감소\(저하\)하지 않는다|상대에 의한 능력 감소\(저하\) 효과를 무효화한다|상대로부터의 능력감소\(저하\)를 (?:무효화한다|받지 않는다))$")) return "자신은 상대에 의해 능력이 내려가지 않는다";
-   if ((m = Regex.Match(s, @"^자신의 (?<s>공|방|명중|속|특공|특방)이 감소\(저하\)하지 않는다$")).Success) return "자신은 상대에 의해 「" + Stat(m.Groups["s"].Value) + "」이 내려가지 않는다";
-   if (Regex.IsMatch(s, @"^설치기술의 (?:효과를 무시한다|영향을 받지 않는다)$")) return HazardProof;
-   if (Regex.IsMatch(s, @"^(?:상대의 방호특성을 무시한다|방호특성 무효|자신의 기술이 상대의 〔방호 특성〕을 관통한다)$")) return Pierce;
-   if ((m = Regex.Match(s, @"^자신의 타입에 「?(?<t>[^」\s]+?)」?(?:을|를) 추가한다$")).Success) return "자신의 타입에 「" + m.Groups["t"].Value + "」를 추가한다";
-   if (s == "강제교대 무효") return "자신은 강제교대되지 않는다";
-   if ((m = Regex.Match(s, @"^상대(?:에게 HP의|의 체력을) 1/(?<n>\d+)(?:만큼 대미지를 준다| ?감소한다)$")).Success) return "상대에게 최대 HP의 1/" + m.Groups["n"].Value + " 대미지를 준다";
-   if ((m = Regex.Match(s, @"^(?:자신의 )?HP를 1/(?<n>\d+)만큼 회복한다$")).Success) return "자신의 체력을 최대 HP의 1/" + m.Groups["n"].Value + " 회복한다";
-   if ((m = Regex.Match(s, @"^「(?<x>[^」]+)」 기술로 받는 대미지가 (?<n>\d+(?:\.\d+)?)배가 된다$")).Success) return "자신이 받는 「" + m.Groups["x"].Value + "」 기술의 대미지를 " + (double.Parse(m.Groups["n"].Value) >= 1 ? "강화" : "약화") + "(" + m.Groups["n"].Value + "배)한다";
-   if ((m = Regex.Match(s, @"^(?:자신이 )?「(?<x>[^」]+)」\s*(?:상태)?(?:가|이) 되지 않는다$")).Success) return "자신은 「" + m.Groups["x"].Value + "」상태가 되지 않는다";
-   if ((m = Regex.Match(s, @"^(?<n>\d+)할로 (?<r>(?:상대를 )?「[^」]+」\s*상태로 한다)$")).Success) return m.Groups["n"].Value + "할로 " + (m.Groups["r"].Value.StartsWith("상대") ? m.Groups["r"].Value : "상대를 " + m.Groups["r"].Value);
-   if ((m = Regex.Match(s, @"^자신의 「(?<s>[^」]+)」 종족치(?:를|가) 「?(?<v>[A-Z+]+)」?(?:로 한다|가 된다)$")).Success) return "자신의 「" + m.Groups["s"].Value + "」 종족치를 「" + m.Groups["v"].Value + "」로 한다";
-   if ((m = Regex.Match(s, @"^자신의 「(?<c>[^」]+)」 (?:타입 )?기술의 우선도를 [+＋](?<n>\d)한다$")).Success) return "자신의 「" + m.Groups["c"].Value + "」 기술의 우선도를 +" + m.Groups["n"].Value + "한다";
-   if ((m = Regex.Match(s, @"^(?<n>\d+)T 동안 (?:날씨를 「(?<w>[^」]+)」(?:으로|로) 한다|전체 필드를 「(?<f>[^」]+)」 상태로 한다)$")).Success)
-    return m.Groups["w"].Success ? m.Groups["n"].Value + "T동안 날씨를 「" + m.Groups["w"].Value + "」" + EffectModules.Ro(m.Groups["w"].Value) + " 한다" : m.Groups["n"].Value + "T동안 지형을 「" + m.Groups["f"].Value + "」" + EffectModules.Ro(m.Groups["f"].Value) + " 한다";
-   return s;
+   return PhrasePipeline.AbilityEffect(s) ?? s;
   }
 
   // ===== 새 계속 효과 모듈 =====

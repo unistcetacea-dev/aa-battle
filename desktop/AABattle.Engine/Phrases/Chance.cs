@@ -21,5 +21,14 @@ namespace AABattle
       }
       return null;
     }
+
+    // N할로 상태 부여
+    // 출처: 특성 도감
+    internal static string AbilityChanceState(string s)
+    {
+      Match m;
+      if ((m = Regex.Match(s, @"^(?<n>\d+)할로 (?<r>(?:상대를 )?「[^」]+」\s*상태로 한다)$")).Success) return m.Groups["n"].Value + "할로 " + (m.Groups["r"].Value.StartsWith("상대") ? m.Groups["r"].Value : "상대를 " + m.Groups["r"].Value);
+      return null;
+    }
   }
 }

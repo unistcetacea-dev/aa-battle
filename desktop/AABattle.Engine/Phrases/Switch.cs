@@ -32,5 +32,31 @@ namespace AABattle
       text = Regex.Replace(text, @"」이외의 수단", "」 이외의 수단");
       return text;
     }
+
+    // 아군과 임의교대할 수 있다
+    // 출처: 실프 인헨스먼츠
+    internal static string OptionalSwitch(string s)
+    {
+      if (Regex.IsMatch(s, @"^아군과 (?:임의)?교대(?:할| ?해 (?:필드|장소)에 나올) 수 있다$"))
+        return AbaddonModules.OptionalSwitchSentence;
+      return null;
+    }
+
+    // 공격기술에 유턴 효과 부여
+    // 출처: 실프 인헨스먼츠
+    internal static string AttackPivot(string s)
+    {
+      if (Regex.IsMatch(s, @"^자신의 공격기술에 「유턴」 효과를 부여한다$"))
+        return AbaddonModules.AttackPivotSentence;
+      return null;
+    }
+
+    // 강제교대 무효
+    // 출처: 특성 도감
+    internal static string AbilityNoForcedSwitch(string s)
+    {
+      if (s == "강제교대 무효") return "자신은 강제교대되지 않는다";
+      return null;
+    }
   }
 }

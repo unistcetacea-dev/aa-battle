@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 
 namespace AABattle
 {
-  // 정규화 규칙 모음(공통). 적용 순서는 PhrasePipeline.cs에만 둔다.
+  // 정규화 규칙 모음(공통·표기). 적용 순서는 PhrasePipeline.cs에만 둔다.
   public static partial class PhraseRules
   {
     // 능력 이름 하나(괄호 쌍·쉼표 나열에 쓴다)
@@ -80,6 +80,53 @@ namespace AABattle
       if (pieces.Length > 1 && pieces.All(IsOwnPiece))
         return string.Join(" ", pieces.Select(x => x.TrimEnd('.', '。', '．') + "."));
       return null;
+    }
+
+    // 출처: 실프 인헨스먼츠
+    // 「무릎차기」처럼 기술 이름이면 「기술:무릎차기」, 「접촉기술」은 「접촉」, 「다크」는 「악」
+    internal static string ConvertCondition(string raw)
+    {
+      var tokens = Regex.Matches(raw ?? "", "「([^」]*)」").Cast<Match>().Select(m => m.Groups[1].Value.Trim()).ToList();
+      var result = new List<string>();
+      foreach (string token in tokens)
+      {
+        string t = token;
+        if (t == "다크")
+          t = "악";
+        if (t.EndsWith("기술") && t.Length > 2)
+          t = t.Substring(0, t.Length - 2);
+        if (!t.StartsWith("기술:") && MoveNames.Known(t))
+          t = "기술:" + t;
+        result.Add("「" + t + "」");
+      }
+
+      MoveCondition condition;
+      string text = string.Concat(result);
+      return MoveCondition.TryParse(text, out condition) ? (condition.Empty ? "" : condition.Text + " ") : null;
+    }
+
+    // 「쾌청(큰가뭄)」「비(강한 비)」 → 「쾌청」「비」
+    // 출처: 특성 도감
+    internal static string AbilityWeatherNames(string t)
+    {
+      t = Regex.Replace(t, @"「(쾌청|비)\([^)]*\)」", "「$1」");
+      return t;
+    }
+
+    // 날씨가 맑음/싸라기눈/모래바람일 때 → 날씨 이름
+    // 출처: 특성 도감
+    internal static string AbilityWeatherCondition(string t)
+    {
+      t = Regex.Replace(t, @"날씨가 (맑음|싸라기눈|모래바람)일 때", m => "날씨가 「" + (m.Groups[1].Value == "맑음" ? "쾌청" : m.Groups[1].Value) + "」일 때");
+      return t;
+    }
+
+    // 필드가 「X」 상태일 때 → 「X」일 때
+    // 출처: 특성 도감
+    internal static string AbilityFieldState(string t)
+    {
+      t = Regex.Replace(t, @"필드가 「([^」]+)」 상태일 때", "「$1」일 때");
+      return t;
     }
   }
 }

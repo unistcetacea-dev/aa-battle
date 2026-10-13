@@ -54,7 +54,7 @@ namespace AABattle.Tests
     [Test]
     public void GenderTriggerIsNotTakenForATrainerName()
     {
-      Assert.That(ChaldeaTriggers.Normalize("트레이너가 「남성」일 때"), Is.Null);
+      Assert.That(PhrasePipeline.TriggerNormalize("트레이너가 「남성」일 때"), Is.Null);
     }
   }
 }

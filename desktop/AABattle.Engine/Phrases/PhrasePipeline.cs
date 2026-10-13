@@ -103,6 +103,178 @@ namespace AABattle
       return null;
     }
 
+    // ===== 효과 정규화: 실프 인헨스먼츠 규칙(칼데아 규칙에서 못 바꾼 문장만 온다) =====
+    static readonly Func<string, string>[] AbaddonEffectRules =
+    {
+      PhraseRules.InvertRank,
+      PhraseRules.FoeMoveType,
+      PhraseRules.LowerPower,
+      PhraseRules.SealCure,
+      PhraseRules.ContactPierce,
+      PhraseRules.RecoilNoDamage,
+      PhraseRules.OwnMoveType,
+      PhraseRules.FirstPriority,
+      PhraseRules.SameTypeHalve,
+      PhraseRules.FullHeal,
+      PhraseRules.RepayDamage,
+      PhraseRules.OffField,
+      PhraseRules.OptionalSwitch,
+      PhraseRules.AttackPivot
+    };
+
+    static string FirstResult(Func<string, string>[] rules, string s)
+    {
+      foreach (var rule in rules)
+      {
+        string result = rule(s);
+        if (result != null)
+          return result;
+      }
+
+      return null;
+    }
+
+    public static string AbaddonEffect(string text)
+    {
+      string s = CleanSentence(text);
+      if (s.Length == 0)
+        return null;
+      return FirstResult(AbaddonEffectRules, s);
+    }
+
+    // ===== 특성 도감 문장 다시쓰기(문장 하나 단위) =====
+    static readonly Func<string, string>[] AbilityRewritePreSteps =
+    {
+      PhraseRules.AbilityWeatherNames,
+      PhraseRules.AbilityWeatherCondition,
+      PhraseRules.AbilityFieldState,
+      PhraseRules.AbilityContactChip,
+      PhraseRules.AbilityStatusImmuneSplit,
+      PhraseRules.AbilityCriticalBonus
+    };
+
+    public static string AbilityRewritePre(string t)
+    {
+      foreach (var step in AbilityRewritePreSteps)
+        t = step(t);
+      return t;
+    }
+
+    // 특성 효과 문장: 앞에서부터 처음 맞는 규칙(없으면 null)
+    static readonly Func<string, string>[] AbilityEffectRules =
+    {
+      PhraseRules.AbilityWeatherDamage,
+      PhraseRules.AbilityNoCritical,
+      PhraseRules.AbilitySturdy,
+      PhraseRules.AbilityMagicGuard,
+      PhraseRules.AbilityDropImmuneAll,
+      PhraseRules.AbilityDropImmuneStat,
+      PhraseRules.AbilityHazardProof,
+      PhraseRules.AbilityPierce,
+      PhraseRules.AbilityAddType,
+      PhraseRules.AbilityNoForcedSwitch,
+      PhraseRules.AbilityFoeFractionDamage,
+      PhraseRules.AbilitySelfFractionHeal,
+      PhraseRules.AbilityTakenDamageRate,
+      PhraseRules.AbilityStateImmune,
+      PhraseRules.AbilityChanceState,
+      PhraseRules.AbilitySpeciesGrade,
+      PhraseRules.AbilityConditionPriority,
+      PhraseRules.AbilityWeatherTurns
+    };
+
+    public static string AbilityEffect(string s)
+    {
+      return FirstResult(AbilityEffectRules, s);
+    }
+
+    // 특성의 타입 변경·반동·특성 교체 문장
+    static readonly Func<string, string>[] AbilityTypeSentenceRules =
+    {
+      PhraseRules.AbilityChangeAbility,
+      PhraseRules.AbilityTauntInfatuation,
+      PhraseRules.AbilityMatchMoveType,
+      PhraseRules.AbilityMoveTypeChange,
+      PhraseRules.AbilityNoRecoil
+    };
+
+    public static string AbilityTypeSentence(string s)
+    {
+      return FirstResult(AbilityTypeSentenceRules, s);
+    }
+
+    // ===== 트리거 절 정규화 =====
+    static readonly Func<string, string>[] TriggerPreSteps =
+    {
+      TriggerPhraseRules.PreNormalSpelling,
+      TriggerPhraseRules.PreHeadCut
+    };
+
+    static readonly Func<string, string>[] TriggerVariantRules =
+    {
+      TriggerPhraseRules.HitSelf,
+      TriggerPhraseRules.CriticalReceived,
+      TriggerPhraseRules.SwitchEntry,
+      TriggerPhraseRules.DefeatByFaint,
+      TriggerPhraseRules.ReplacementEntry,
+      TriggerPhraseRules.OmittedStateSubject,
+      TriggerPhraseRules.SpeedCompare,
+      TriggerPhraseRules.TrainerName,
+      TriggerPhraseRules.NoAttack
+    };
+
+    // 정리된 트리거 절(Clean)을 받아 표준 문장을 돌려준다. 해당 없으면 null
+    public static string TriggerNormalize(string clause)
+    {
+      string t = Regex.Replace(clause ?? "", @"\s+", " ").Trim();
+      if (t.Length == 0)
+        return null;
+      foreach (var step in TriggerPreSteps)
+        t = step(t);
+      string result = FirstResult(TriggerVariantRules, t);
+      if (result != null)
+        return result;
+      return t == (clause ?? "").Trim() ? null : t;
+    }
+
+    // 변형이 아니면 입력 그대로
+    public static string TriggerVariant(string t)
+    {
+      return TriggerNormalize(t) ?? t;
+    }
+
+    static readonly Func<string, string>[] TriggerMutualRules =
+    {
+      TriggerPhraseRules.MutualFixedHit,
+      TriggerPhraseRules.MutualAttack,
+      TriggerPhraseRules.MutualStatusMove
+    };
+
+    public static string TriggerMutual(string t)
+    {
+      return FirstResult(TriggerMutualRules, t);
+    }
+
+    // 특성 도감 트리거 절(문장 하나, 맞는 규칙이 없으면 그대로)
+    static readonly Func<string, string>[] AbilityTriggerRules =
+    {
+      TriggerPhraseRules.AbilityContactReceived,
+      TriggerPhraseRules.AbilityNonContactReceived,
+      TriggerPhraseRules.AbilityHpBelow,
+      TriggerPhraseRules.AbilityHpRange,
+      TriggerPhraseRules.AbilityHpFull,
+      TriggerPhraseRules.AbilityAttackReceived,
+      TriggerPhraseRules.AbilityPhysicalSpecialReceived,
+      TriggerPhraseRules.AbilityPhysicalSpecialHit,
+      TriggerPhraseRules.AbilityDefeat,
+      TriggerPhraseRules.AbilityStatusState
+    };
+
+    public static string AbilityTrigger(string c)
+    {
+      return FirstResult(AbilityTriggerRules, c) ?? c;
+    }
+
     // 확률 접두어까지 한 문장으로 읽어야 하는 변형(방호·회피처럼 확률이 문장 안으로 들어가는 것)
     public static string EffectWhole(string clean)
     {

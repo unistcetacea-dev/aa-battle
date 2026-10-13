@@ -38,5 +38,52 @@ namespace AABattle
         return m.Groups["d"].Value + (m.Groups["t"].Value == "상대" ? "상대" : "자신") + "를 「" + m.Groups["s"].Value + "」 상태로 한다.";
       return null;
     }
+
+    // 상태이상 치유 봉인
+    // 출처: 실프 인헨스먼츠
+    internal static string SealCure(string s)
+    {
+      Match m;
+      m = Regex.Match(s, @"^(?<t>자신|상대)의 「상태이상」(?:이|은) (?:해제되지|치유되지) 않는다$");
+      if (m.Success)
+        return m.Groups["t"].Value + "의 「상태이상」은 치유되지 않는다.";
+      return null;
+    }
+
+    // 「X」 상태가 되지 않고, … → 문장 분리
+    // 출처: 특성 도감
+    internal static string AbilityStatusImmuneSplit(string t)
+    {
+      t = Regex.Replace(t, @"(?:자신은\s*)?(?<s>「[^」]+」)\s*상태가\s*되지\s*않고,\s*", "자신은 ${s}상태가 되지 않는다. ");
+      return t;
+    }
+
+    // 자신의 HP 1/N 회복
+    // 출처: 특성 도감
+    internal static string AbilitySelfFractionHeal(string s)
+    {
+      Match m;
+      if ((m = Regex.Match(s, @"^(?:자신의 )?HP를 1/(?<n>\d+)만큼 회복한다$")).Success) return "자신의 체력을 최대 HP의 1/" + m.Groups["n"].Value + " 회복한다";
+      return null;
+    }
+
+    // 상태가 되지 않는다
+    // 출처: 특성 도감
+    internal static string AbilityStateImmune(string s)
+    {
+      Match m;
+      if ((m = Regex.Match(s, @"^(?:자신이 )?「(?<x>[^」]+)」\s*(?:상태)?(?:가|이) 되지 않는다$")).Success) return "자신은 「" + m.Groups["x"].Value + "」상태가 되지 않는다";
+      return null;
+    }
+
+    // 헤롱헤롱이나 도발 상태가 되지 않는다
+    // 출처: 특성 도감
+    internal static string AbilityTauntInfatuation(string s)
+    {
+      Match m;
+      m = Regex.Match(s, @"^(?<n>헤롱헤롱이나 도발) 상태가 되지 않는다$");
+      if (m.Success) return "자신은 「헤롱헤롱/도발」 상태가 되지 않는다";
+      return null;
+    }
   }
 }

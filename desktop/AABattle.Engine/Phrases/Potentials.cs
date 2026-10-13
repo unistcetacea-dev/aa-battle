@@ -92,5 +92,49 @@ namespace AABattle
         return RoleModules.NormalizeEffect("자신을 『" + (m.Groups["r"].Value == "엠페러" ? "엠퍼러" : m.Groups["r"].Value) + "』로 임명" + m.Groups["o"].Value);
       return null;
     }
+
+    // 자진의 포켓몬 체력 가득 회복
+    // 출처: 실프 인헨스먼츠
+    internal static string FullHeal(string s)
+    {
+      if (Regex.IsMatch(s, @"^자진의 포켓몬의 체력을 가득(?:으로)? 회복한다$"))
+        return AbaddonModules.FullHealSentence;
+      return null;
+    }
+
+    // 필드 밖 발동
+    // 출처: 실프 인헨스먼츠
+    internal static string OffField(string s)
+    {
+      if (Regex.IsMatch(s, @"^이 포텐셜은 자신이 필드에 없어도 발동(?:한다|할 수 있다)$"))
+        return AbaddonModules.OffFieldSentence;
+      return null;
+    }
+
+    // 설치물 무시
+    // 출처: 특성 도감
+    internal static string AbilityHazardProof(string s)
+    {
+      if (Regex.IsMatch(s, @"^설치기술의 (?:효과를 무시한다|영향을 받지 않는다)$")) return AbilityPhrases.HazardProof;
+      return null;
+    }
+
+    // 방호 특성 관통
+    // 출처: 특성 도감
+    internal static string AbilityPierce(string s)
+    {
+      if (Regex.IsMatch(s, @"^(?:상대의 방호특성을 무시한다|방호특성 무효|자신의 기술이 상대의 〔방호 특성〕을 관통한다)$")) return AbilityPhrases.Pierce;
+      return null;
+    }
+
+    // 〔특성〕을 〔X〕로 변경한다
+    // 출처: 특성 도감
+    internal static string AbilityChangeAbility(string s)
+    {
+      Match m;
+      m = Regex.Match(s, @"^(?<s>자신|상대)의 〔특성〕을 〔(?<a>[^〕]+)〕(?:으로|로) 변경한다$");
+      if (m.Success) return m.Groups["s"].Value + "의 특성을 「" + m.Groups["a"].Value + "」" + EffectModules.Ro(m.Groups["a"].Value) + " 한다";
+      return null;
+    }
   }
 }
