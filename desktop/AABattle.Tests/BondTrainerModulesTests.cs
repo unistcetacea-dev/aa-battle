@@ -85,7 +85,22 @@ namespace AABattle
       Assert.That(trigger, Is.EqualTo("자신이 『에이스』『탐사대장』이 되었을 때"));
       var parsed = TriggerModules.Parse(trigger);
       Assert.That(parsed.Module, Is.EqualTo(RoleModules.EventModule));
-      Assert.That(RoleModules.Matches(parsed, new TriggerFact { Kind = RoleModules.EventModule, Method = "에이스" }), Is.True);
+      Assert.That(RoleModules.Matches(parsed, new TriggerFact { Kind = RoleModules.EventModule, Method = "에이스", Self = true }), Is.True);
+    }
+
+    [Test]
+    public void RoleChangeRaisedForBothSidesOnlyMatchesTheFighterWhoChangedRole()
+    {
+      string trigger = "자신이 『에이스』가 되었을 때";
+      Assert.That(TriggerModules.Parse(trigger).IsEvent, Is.True);
+      var actor = Fighter("역할 변경자", new[] { 100, 100, 100, 100, 100, 100 }, new Potential { id = "범용", name = "actor-role", description = "actor-effect", triggers = new[] { trigger } });
+      var other = Fighter("상대", new[] { 100, 100, 100, 100, 100, 100 }, new Potential { id = "범용", name = "other-role", description = "other-effect", triggers = new[] { trigger } });
+      var logs = new List<string>();
+
+      TriggerModules.Raise(new TriggerFact { Kind = RoleModules.EventModule, Method = "에이스" }, actor, other, "역할 임명 사건", logs.Add);
+
+      Assert.That(logs.Any(x => x.Contains("actor-role") && x.Contains("트리거 충족")), Is.True);
+      Assert.That(logs.Any(x => x.Contains("other-role") && x.Contains("트리거 충족")), Is.False);
     }
 
     [Test]

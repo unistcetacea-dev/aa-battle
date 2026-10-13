@@ -44,7 +44,7 @@ namespace AABattle
 
     public static bool Matches(TriggerSpec spec, TriggerFact fact)
     {
-      return IsRoleSpec(spec) && fact != null && fact.Kind == EventModule && spec.Names.Any(x => x == fact.Method);
+      return IsRoleSpec(spec) && fact != null && fact.Kind == EventModule && fact.Self && spec.Names.Any(x => x == fact.Method);
     }
 
     public static string NormalizeEffect(string text)
