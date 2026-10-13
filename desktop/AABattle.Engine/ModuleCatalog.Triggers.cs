@@ -77,8 +77,38 @@ namespace AABattle {
     s => read(s).ToString(CultureInfo.InvariantCulture));
   }
 
-  static void TL(List<ModuleDefinition> modules, string id, string module, string name, string text) {
-   T(modules, id, module, name, "기본 조건", text, () => TriggerModules.Parse(text));
+  static ModuleKind TriggerKind(string module) {
+   return TriggerModules.EventModules.Contains(module) ? ModuleKind.TriggerEvent : ModuleKind.TriggerState;
+  }
+
+  // 빈칸 없는 고정 문장 모듈.
+  static void TF(List<ModuleDefinition> modules, string id, string module, string name, string family, string text) {
+   T(modules, id, module, name, family, text, () => TriggerModules.Parse(text));
+  }
+
+  // 같은 꼴의 고정 문장을 선택 빈칸 하나로 합친 모듈. 선택지에 조사까지 넣어 표준 문장을 글자 그대로 만든다.
+  static void TX(List<ModuleDefinition> modules, string id, string module, string name, string family,
+   string template, string slotId, params string[] choices) {
+   var slot = S(slotId, ModuleSlotKind.Text, choices[0], choices);
+   Func<string, string> sentence = choice => template.Replace("{" + slotId + "}", choice);
+   var definition = new ModuleDefinition("trigger." + id, name, TriggerKind(module), family, template, slot) { Expected = module };
+   definition.Formatter = values => {
+    string choice = values[slotId];
+    if (!choices.Contains(choice)) throw new ArgumentException("선택지에 없는 값입니다.");
+    var spec = TriggerModules.Parse(sentence(choice));
+    if (spec.Module != module) throw new ArgumentException("이 선택은 트리거 조건으로 읽을 수 없습니다.");
+    return TriggerModules.Canonical(spec);
+   };
+   definition.Reader = text => {
+    var read = TriggerModules.Parse(text);
+    if (read.Module != module) return null;
+    string canonical = TriggerModules.Canonical(read);
+    foreach (string choice in choices)
+     if (TriggerModules.Canonical(TriggerModules.Parse(sentence(choice))) == canonical)
+      return new Dictionary<string, string> { { slotId, choice } };
+    return null;
+   };
+   modules.Add(definition);
   }
 
   static partial void RegisterTriggers(List<ModuleDefinition> modules) {
@@ -95,14 +125,10 @@ namespace AABattle {
     TB(S("방식", ModuleSlotKind.Text, "선발", TriggerModules.EntryMethods), (s, v) => s.Method = v, s => s.Method));
    T(modules, "entry.type", "등장", "타입 아군과 교대해 등장", "등장·교대", "「{타입}」 타입 아군과 교대해 장소에 나올 때",
     () => new TriggerSpec { Module = "등장" }, TT());
-   TL(modules, "switch.self", "교대", "아군과 임의교대", TriggerStructures.SwitchLabel);
+   TF(modules, "switch.self", "교대", "아군과 임의교대", "등장·교대", TriggerStructures.SwitchLabel);
    T(modules, "switch.type", "교대", "타입 아군과 교대", "등장·교대", "「{타입}」 타입 아군과 교대할 때",
     () => new TriggerSpec { Module = "교대", Method = "임의" }, TT());
-   foreach (bool voluntary in new[] { false, true }) {
-    bool v = voluntary;
-    TL(modules, "switch.opponent." + v, "교대", v ? "상대가 임의교대" : "상대가 교대",
-     v ? "상대가 임의교대할 때" : "상대가 교대할 때");
-   }
+   TX(modules, "switch.opponent", "교대", "상대 교대", "등장·교대", "상대가 {방식}할 때", "방식", "교대", "임의교대");
    foreach (bool forced in new[] { false, true }) {
     bool f = forced;
     T(modules, "leave." + f, "퇴장", f ? "강제교대를 포함한 퇴장" : "장소에서 퇴장", "등장·교대",
@@ -148,8 +174,7 @@ namespace AABattle {
      "{주체}가 {기술조건} 기술을 " + (a ? "내보냈을 때" : "내보낼 때"),
      () => new TriggerSpec { Module = "기술 사용", After = a }, TS("자신", "상대"), TC());
    }
-   TL(modules, "defeat", "쓰러뜨림", "상대를 쓰러뜨림", TriggerStructures.DefeatLabel);
-   TL(modules, "defeat.ain", "쓰러뜨림", "아인종을 쓰러뜨림", "아인종 포켓몬을 쓰러뜨렸을 때");
+   TX(modules, "defeat", "쓰러뜨림", "상대를 쓰러뜨림", "기술·대미지", "{대상} 쓰러뜨렸을 때", "대상", "상대를", "아인종 포켓몬을");
    T(modules, "defeat.type", "쓰러뜨림", "타입 포켓몬을 쓰러뜨림", "기술·대미지", "「{타입}」 타입 포켓몬을 쓰러뜨렸을 때",
     () => new TriggerSpec { Module = "쓰러뜨림" }, TT());
    T(modules, "defeat.move", "쓰러뜨림", "조건 기술로 쓰러뜨림", "기술·대미지", "자신의 {기술조건} 기술로 상대를 쓰러뜨렸을 때",
@@ -163,7 +188,7 @@ namespace AABattle {
     T(modules, "itemloss." + m, "소지품 소실", "소지품 " + m, "소지품·특성", "{주체}의 소지품이 " + (m == "소모 또는 파괴" ? "소모(파괴)" : m) + "됐을 때",
      () => new TriggerSpec { Module = "소지품 소실", Method = m }, TS("자신", "상대"));
    }
-   TL(modules, "ability.any", "특성 발동", "특성 발동(전체)", "자신의 특성이 발동했을 때");
+   TF(modules, "ability.any", "특성 발동", "특성 발동(전체)", "소지품·특성", "자신의 특성이 발동했을 때");
    T(modules, "ability.named", "특성 발동", "지정 특성 발동", "소지품·특성", "자신의 「{이름}」 특성이 발동했을 때",
     () => new TriggerSpec { Module = "특성 발동" }, TN(ModuleSlotKind.Ability, "부유"));
   }

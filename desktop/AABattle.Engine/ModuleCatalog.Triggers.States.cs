@@ -44,8 +44,8 @@ namespace AABattle {
     T(modules, "hpchange." + o, "체력 변화", "체력 변화 " + o, "체력·상태", "{주체}의 체력이 " + phrase,
      () => new TriggerSpec { Module = "체력 변화", Op = o }, bindings.ToArray());
    }
-   TL(modules, "weather.any", "날씨", "날씨 있음", "날씨가 있을 때");
-   TL(modules, "weatherchange.any", "날씨 변화", "모든 날씨 변화", "날씨가 변화했을 때");
+   TF(modules, "weather.any", "날씨", "날씨 있음", "날씨·장소", "날씨가 있을 때");
+   TF(modules, "weatherchange.any", "날씨 변화", "모든 날씨 변화", "날씨·장소", "날씨가 변화했을 때");
    foreach (string module in new[] { "날씨", "날씨 변화" }) {
     string m = module;
     T(modules, m == "날씨" ? "weather" : "weatherchange", m, m, "날씨·장소",
@@ -80,13 +80,11 @@ namespace AABattle {
      TB(S("왼쪽", ModuleSlotKind.Stats, "공격", CatalogTriggerStats.Take(5).ToArray()), (s, x) => s.Stats[0] = Array.IndexOf(CatalogTriggerStats, x) + 1, s => CatalogTriggerStats[s.Stats[0] - 1]),
      TB(S("오른쪽", ModuleSlotKind.Stats, "특공", CatalogTriggerStats.Take(5).ToArray()), (s, x) => s.Stats[1] = Array.IndexOf(CatalogTriggerStats, x) + 1, s => CatalogTriggerStats[s.Stats[1] - 1]));
    }
-   TL(modules, "speed.high", "속도 비교", "상대보다 속도가 높음", "자신의 「속도」가 상대보다 높을 때");
-   TL(modules, "speed.low", "속도 비교", "상대보다 속도가 낮음", "자신의 「속도」가 상대보다 낮을 때");
-   TL(modules, "firstaction", "첫 행동 전", "등장 후 첫 행동 전", "장소에 나와 아직 기술을 내보내지 않았을 때");
-   TL(modules, "floating.self", "공중", "자신이 공중에 있음", "자신이 공중에 떠 있을 때");
-   TL(modules, "floating.both", "공중", "서로 공중에 있음", "서로 공중에 떠 있을 때");
-   TL(modules, "sametype", "같은 타입", "상대와 같은 타입", "상대가 자신과 같은 타입일 때");
-   TL(modules, "notlast", "최후 아님", "최후의 1체가 아님", "자신이 「최후의 1체」가 아닐 때");
+   TX(modules, "speed", "속도 비교", "상대와 속도 비교", "능력", "자신의 「속도」가 상대보다 {비교} 때", "비교", "높을", "낮을");
+   TF(modules, "firstaction", "첫 행동 전", "등장 후 첫 행동 전", "턴·행동", "장소에 나와 아직 기술을 내보내지 않았을 때");
+   TX(modules, "floating", "공중", "공중에 떠 있음", "체력·상태", "{주체} 공중에 떠 있을 때", "주체", "자신이", "서로");
+   TF(modules, "sametype", "같은 타입", "상대와 같은 타입", "능력", "상대가 자신과 같은 타입일 때");
+   TF(modules, "notlast", "최후 아님", "최후의 1체가 아님", "파티·트레이너", "자신이 「최후의 1체」가 아닐 때");
    T(modules, "party.ability", "PT 특성", "PT에 지정 특성 아군 있음", "파티·트레이너", "PT에 특성이 「{이름}」인 아군이 있을 때",
     () => new TriggerSpec { Module = "PT 특성" }, TN(ModuleSlotKind.Ability, "마이너스/플러스"));
    T(modules, "or", "또는", "두 상태 조건 중 하나", "조건 조합", "{조건A}이거나 {조건B}",

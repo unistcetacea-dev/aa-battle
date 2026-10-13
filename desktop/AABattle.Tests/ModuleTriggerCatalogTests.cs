@@ -88,5 +88,35 @@ namespace AABattle {
    Dictionary<string, string> read;
    Assert.That(ModuleCatalog.Find(left).TryRead(ModuleCatalog.Find(right).Fill(), out read), Is.False);
   }
+
+  // 「기본 조건」 묶음은 없어졌고, 합친 모듈의 선택지는 원래 고정 문장과 글자 그대로 같다.
+  [Test]
+  public void NoTriggerModuleIsInTheOldBasicConditionFamily() {
+   var triggers = ModuleCatalog.All.Where(x => x.Kind != ModuleKind.Effect);
+   Assert.That(triggers.Where(x => x.Family == "기본 조건"), Is.Empty);
+  }
+
+  [TestCase("trigger.order", "자신이", "자신이 지령을 받았을 때")]
+  [TestCase("trigger.order", "아군이", "아군이 지령을 받았을 때")]
+  [TestCase("trigger.selected.both", "필중 기술을", "서로 필중 기술을 선택했을 때")]
+  [TestCase("trigger.selected.idle", "상대가", "상대가 공격하지 않는 행동을 선택했을 때")]
+  [TestCase("trigger.order.before", "상대가 자신보다", "상대가 자신보다 먼저 행동할 때")]
+  [TestCase("trigger.order.after", "자신이 상대보다", "자신이 상대보다 먼저 행동했을 때")]
+  [TestCase("trigger.protect", "기술을", "「방어」 등의 기술로 상대의 기술을 무효화했을 때")]
+  [TestCase("trigger.analyzedstate", "자신의 데이터가 해석되지 않았을 때", "자신의 데이터가 해석되지 않았을 때")]
+  [TestCase("trigger.faintcount", "적을", "아군의 빈사 수가 상대보다 적을 때")]
+  [TestCase("trigger.speed", "높을", "자신의 「속도」가 상대보다 높을 때")]
+  [TestCase("trigger.floating", "서로", "서로 공중에 떠 있을 때")]
+  [TestCase("trigger.switch.opponent", "임의교대", "상대가 임의교대할 때")]
+  [TestCase("trigger.defeat", "아인종 포켓몬을", "아인종 포켓몬을 쓰러뜨렸을 때")]
+  public void MergedChoiceModulesKeepTheOriginalSentences(string id, string choice, string sentence) {
+   var module = ModuleCatalog.Find(id);
+   var values = module.Defaults();
+   values[module.Slots[0].Id] = choice;
+   Assert.That(module.Fill(values), Is.EqualTo(sentence));
+   Dictionary<string, string> read;
+   Assert.That(module.TryRead(sentence, out read), Is.True, sentence);
+   Assert.That(read[module.Slots[0].Id], Is.EqualTo(choice));
+  }
  }
 }

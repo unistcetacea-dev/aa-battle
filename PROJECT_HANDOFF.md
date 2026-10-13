@@ -827,3 +827,7 @@ Codex 공유 링크는 특정 시점의 읽기 전용 대화 스냅샷이다. �
 - 보완한 점(WIP 대비): 인접한 빈칸이 글자를 가로채던 읽기 오류(추가행동 조건·추가효과 랭크, 「『야생의 두목』의 능력」)를 선택지 우선 읽기(`StrictSlotPattern`)로 고쳤다. 문장 틀 정규식은 모듈마다 한 번만 만든다. 느슨한 입력 정규화(`ConditionFromInput`)를 UI에서 엔진으로 옮겼다.
 - 검사: `ModuleCoverageTests`(누락·제외 이유·확정 목록 입력 가능), `ModuleTriggerCatalogTests`·`ModuleEffectCoreTests`(왕복·읽기 분리)·`TriggerBuilderUiTests`·`EffectBuilderUiTests`(화면 입력 → 같은 문장, 옛 편집기 문장 재현, 상태 여러 줄·확률 접두어·자격 꼬리표)를 갱신/추가했다. UI 검사는 `[Category("UI")]`.
 - 사용자 판단 필요/보류: `AGENTS.md`의 「새 트리거 종류는 모듈·사건 지점·편집기(`TriggerBuilder.cs`)를 함께 추가」 문구는 이제 「`ModuleCatalog`에 등록」으로 바꾸는 것이 맞다(이번 지시서 범위 밖이라 수정하지 않음). 확정 목록의 옛 표기(예: 「자신의 체력을 회복했을 때」)는 모듈이 표준 문장(「자신이 체력을 회복했을 때」)으로 낸다.
+
+## 2026-10-14 트리거 「기본 조건」 분류 해체
+- 지시서 `research/tasks/2026-10-14-trigger-basic-split.md`, 브랜치 `task/trigger-basic-split`. 편집기 분류 「기본 조건」과 `TL` 도우미를 지우고 고정 문장 49개를 기존 분류로 나눴다(빈칸 없는 문장은 `TF`, 분류 인자 포함).
+- 같은 꼴 문장은 선택 빈칸 하나짜리 모듈로 합쳤다(`TX` 도우미: 선택지에 조사까지 넣고, 선택지마다 `TriggerModules.Parse/Canonical`로 표준 문장을 확인하며 `TryRead`는 선택지마다 대조). 표준 문장·엔진 판정은 바꾸지 않았다. 합친 모듈 id는 바뀌었으나 저장은 문장 기준이라 영향이 없다. 새 분류: 「상시·배틀」, 「데이터 해석」.

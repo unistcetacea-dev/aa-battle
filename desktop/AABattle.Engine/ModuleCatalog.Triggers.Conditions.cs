@@ -5,39 +5,33 @@ using System.Globalization;
 namespace AABattle {
  public static partial class ModuleCatalog {
   static void RegisterTriggerConditions(List<ModuleDefinition> modules) {
-   TL(modules, "always", "상시", "상시", TriggerStructures.AlwaysLabel);
-   TL(modules, "onfield", "상시", "장소에 있는 한", TriggerStructures.FieldLabel);
-   TL(modules, "observer", "PT 참가", "PT에 참여 중", TriggerStructures.ObserverLabel);
-   TL(modules, "here", "여기다", "여기다", TriggerStructures.HereLabel);
-   TL(modules, "battlestart", "배틀 시작", "배틀 시작", TriggerStructures.BattleStartLabel);
-   TL(modules, "order.self", "지령", "자신이 지령 받음", TriggerStructures.SelfOrderLabel);
-   TL(modules, "order.ally", "지령", "아군이 지령 받음", TriggerStructures.AllyOrderLabel);
-   TL(modules, "analyzed", "해석", "상대 데이터 해석", TriggerStructures.AnalyzedLabel);
-   TL(modules, "receivedornullified", "피격·무효화", "공격 피격 또는 무효화", TriggerStructures.ReceivedOrNullifiedLabel);
-   TL(modules, "damaged", "대미지", "대미지를 받음", TriggerStructures.DamagedLabel);
-   TL(modules, "missed", "빗나감", "기술이 빗나감", "자신의 기술이 빗나갔을 때");
-   TL(modules, "indirect", "간접 대미지", "상대가 간접 대미지를 받음", "상대가 공격 이외의 대미지를 받았을 때");
-   TL(modules, "drain", "드레인", "상대 체력 드레인", "상대의 체력을 드레인했을 때");
-   TL(modules, "analyzed.self", "해석당함", "자신의 데이터가 해석됨", "자신의 데이터가 해석되었을 때");
-   TL(modules, "faint.any", "필드 빈사", "필드의 누군가 빈사", "필드의 누군가가 「빈사」 상태가 되었을 때");
-   TL(modules, "berry", "나무열매 사용", "나무열매 사용", "자신이 「나무열매」를 사용했을 때");
-   TL(modules, "damage.small", "작은 대미지", "작은 대미지 이하를 받음", "「작은」 이하의 대미지를 받았을 때");
-   TL(modules, "rank.nullified", "하락 무효", "상대에 의한 능력 하락 무효", "상대에 의한 능력 하락을 무효화했을 때");
-   TL(modules, "intimidated", "위협 받음", "위협을 받음", "상대의 〔위협〕을 받았을 때");
-   TL(modules, "received.fullhp", "가득 피격", "체력이 가득인 상태로 피격", "체력이 가득인 상태로 공격을 받았을 때");
-   foreach (string obj in new[] { "공격", "기술" })
-    TL(modules, "protect." + obj, "방어 성공", "방어로 " + obj + " 무효화", "「방어」 등의 기술로 상대의 " + obj + "을 무효화했을 때");
-   TL(modules, "protect.state", "방어 성공", "방어 상태가 공격을 막음", "자신의 방어 상태가 공격을 막았을 때");
-   TL(modules, "selected.both.변화기술", "행동 선택", "서로 변화기술 선택", "서로 변화기술을 선택했을 때");
-   TL(modules, "selected.both.공격기", "행동 선택", "서로 공격기 선택", "서로 공격기를 선택했을 때");
-   TL(modules, "selected.both.필중 기술", "행동 선택", "서로 필중 기술 선택", "서로 필중 기술을 선택했을 때");
-   foreach (string subject in new[] { "자신", "상대" }) {
-    string owner = subject == "상대" ? "상대가" : "자신이";
-    string other = subject == "상대" ? "자신" : "상대";
-    TL(modules, "selected.idle." + subject, "행동 선택", subject + "이 공격하지 않는 행동 선택", owner + " 공격하지 않는 행동을 선택했을 때");
-    TL(modules, "order.before." + subject, "행동 선후", subject + "이 먼저 행동할 때", owner + " " + other + "보다 먼저 행동할 때");
-    TL(modules, "order.after." + subject, "먼저 행동함", subject + "이 먼저 행동했을 때", owner + " " + other + "보다 먼저 행동했을 때");
-   }
+   TF(modules, "always", "상시", "상시", "상시·배틀", TriggerStructures.AlwaysLabel);
+   TF(modules, "onfield", "상시", "장소에 있는 한", "상시·배틀", TriggerStructures.FieldLabel);
+   TF(modules, "here", "여기다", "여기다", "상시·배틀", TriggerStructures.HereLabel);
+   TF(modules, "battlestart", "배틀 시작", "배틀 시작", "상시·배틀", TriggerStructures.BattleStartLabel);
+   TF(modules, "observer", "PT 참가", "PT에 참여 중", "파티·트레이너", TriggerStructures.ObserverLabel);
+   TX(modules, "order", "지령", "지령을 받음", "파티·트레이너", "{주체} 지령을 받았을 때", "주체", "자신이", "아군이");
+   TF(modules, "analyzed", "해석", "상대 데이터 해석", "데이터 해석", TriggerStructures.AnalyzedLabel);
+   TF(modules, "analyzed.self", "해석당함", "자신의 데이터가 해석됨", "데이터 해석", "자신의 데이터가 해석되었을 때");
+   TX(modules, "analyzedstate", "해석 상태", "데이터 해석 상태", "데이터 해석", "{상태}", "상태",
+    "적진에 데이터가 해석된 상대가 있을 때", "자신의 데이터가 해석되어 있을 때", "자신의 데이터가 해석되지 않았을 때");
+   TF(modules, "receivedornullified", "피격·무효화", "공격 피격 또는 무효화", "기술·대미지", TriggerStructures.ReceivedOrNullifiedLabel);
+   TF(modules, "damaged", "대미지", "대미지를 받음", "기술·대미지", TriggerStructures.DamagedLabel);
+   TF(modules, "missed", "빗나감", "기술이 빗나감", "기술·대미지", "자신의 기술이 빗나갔을 때");
+   TF(modules, "indirect", "간접 대미지", "상대가 간접 대미지를 받음", "기술·대미지", "상대가 공격 이외의 대미지를 받았을 때");
+   TF(modules, "drain", "드레인", "상대 체력 드레인", "기술·대미지", "상대의 체력을 드레인했을 때");
+   TF(modules, "faint.any", "필드 빈사", "필드의 누군가 빈사", "체력·상태", "필드의 누군가가 「빈사」 상태가 되었을 때");
+   TF(modules, "berry", "나무열매 사용", "나무열매 사용", "소지품·특성", "자신이 「나무열매」를 사용했을 때");
+   TF(modules, "damage.small", "작은 대미지", "작은 대미지 이하를 받음", "기술·대미지", "「작은」 이하의 대미지를 받았을 때");
+   TF(modules, "rank.nullified", "하락 무효", "상대에 의한 능력 하락 무효", "능력", "상대에 의한 능력 하락을 무효화했을 때");
+   TF(modules, "intimidated", "위협 받음", "위협을 받음", "소지품·특성", "상대의 〔위협〕을 받았을 때");
+   TF(modules, "received.fullhp", "가득 피격", "체력이 가득인 상태로 피격", "기술·대미지", "체력이 가득인 상태로 공격을 받았을 때");
+   TX(modules, "protect", "방어 성공", "방어로 무효화", "기술·대미지", "「방어」 등의 기술로 상대의 {대상} 무효화했을 때", "대상", "공격을", "기술을");
+   TF(modules, "protect.state", "방어 성공", "방어 상태가 공격을 막음", "기술·대미지", "자신의 방어 상태가 공격을 막았을 때");
+   TX(modules, "selected.both", "행동 선택", "서로 같은 종류 선택", "턴·행동", "서로 {종류} 선택했을 때", "종류", "변화기술을", "공격기를", "필중 기술을");
+   TX(modules, "selected.idle", "행동 선택", "공격하지 않는 행동 선택", "턴·행동", "{주체} 공격하지 않는 행동을 선택했을 때", "주체", "자신이", "상대가");
+   TX(modules, "order.before", "행동 선후", "먼저 행동할 때", "턴·행동", "{주체} 먼저 행동할 때", "주체", "자신이 상대보다", "상대가 자신보다");
+   TX(modules, "order.after", "먼저 행동함", "먼저 행동했을 때", "턴·행동", "{주체} 먼저 행동했을 때", "주체", "자신이 상대보다", "상대가 자신보다");
    T(modules, "idle", "공격하지 않음", "그 턴에 공격하지 않음", "턴·행동", "{주체}가 공격하지 않을 때",
     () => new TriggerSpec { Module = "공격하지 않음" }, TS("자신", "상대"));
    T(modules, "opponent.type", "적진 타입", "적진의 타입", "파티·트레이너", "적진에 「{이름}」 포켓몬이 있을 때",
@@ -50,19 +44,15 @@ namespace AABattle {
      TB(S("자질", ModuleSlotKind.TrainerAptitude, "지시", "지시", "육성", "통솔", "능력"), (s, v) => s.Names[0] = v, s => s.Names[0]),
      TB(S("등급", ModuleSlotKind.Grade, "A", "E", "D", "C", "B", "A", "AA", "AAA", "S"), (s, v) => s.Names[1] = v, s => s.Names[1]));
    }
-   TL(modules, "analyzedstate.opponent", "해석 상태", "상대의 데이터가 해석된 상태", "적진에 데이터가 해석된 상대가 있을 때");
-   TL(modules, "analyzedstate.self", "해석 상태", "자신의 데이터가 해석된 상태", "자신의 데이터가 해석되어 있을 때");
-   TL(modules, "analyzedstate.unknown", "해석 상태", "자신의 데이터가 미해석", "자신의 데이터가 해석되지 않았을 때");
    foreach (string module in new[] { "부여", "포텐셜 보유", "생존" }) {
     string m = module;
     T(modules, "named." + m, m, m, "파티·트레이너", m == "부여" ? "『{이름}』이 부여되어 있을 때" :
      m == "포텐셜 보유" ? "자신이 『{이름}』를 보유하고 있을 때" : "아군에 「{이름}」가 생존해 있을 때",
      () => new TriggerSpec { Module = m }, TN(ModuleSlotKind.Text, m == "부여" ? "계약의 특권" : m == "포텐셜 보유" ? "에이스" : "피카츄"));
    }
-   TL(modules, "last", "생존", "최후의 1체", "자신만 생존해 있을 때");
-   foreach (string op in new[] { "많을", "같을", "적을" })
-    TL(modules, "faintcount." + op, "빈사 수", "빈사 수가 상대보다 " + op + " 때", "아군의 빈사 수가 상대보다 " + op + " 때");
-   TL(modules, "item.exists", "소지품", "소지품을 보유함", "자신이 소지품을 가지고 있을 때");
+   TF(modules, "last", "생존", "최후의 1체", "파티·트레이너", "자신만 생존해 있을 때");
+   TX(modules, "faintcount", "빈사 수", "빈사 수 비교", "파티·트레이너", "아군의 빈사 수가 상대보다 {비교} 때", "비교", "많을", "같을", "적을");
+   TF(modules, "item.exists", "소지품", "소지품을 보유함", "소지품·특성", "자신이 소지품을 가지고 있을 때");
    T(modules, "item.absent", "소지품", "소지품이 없음", "소지품·특성", "{주체}가 소지품을 가지고 있지 않을 때",
     () => new TriggerSpec { Module = "소지품", Op = "없음" }, TS("자신", "상대"));
    foreach (string module in new[] { "소지품", "특성" }) {

@@ -33,8 +33,8 @@ namespace AABattle {
   // 남은 특성 모듈화 3차의 트리거 모듈도 편집기에서 만들고 다시 불러올 수 있다
   [Test] public void AbilityBatchThreeModulesBuildAndReloadEngineSentences() {
    var cases = new[] {
-    new[] { "trigger.speed.low", "", "", "자신의 「속도」가 상대보다 낮을 때" },
-    new[] { "trigger.floating.both", "", "", "서로 공중에 떠 있을 때" },
+    new[] { "trigger.speed", "비교", "낮을", "자신의 「속도」가 상대보다 낮을 때" },
+    new[] { "trigger.floating", "주체", "서로", "서로 공중에 떠 있을 때" },
     new[] { "trigger.firstaction", "", "", "장소에 나와 아직 기술을 내보내지 않았을 때" },
     new[] { "trigger.sametype", "", "", "상대가 자신과 같은 타입일 때" },
     new[] { "trigger.notlast", "", "", "자신이 「최후의 1체」가 아닐 때" },
