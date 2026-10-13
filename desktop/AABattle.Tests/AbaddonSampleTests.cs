@@ -32,7 +32,7 @@ namespace AABattle {
     var pokemon = EditorBridge.ToPokemon(member, TestData.Db, out warning, team.trainer);
     Assert.That(warning, Is.Empty, member.name);
     Assert.That(pokemon.moves.Length, Is.EqualTo(member.moves.Count), member.name + ": 4개를 넘는 기술도 모두 변환된다");
-    Assert.That(member.stats.hp, Is.EqualTo(member.name == "로보코" ? 150 : 100), member.name);
+    Assert.That(member.stats.hp, Is.EqualTo(100), member.name);
     Assert.That(member.asciiArt, Does.Not.Contain("</br>"));
    }
    Assert.That(team.members.SelectMany(m => m.potentials).Count(p => p.slot == TeamRules.ExclusiveSlot), Is.EqualTo(7));
@@ -79,6 +79,7 @@ namespace AABattle {
     foreach (var state in states) state.RefreshUnlocks();
     var turn = Engine.Resolve(db, fighters, commands, new Rules(), states, () => .5);
     Assert.That(turn.Log, Is.Not.Empty, "선봉 " + lead);
+    if (turn.Fighters[0].Data.name == "로보코") Assert.That(turn.Fighters[0].Data.@base[0], Is.EqualTo(150), "배틀 시작 시 금관 사이즈 체력 종족치 적용");
    }
   }
  }

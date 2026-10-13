@@ -43,6 +43,15 @@ namespace AABattle {
    Mechanics.LeaveField(a);
    Assert.That(PotentialModifiers.Stat(a,b,5,r), Is.EqualTo(1));
   }
+  [Test] public void AssaultVestRunsSpecialDefenseScalarAndDoesNotSupportMoveLock() {
+   var d = ItemCatalog.Find("돌격조끼"); var a = F("", "돌격조끼"); var plain = F(); var b = F(); var rules = new Rules();
+   Assert.That(d.Effect, Does.Contain("자신의 「특방」").And.Contain("1.5배"));
+   Assert.That(ItemRuntime.Runnable(d), Is.True);
+   using (EffectScope.Begin(new[] { a, b }, rules, () => .5)) ItemRuntime.Sync(a);
+   Assert.That(Engine.Effective(a, b, 4, rules), Is.EqualTo(Engine.Effective(plain, b, 4, rules) * 1.5));
+   var moveLock = new ItemDefinition { Name = "검사", Effect = "「변화」 기술을 내보낼 수 없다." };
+   Assert.That(ItemRuntime.Runnable(moveLock), Is.False, "현재 엔진은 변화기술 봉쇄 문장을 실행할 모듈이 없음");
+  }
   [TestCase("서투름", "먹다남은음식", false)]
   [TestCase("서투름", "생명의구슬", false)]
   [TestCase("긴장감", "리샘열매", true)]

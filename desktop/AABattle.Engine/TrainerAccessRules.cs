@@ -11,7 +11,8 @@ namespace AABattle {
   public const string AimOrders="order.aim",SureHitOrder="order.sure-hit",Pt1="potential.pt1",Pt2="potential.pt2";
   public static readonly string[] UnlockNames={AimOrders,SureHitOrder,Pt1,Pt2};
   static readonly string[] RankBands={"E","D","C","B","A","AA","AAA","S"};
-  static string Band(string rank){return new string((rank??"").ToUpperInvariant().Where(x=>x>='A'&&x<='Z').ToArray());}
+  // 사용자 결정: 육성 EX는 현재 AA와 동일하게 취급한다.
+  static string Band(string rank){string value=new string((rank??"").ToUpperInvariant().Where(x=>x>='A'&&x<='Z').ToArray());return value=="EX"?"AA":value;}
   static int RankIndex(string rank){return Array.IndexOf(RankBands,Band(rank));}
   static AptitudeRecord Aptitude(TrainerRecord trainer,string name){if(trainer==null)return null;return name=="지시"?trainer.command:name=="육성"?trainer.training:name=="통솔"?trainer.leadership:trainer.ability;}
   public static bool RankAtLeast(string actual,string required){int a=RankIndex(actual),r=RankIndex(required);return a>=0&&r>=0&&a>=r;}

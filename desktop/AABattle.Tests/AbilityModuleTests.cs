@@ -21,6 +21,7 @@ namespace AABattle {
   static int Max(Fighter f) { return Mechanics.MaxHP(f, f, new Rules()); }
 
   [TestCase("「접촉」 기술을 받았을 때,상대에게 HP의 1/8만큼 대미지를 준다.", "상대의 「접촉」 기술을 받았을 때, 상대에게 최대 HP의 1/8 대미지를 준다.")]
+  [TestCase("상대의 「접촉기술」을 받았을 때, 1/8의 데미지를 입는다.", "상대의 「접촉」 기술을 받았을 때, 자신에게 최대 HP의 1/8 대미지를 준다.")]
   [TestCase("급소무효. 상대의 공격 이외의 대미지를 무효화한다.", "자신은 급소에 맞지 않는다. 자신은 공격 이외의 대미지를 받지 않는다.")]
   [TestCase("「에스퍼」 기술을 받으면 흡수해서 「특공」이 오른다.", "상대의 「에스퍼」 기술을 무효화한다. 상대의 「에스퍼」 기술을 무효화했을 때, 자신의 「특공」이 오른다.")]
   [TestCase("상대의 「불꽃」 타입 기술을 무효화한다.이 〔특성〕이 발동했을 때,자신의 「방어」가 크게 오른다.", "상대의 「불꽃」 기술을 무효화한다. 상대의 「불꽃」 기술을 무효화했을 때, 자신의 「방어」가 크게 오른다.")]
@@ -33,6 +34,13 @@ namespace AABattle {
    Assert.That(t.Fighters[0].HP, Is.EqualTo(Max(t.Fighters[0]) - Max(t.Fighters[0]) / 8), Log(t));
    Assert.That(Log(t), Does.Contain("〔까칠한피부〕"));
    Assert.That(t.Fighters[1].Data.potentials.Any(p => p.id == AbilityModules.Slot), Is.True);
+  }
+
+  [Test] public void AbaddonContactAbilityUsesExistingContactDamageModule() {
+   var t = Turn(F(), F("결벽증"), M("몸통박치기"), Idle());
+   Assert.That(t.Fighters[1].HP, Is.LessThan(Max(t.Fighters[1]) - Max(t.Fighters[1]) / 8), Log(t));
+   Assert.That(Log(t), Does.Contain("〔결벽증〕: HP -42"), Log(t));
+   Assert.That(AbilityCatalog.Find("결벽증").support, Is.EqualTo("자동"));
   }
 
   [Test] public void AbsorbAbilityNullifiesAndBoosts() {
