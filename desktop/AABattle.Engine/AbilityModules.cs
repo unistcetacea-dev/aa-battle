@@ -15,6 +15,7 @@ namespace AABattle {
   public static readonly Dictionary<string, string> Pending = new Dictionary<string, string>(AbilityRewrites3.PendingReasons);
   // 도감 문장의 모듈 표현
   public static readonly Dictionary<string, string> Rewrites = new Dictionary<string, string> {
+   { "인형사", BatonModules.BilateralRanks + "." },
    { "필수조역", "아군과 임의교대할 때, 자신의 「능력변화」를 인계한다." },
    { "전열", "장소를 떠날 때, 교대해 나온 아군이 최초로 내보내는 「불꽃」 기술의 위력을 강화(1.5배)한다." },
    { "에코로케이션", "자신의 「소리」 기술에 「추격」 효과를 부여한다." },

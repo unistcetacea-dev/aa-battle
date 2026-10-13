@@ -11,9 +11,11 @@ namespace AABattle {
   public int Accuracy, Evasion, Critical;
   public ConditionState Conditions;
   public List<string> FirstMoves = new List<string>();
+  public Potential IncomingRankSource;
  }
  // 인계 허용 목록. 상태이상·특성·소지품·타입·종족치·배율은 넘기지 않는다.
  public static class BatonModules {
+  public const string BilateralRanks = "자신이 나가거나 들어오는 임의교대의 「능력변화」를 인계할 수 있다";
   public static readonly string[] StateFields = {
    "Heated", "Chilled", "Charged", "Bomb", "BombSetTurn", "Intercept",
    "Confusion", "FocusEnergy", "Substitute", "Seed", "Curse", "Ingrain", "AquaRing",
@@ -38,6 +40,7 @@ namespace AABattle {
   static string Clean(string s) { return Regex.Replace(PotentialParts.Clean(s??""),@"\s+"," ").Trim().TrimEnd('.','。','．'); }
   public static string Normalize(string text) {
    string s=Clean(text);
+   if(s==BilateralRanks)return s+".";
    if(s=="능력변화를 인계한다" || s=="능력변화를 인계해서 교대한다") return "자신의 「능력변화」를 인계한다.";
    if(s=="능력변화를 인계할 수 있다") return "자신의 「능력변화」를 인계할 수 있다.";
    var m=Transfer.Match(s);
@@ -46,7 +49,7 @@ namespace AABattle {
   }
   public static string Classify(string text) {
    string s=Clean(text);
-   return Transfer.IsMatch(s)?"교대 인계":FirstMove.IsMatch(s)?"교대 아군 첫 기술 강화":"";
+   return s==BilateralRanks?"양방향 임의교대 인계":Transfer.IsMatch(s)?"교대 인계":FirstMove.IsMatch(s)?"교대 아군 첫 기술 강화":"";
   }
   static bool Queue(EffectCall call) {
    string s=Clean(call.Line); var m=Transfer.Match(s);
@@ -63,13 +66,44 @@ namespace AABattle {
    return true;
   }
   public static void Register() {
-   PotentialExecutors.Register("교대 인계",c=>Classify(c.Line).Length>0,c=>Queue(c)?EffectOutcome.Success:EffectOutcome.Failed);
+   PotentialExecutors.Register("교대 인계",c=>Classify(c.Line).Length>0 && Clean(c.Line)!=BilateralRanks,c=>Queue(c)?EffectOutcome.Success:EffectOutcome.Failed);
+  }
+  // 들어오는 특성은 상대의 무효화를 반영한 복사본으로 판정한다.
+  static Potential AcceptRanks(Fighter owner, Fighter other, Rules rules, bool entering) {
+   if(owner==null || owner.HP<=0 || rules==null || rules.OptionalEffectPrompt==null)return null;
+   var probe=owner;
+   if(entering) {
+    probe=owner.Copy();
+    probe.OnField=true;
+    probe.AbilitySuppressed=AbilityPhrases.SuppressesAbilities(other,probe)
+     && !AbilityPhrases.SuppressesAbilities(probe,other,true) && !AbilityChangeModules.CannotSuppress(probe,other);
+    AbilityModules.Sync(probe);
+   }
+   foreach(var potential in (probe.Data.potentials??new Potential[0]).Where(p=>p!=null)) {
+    if(!PotentialModifiers.Sentences(probe,other,rules,"인계",new[]{potential},true).Any(s=>Clean(s)==BilateralRanks))continue;
+    if(rules.OptionalEffectPrompt(owner,other,potential))return potential;
+   }
+   return null;
+  }
+  static void Activated(Potential source, Fighter owner, List<string> log) {
+   if(source==null)return;
+   if(log!=null)log.Add((source.id==AbilityModules.Slot?"〔"+source.name+"〕":"『"+source.name+"』")+": 능력변화 인계 선택 발동");
+   if(source.id==AbilityModules.Slot)
+    AnsweredTriggers.AbilityActivated(owner,AbilityRuntime.Name(owner),log==null?(Action<string>)null:log.Add);
   }
   // 퇴장 사건을 처리한 뒤, LeaveField 직전에 값을 잡는다.
-  public static BatonSnapshot Capture(Fighter outgoing, Fighter other, Rules rules, SwitchReason reason) {
+  public static BatonSnapshot Capture(Fighter outgoing, Fighter other, Rules rules, SwitchReason reason, Fighter incoming=null, List<string> log=null) {
    if(outgoing==null || outgoing.HP<=0 || reason==SwitchReason.Fainted)return null;
    Intent intent;
    if(!Pending.TryGetValue(outgoing,out intent))intent=new Intent();
+   bool voluntary=reason==SwitchReason.Normal || reason==SwitchReason.Return || reason==SwitchReason.Pivot || reason==SwitchReason.Potential;
+   Potential enteringSource=null;
+   if(voluntary && !intent.Ranks) {
+    var leavingSource=AcceptRanks(outgoing,other,rules,false);
+    if(leavingSource!=null)Activated(leavingSource,outgoing,log);
+    else enteringSource=AcceptRanks(incoming,other,rules,true);
+    intent.Ranks=leavingSource!=null || enteringSource!=null;
+   }
    foreach(string line in PotentialModifiers.Sentences(outgoing,other,rules,"인계")) {
     var m=Transfer.Match(Clean(line));
     if(m.Success && m.Groups["s"].Value=="자신" && m.Groups["opt"].Value=="한다") {
@@ -84,7 +118,7 @@ namespace AABattle {
    if(intent.States && intent.Bomb)saved.Bomb=true;
    return new BatonSnapshot { Ranks=intent.Ranks,States=intent.States,Stages=(int[])outgoing.Stages.Clone(),
     Accuracy=outgoing.AccuracyStage,Evasion=outgoing.EvasionStage,Critical=outgoing.CriticalStage,
-    Conditions=saved,FirstMoves=new List<string>(intent.FirstMoves) };
+    Conditions=saved,FirstMoves=new List<string>(intent.FirstMoves),IncomingRankSource=enteringSource };
   }
   public static void Apply(BatonSnapshot saved,Fighter incoming,List<string> log) {
    if(saved==null || incoming==null)return;
@@ -100,6 +134,8 @@ namespace AABattle {
    }
    ItemRuntime.Sync(incoming);
    if(log!=null)log.Add(incoming.Data.name+": 교대 인계");
+   // 등장 측의 발동 사건은 대기 복사본이 아니라 실제 장소의 포켓몬에게 낸다.
+   Activated(saved.IncomingRankSource,incoming,log);
   }
   public static void AfterMove(Fighter owner,Move move,List<string> log) {
    if(owner==null || move==null)return;

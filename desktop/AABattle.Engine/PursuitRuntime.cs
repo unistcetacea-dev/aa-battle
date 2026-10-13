@@ -129,7 +129,7 @@ namespace AABattle {
  public static partial class Engine {
   static void PursuitReturn(Fighter[] f,BattleCommand[] commands,Rules r,Func<double> rng,TurnResult result,bool[] away,BatonSnapshot[] transfers,int side) {
    RuntimeTriggers.Switch(f[side],commands[side].SwitchIn,SwitchReason.Return,result.Log.Add);
-   transfers[side]=BatonModules.Capture(f[side],f[1-side],r,SwitchReason.Return);
+   transfers[side]=BatonModules.Capture(f[side],f[1-side],r,SwitchReason.Return,commands[side].SwitchIn,result.Log);
    AbilityRuntime.Leave(f[side],f[1-side],r,SwitchReason.Return,result.Log);
    Mechanics.LeaveField(f[side],result.Log,rng);
    result.SwitchedOut[side]=f[side].Copy();away[side]=true;
