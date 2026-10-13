@@ -61,6 +61,7 @@ namespace AABattle
     public bool Critical, HPCorrection, IgnoreDefenderRaise;
     public Func<Fighter, Fighter, Potential, bool> OptionalEffectPrompt;
     public Func<PotentialInstance, Fighter, string[], string> ChooseStat;
+    public Func<Fighter, string[], int> ChooseBondPotential; // 유대: 다시 쓸 트레이너 포텐셜 선택(목록 번호, 취소는 -1, 없으면 첫 항목)
     public Func<Fighter, string[], string> ChooseSealMove; // 봉인할 상대 기술 선택(없거나 null이면 마지막으로 낸 기술)
     public Dictionary<string, string> SealedMoves = new Dictionary<string, string>(); // 봉인(교대해도 유지): 멤버 키 → 기술
     public Func<Fighter, Move[], Move> ChooseExtraMove; // 추가행동 기술 선택(없으면 첫 후보)        // 「임의의 능력」 선택(없거나 null을 돌려주면 판정 대기)

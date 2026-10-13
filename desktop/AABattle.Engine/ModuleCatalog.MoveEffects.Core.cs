@@ -51,6 +51,9 @@ namespace AABattle
       CoreAdd(modules, "effect.hp.split", "체력 합산 후 배분", MoveMiscModules.KindPainSplit, family, MoveMiscModules.PainSplit + ".");
       CoreAdd(modules, "effect.heal.weather", "날씨별 회복량", MoveMiscModules.KindWeatherHeal, family, "자신의 체력을 날씨에 따라 최대 HP의 {악천후}·{보통}·{쾌청} 회복한다.", S("악천후", ModuleSlotKind.Text, "1/4"), S("보통", ModuleSlotKind.Text, "1/2"), S("쾌청", ModuleSlotKind.Text, "2/3"));
       CoreAdd(modules, "effect.rank.weather", "날씨별 능력 상승폭", MoveMiscModules.KindWeatherRank, family, "자신의 「{능력}」이 {기본}단계 오르고, 날씨가 「{날씨}」일 때는 {강화}단계 오른다.", S("능력", ModuleSlotKind.Stats, "공격/특공", "공격", "방어", "특공", "특방", "속도", "공격/특공", "방어/특방"), CoreNumber("기본", ModuleSlotKind.Rank, "1", 3), S("날씨", ModuleSlotKind.Weather, "쾌청", Mechanics.Weathers), CoreNumber("강화", ModuleSlotKind.Rank, "2", 3));
+      CoreAdd(modules, "effect.bond.rise", "필드에 있는 한 지시 랭크 상승", BondModules.KindRise, "트레이너", "필드에 있는 한 트레이너의 지시를 「{랭크}」랭크 올린다.", CoreNumber("랭크", ModuleSlotKind.Rank, "1", 3));
+      CoreAdd(modules, "effect.bond.regain", "트레이너 포텐셜 재사용 권한", BondModules.KindRegain, "트레이너", BondModules.RegainSentence + ".");
+      CoreAdd(modules, "effect.bond.replay", "트레이너 포텐셜 재발동", BondModules.KindReplay, "트레이너", BondModules.ReplaySentence + ".");
       CoreAdd(modules, "effect.pursuit.grant", "추격 효과 부여", "추격 효과 부여", "교대", "자신의 {조건} 기술에 「추격」 효과를 부여한다.", S("조건", ModuleSlotKind.MoveCondition, ""));
     }
   }

@@ -101,8 +101,21 @@ namespace AABattle {
    new RolePotentialOption("익스펜션（비행）","필드의 날씨 디메리트를 받지 않는다.\r\n상대로부터의 강제교대를 받지 않는다."),new RolePotentialOption("익스펜션（에스퍼）","「혼란」상태가 되지 않는다.\r\n자신의 공격기술에 「1할：혼란」의 추가효과를 부여한다."),new RolePotentialOption("익스펜션（벌레）","자신의 「벌레」기술이 급소에 맞기 쉬워진다. (C+1)"),new RolePotentialOption("익스펜션（바위）","「풀죽음」상태가 되지 않는다."),new RolePotentialOption("익스펜션（고스트）","자신의 「고스트」기술이 상대의 「방어」등의 기술을 관통한다."),new RolePotentialOption("익스펜션（드래곤）","자신의 「체력」종족치가 1랭크 오른다."),new RolePotentialOption("익스펜션（악）","상대의 기술의 「추격」효과를 받지 않는다."),new RolePotentialOption("익스펜션（강철）","상대의 「악」「고스트」기술이 「효과가 별로」가 된다."),
    new RolePotentialOption("익스펜션（페어리）","상대에 의해 「잠듦」상태가 되지 않는다.\r\n자신의 공격기술에 「1할：잠듦」의 추가효과를 부여한다."),new RolePotentialOption("계약의 특권","『계약의 특권』이 부여되어 있을 때, 상대의 「○」기술의 대미지를 반감한다."),new RolePotentialOption("주인의 특권","자신의 「체력」종족치가 조금 오른다."),new RolePotentialOption("왕자의 특권","자신의 「체력」종족치가 조금 오른다.\r\n상대로부터의 상태이상을 받지 않는다.")
   };
+  // 유대: 지시 랭크 상승(상시) + 재사용 권한/재발동. 재판정은 T 개시 시(지시·지령 처리 직후)
+  static RolePotentialOption Bond(string name, string rise, string reroll) {
+   string text = (rise.Length == 0 ? "" : rise + "\r\n") + reroll;
+   return new RolePotentialOption(name, new StructuredPotentialTemplate(TriggerStructures.TurnStartLabel, text), "", "");
+  }
+  static readonly string BondRise = BondModules.RiseSentence(1);
+  static readonly string BondRegain = "저확률로 " + BondModules.RegainSentence + ".";
+  static readonly string BondReplay = "저확률로 " + BondModules.ReplaySentence + ".";
+  public static readonly RolePotentialOption[] BondPotentials={
+   Bond("영혼의 유대", BondRise, BondRegain), Bond("사랑의 유대", BondRise, BondRegain), Bond("왕의 유대", BondRise, BondReplay),
+   Bond("뜨거운 유대", "자신의 모든 종족치에 「++」를 부여한다.", BondRegain),
+   Bond("불타는 유대", BondRise, BondReplay), Bond("얼어붙는 유대", BondRise, BondReplay), Bond("노래의 유대", BondRise, BondReplay), Bond("꿈의 유대", BondRise, BondReplay)
+  };
   public static RolePotentialOption Role(string name){return RolePotentials.FirstOrDefault(x=>x.name==name);}
-  public static RolePotentialOption[] FixedOptions(string slot){return slot=="역할"?RolePotentials:slot=="범용"?CommonPotentials:slot=="선"?InitiativePotentials:slot=="특권"?PrivilegePotentials:null;}
+  public static RolePotentialOption[] FixedOptions(string slot){return slot=="역할"?RolePotentials:slot=="범용"?CommonPotentials:slot=="선"?InitiativePotentials:slot=="특권"?PrivilegePotentials:slot=="유대"?BondPotentials:null;}
   public static RolePotentialOption FixedOption(string slot,string name){var options=FixedOptions(slot);return options==null?null:options.FirstOrDefault(x=>x.name==name);}
   static readonly string[][] CounterTypes={new[]{"불꽃","화"},new[]{"물","수"},new[]{"풀","초"},new[]{"격투","투"},new[]{"얼음","빙"},new[]{"땅","지"},new[]{"고스트","령"},new[]{"바위","암"},new[]{"전기","전"},new[]{"강철","강"},new[]{"독","독"},new[]{"벌레","충"},new[]{"비행","비"},new[]{"에스퍼","염"},new[]{"악","악"},new[]{"드래곤","룡"},new[]{"페어리","요"}};
   public static string[] CounterTypeNames(){return CounterTypes.Select(x=>x[0]).ToArray();}

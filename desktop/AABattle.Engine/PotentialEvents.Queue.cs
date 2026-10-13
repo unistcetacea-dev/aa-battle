@@ -180,10 +180,10 @@ namespace AABattle
 
       // c. 확률: 같은 소유자·같은 사건 묶음으로 1회 판정(중확률 보장 포함)
       var rolling = plans.Where(p => p.Executable).ToList();
-      var rolled = PotentialProbability.Resolve(rolling.Select(p => p.Source.Description + " " + p.Source.Activation).ToArray(), scope.Rng);
+      var rolled = PotentialProbability.Resolve(rolling.Select(p => BondModules.WithoutOwnRoll(p.Source.Description) + " " + p.Source.Activation).ToArray(), scope.Rng);
       for (int i = 0; i < rolling.Count; i++)
       {
-        double? rate = PotentialProbability.Rate(rolling[i].Source.Description + " " + rolling[i].Source.Activation);
+        double? rate = PotentialProbability.Rate(BondModules.WithoutOwnRoll(rolling[i].Source.Description) + " " + rolling[i].Source.Activation);
         rolling[i].ProbabilityOk = !rate.HasValue || rolled[i];
       }
 
@@ -230,7 +230,8 @@ namespace AABattle
 
       // 실행할 수 있는 효과가 하나도 없거나 다른 단계가 맡는 효과뿐이면 예전처럼 로그만 남긴다
       plan.Executable = plan.Steps.Any(s => s.Executor != null && !IsDeferred(s.Executor));
-      plan.Optional = Regex.IsMatch(PotentialParts.Clean(source.Effect), @"수\s*있다") || plan.Steps.Any(s => s.Executor != null && s.Executor.Name == BuiltIn.AnalysisName);
+      // 유대의 재사용 선택은 목록 창이 맡으므로 별도의 확인 창을 띄우지 않는다
+      plan.Optional = Regex.IsMatch(PotentialParts.Clean(source.Effect), @"수\s*있다") && !plan.Steps.Any(s => s.Executor != null && s.Executor.Name.StartsWith(BondModules.ExecutorPrefix)) || plan.Steps.Any(s => s.Executor != null && s.Executor.Name == BuiltIn.AnalysisName);
       return plan;
     }
 
@@ -357,6 +358,7 @@ namespace AABattle
       // e. 소비(이후 효과가 실패해도 돌려주지 않는다)
       if (!declared && usage != null)
         usage.Use(source.Key, source.Uses);
+      RecordTrainerUse(scope, source);
       Say(log, head + " · 효과 적용: " + source.Effect);
       if (source.Slot == AbilityModules.Slot && source.Owner != null)
         AnsweredTriggers.AbilityActivated(source.Owner, Regex.Replace(source.Name, @" \(\d+\)$", ""), x => Say(log, x));

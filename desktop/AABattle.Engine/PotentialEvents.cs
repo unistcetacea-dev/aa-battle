@@ -163,6 +163,7 @@ namespace AABattle
       AbilityItemModules.Register();
       AbilityEventModules.Register();
       AbilityNoEffectModules.Register();
+      BondModules.Register();
     }
 
     public static PotentialExecutor Register(string name, Func<EffectCall, bool> canRun, Func<EffectCall, EffectOutcome> run)
@@ -194,13 +195,15 @@ namespace AABattle
     public Dictionary<string, int> Battle = new Dictionary<string, int>(); // 1/시·최초 1회
     public Dictionary<string, int> Turn = new Dictionary<string, int>(); // 1/T (턴 종료에 초기화)
     public HashSet<string> Declared = new HashSet<string>(); // 이번 T 선행입력 선언(선언 때 이미 소비)
+    public Dictionary<string, List<BondEntry>> Bond = new Dictionary<string, List<BondEntry>>(); // 포켓몬 키 → 발동했거나 받은 트레이너 포텐셜 이력(유대)
     public PotentialUsage Copy()
     {
       return new PotentialUsage
       {
         Battle = new Dictionary<string, int>(Battle),
         Turn = new Dictionary<string, int>(Turn),
-        Declared = new HashSet<string>(Declared)
+        Declared = new HashSet<string>(Declared),
+        Bond = Bond.ToDictionary(x => x.Key, x => new List<BondEntry>(x.Value))
       };
     }
 

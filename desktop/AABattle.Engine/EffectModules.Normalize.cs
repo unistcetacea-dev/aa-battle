@@ -20,7 +20,7 @@ namespace AABattle
         return "자신을 「" + m.Groups["s"].Value + "」 상태로 한다";
       // 「상대 기술의」처럼 조사가 빠진 주어
       string moveModule = MoveModules.Normalize(text);
-      string batonModule = BatonModules.Normalize(text) ?? PursuitModules.Normalize(text) ?? MoveMiscModules.Normalize(text);
+      string batonModule = BatonModules.Normalize(text) ?? PursuitModules.Normalize(text) ?? MoveMiscModules.Normalize(text) ?? BondModules.Normalize(text);
       if (batonModule != null)
         return batonModule;
       if (moveModule != null)
