@@ -46,6 +46,27 @@ namespace AABattle {
    var a = F(); Rule(a, "자신의 「노말」 기술의 타입을 「물」로 한다.");
    Assert.That(Engine.Calculate(TestData.Db, a, F("", "불꽃"), M("몸통박치기"), new Rules()).Type, Is.EqualTo(2));
   }
+  [Test] public void MoveTypeConversionRunsOnceInPreviewAndBattle() {
+   var a = F("스카이스킨"); var b = F("", "불꽃");
+   a.Data.potentials = a.Data.potentials.Concat(new[] {
+    new Potential { id = "종족 ①", name = "물로 변경", triggers = new[] { TriggerStructures.AlwaysLabel }, description = "자신의 「비행」 기술의 타입을 「물」로 한다." }
+   }).ToArray();
+   var hit = M("몸통박치기").Copy(); hit.priority = 2;
+   var predicted = Engine.Calculate(TestData.Db, a, b, hit, new Rules());
+   Assert.That(predicted.Type, Is.EqualTo(1), "최초로 성립한 스킨 변경만 적용한다");
+   var t = Engine.Resolve(TestData.Db, new[] { a, b }, new[] { hit, Idle() }, new Rules(), () => .5);
+   Assert.That(b.HP - t.Fighters[1].HP, Is.EqualTo(predicted.Rolls[8]), string.Join("\n", t.Log));
+  }
+  [TestCase("웨더볼", "비", "없음")]
+  [TestCase("대지의파동", "없음", "일렉트릭필드")]
+  public void UnconditionalMoveTypeFollowsIntrinsicWeatherOrTerrain(string move, string weather, string terrain) {
+   var a = F("무한의검", "강철"); var b = F("", "강철"); var r = new Rules { Weather = weather, Terrain = terrain };
+   var d = Engine.Calculate(TestData.Db, a, b, M(move), r);
+   Assert.That(d.Type, Is.EqualTo(2)); Assert.That(d.Stab, Is.EqualTo(2));
+   var predicted = d.Rolls[8];
+   var t = Engine.Resolve(TestData.Db, new[] { a, b }, new[] { M(move), Idle() }, r, () => .5);
+   Assert.That(b.HP - t.Fighters[1].HP, Is.EqualTo(predicted), string.Join("\n", t.Log));
+  }
   [TestCase("리베로")] [TestCase("변환자재")]
   public void UserTypeChangesWhenMoveIsActuallyUsed(string ability) {
    var a = F(ability);
