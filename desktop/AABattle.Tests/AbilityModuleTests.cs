@@ -125,7 +125,7 @@ namespace AABattle {
 
   [TestCase(false)]
   [TestCase(true)]
-  public void RegeneratorHealsOnForcedSwitchUnlessHealBlocked(bool blocked) {
+  public void RegeneratorDoesNotHealOnForcedSwitch(bool blocked) {
    var source = F();
    source.Data.potentials = new[] { new Potential { id = "종족 ①", name = "강제교대 검사", triggers = new[] { TriggerStructures.AttackSuccessLabel }, description = "상대를 강제교대시킨다." } };
    var target = F("재생력"); target.HP = 100; target.Conditions.HealBlock = blocked ? 3 : 0;
@@ -135,7 +135,15 @@ namespace AABattle {
    Func<Fighter, TurnResult> run = t => Engine.Resolve(TestData.Db, new[] { source, t }, new[] { new BattleCommand { Move = hit }, new BattleCommand { Move = Idle(), Party = new[] { t, reserve } } }, new Rules(), new[] { new TrainerBattleState(), new TrainerBattleState() }, () => .5);
    var baseline = run(plain); var actual = run(target);
    Assert.That(actual.Switches.Single().Reason, Is.EqualTo(SwitchReason.Forced), Log(actual));
-   Assert.That(actual.Switches.Single().Outgoing.HP, Is.EqualTo(baseline.Switches.Single().Outgoing.HP + (blocked ? 0 : Max(target) / 3)), Log(actual));
+   Assert.That(actual.Switches.Single().Outgoing.HP, Is.EqualTo(baseline.Switches.Single().Outgoing.HP), Log(actual));
+  }
+
+  [TestCase(SwitchReason.Normal, false)] [TestCase(SwitchReason.Normal, true)]
+  [TestCase(SwitchReason.Pivot, false)] [TestCase(SwitchReason.Return, false)]
+  public void RegeneratorKeepsVoluntaryHealingAndHealBlock(SwitchReason reason, bool blocked) {
+   var owner = F("재생력"); owner.HP = 100; owner.Conditions.HealBlock = blocked ? 3 : 0;
+   using (EffectScope.Begin(new[] { owner, F() }, new Rules(), () => .5)) RuntimeTriggers.Leave(owner, reason, _ => { });
+   Assert.That(owner.HP, Is.EqualTo(100 + (blocked ? 0 : Max(owner) / 3)));
   }
 
   [Test] public void RegeneratorDoesNotHealFaintedDeparture() {
