@@ -96,18 +96,6 @@ namespace AABattle.Tests
     }
 
     // ---------- 2. 대미지 문장 변형 ----------
-    [TestCase("상대에게 1/8의 「벌레」 대미지를 준다", "상대에게 최대 HP의 1/8 「벌레」 타입 대미지를 준다.")]
-    [TestCase("최대 체력의 1/8의 「전기」데미지를 준다", "상대에게 최대 HP의 1/8 「전기」 타입 대미지를 준다.")]
-    [TestCase("상대 체력의 1/8의 「불꽃」대미지를 준다", "상대에게 최대 HP의 1/8 「불꽃」 타입 대미지를 준다.")]
-    [TestCase("「1/8」의 전기 대미지를 상대에게 준다", "상대에게 최대 HP의 1/8 「전기」 타입 대미지를 준다.")]
-    [TestCase("상대에게 최대 체력의 1/8의 「물」 대미지를 준다 이 대미지로는 빈사로 할 수 없다", "상대에게 최대 HP의 1/8 「물」 타입 대미지를 준다 이 대미지로는 빈사로 할 수 없다.")]
-    [TestCase("상대로부터의 「데이터해석」을 무효화하고 최대 체력의 1/4의 「물」 대미지를 준다", "상대로부터의 「데이터해석」을 무효화한다. 상대에게 최대 HP의 1/4 「물」 타입 대미지를 준다.")]
-    public void TypedDamageVariantsBecomeTheStandardSentence(string raw, string expected)
-    {
-      string once = EffectNormalizer.Normalize(raw);
-      Assert.That(once, Is.EqualTo(expected));
-      Assert.That(EffectNormalizer.Normalize(once), Is.EqualTo(once), "재정규화");
-    }
 
     [Test]
     public void ForcedEntryDamageSentenceSplitsIntoTriggerAndTypedDamage()
@@ -274,11 +262,5 @@ namespace AABattle.Tests
       Assert.That(second.Fighters[0].Data.potentials.Count(x => x.name == "주인의 특권"), Is.EqualTo(1), "이미 가졌으면 다시 부여하지 않는다");
     }
 
-    [TestCase("자신을 『엠페러』에 임명한다", "자신을 『엠퍼러』로 임명할 수 있다.")]
-    [TestCase("자신을 『야생 포켓몬』에 임명할 수 있다", "자신을 『야생 포켓몬』로 임명할 수 있다.")]
-    public void RoleAppointmentParticleVariants(string raw, string expected)
-    {
-      Assert.That(EffectNormalizer.Normalize(raw), Is.EqualTo(expected));
-    }
   }
 }

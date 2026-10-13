@@ -157,12 +157,6 @@ namespace AABattle {
    Assert.That(turn.Log.Any(x => x.Contains("급소!")), Is.EqualTo(critical), string.Join("\n", turn.Log));
   }
 
-  [TestCase("「독」 상태를 치유한다", "자신의 「독」 상태를 치유한다.")]
-  [TestCase("「혼란」상태를 치유한다", "자신의 「혼란」 상태를 치유한다.")]
-  [TestCase("자신의 「도발」 상태를 치유한다", "자신의 「도발」 상태를 해제한다.")]
-  public void CureIsStatusAndConfusionOnly(string raw, string expected) {
-   Assert.That(EffectNormalizer.Normalize(raw), Is.EqualTo(expected));
-  }
 
   // 추가효과 모듈
   [TestCase("자신의 기술에 「1할：풀죽음」의 추가효과를 부여한다", "자신의 기술에 「1할:풀죽음」의 추가효과를 부여한다.")]

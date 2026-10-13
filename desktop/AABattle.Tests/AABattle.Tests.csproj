@@ -17,6 +17,11 @@
     <Reference Include="System.Web.Extensions" />
   </ItemGroup>
   <ItemGroup>
+    <None Update="Data\*.tsv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\AABattle.UI\AABattle.UI.csproj" />
   </ItemGroup>
 </Project>

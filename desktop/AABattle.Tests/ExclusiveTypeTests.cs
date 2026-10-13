@@ -58,12 +58,6 @@ namespace AABattle {
   }
 
   // ===== 정규화 · 분류 =====
-  [TestCase("「추격」효과의 발동 시, 기술의 데미지를 2배로 한다.", "자신이 「추격」 효과로 주는 대미지를 강화(2배)한다.")]
-  [TestCase("상대의 「상태변화」를 해제한다.", "상대의 모든 상태변화를 해제한다.")]
-  [TestCase("자신의 기술이 상대에게 「필중」한다.", "자신의 기술은 필중이다.")]
-  public void CollectedVariantsBecomeStandardSentences(string raw, string standard) {
-   Assert.That(EffectNormalizer.Normalize(raw), Is.EqualTo(standard));
-  }
 
   [TestCase("자신이 「추격」 효과로 주는 대미지를 강화(2배)한다.", "추격 발동 배율")]
   [TestCase("상대의 모든 상태변화를 해제한다.", "상태변화 전체 해제")]

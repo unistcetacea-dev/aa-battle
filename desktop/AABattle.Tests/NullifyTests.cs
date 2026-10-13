@@ -45,15 +45,6 @@ namespace AABattle
 
     static readonly Potential Primal = Pot("부수", "프라이멀 헌트", "", "상대의 『투쟁본능』을 무효화한다");
 
-    [TestCase("상대의 『투쟁본능』을 무효화한다.", "상대의 『투쟁본능』을 무효화한다.")]
-    [TestCase("상대의 『대○회피』『대○내성』을 무효화한다.", "상대의 『대○회피』『대○내성』을 무효화한다.")]
-    [TestCase("상대의 「공격을 회피한다」의 효과를 가진 포텐셜을 무효화한다.", "상대의 「공격을 회피한다」 효과를 가진 포텐셜을 무효화한다.")]
-    [TestCase("원종인 「캐스터」종과는 다른 생태를 갖는다. 『올드 타입』을 무효화한다.", "자신의 『올드 타입』을 무효화한다.")]
-    [TestCase("「？？？」종이 이 개체뿐이기에 『올드 타입』을 무효화한다.", "자신의 『올드 타입』을 무효화한다.")]
-    public void CollectedVariantsBecomeStandardSentences(string raw, string standard)
-    {
-      Assert.That(EffectNormalizer.Normalize(raw), Is.EqualTo(standard));
-    }
 
     [TestCase("상대의 『투쟁본능』을 무효화한다.", PotentialNullify.Kind)]
     [TestCase("상대의 「공격을 회피한다」 효과를 가진 포텐셜을 무효화한다.", PotentialNullify.ByEffectKind)]

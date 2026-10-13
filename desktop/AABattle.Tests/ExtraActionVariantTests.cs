@@ -8,19 +8,6 @@ namespace AABattle
   [TestFixture]
   public class ExtraActionVariantTests
   {
-    [TestCase("「칼춤」에 의한 추가행동권을 얻는다.", "가장 마지막에 「기술:칼춤」 기술에 의한 추가행동을 얻는다.")]
-    [TestCase("가장 마지막에 「기능확장：기가임팩트」에 의한 추가행동을 얻는다.", "가장 마지막에 「기술:기가임팩트」 기술에 의한 추가행동을 얻는다.")]
-    [TestCase("「4」배수의 T, 아군이 가장 먼저 「기능확장(성스러운칼)」에 의한 추가행동권을 얻는다.", "「4」배수 T, 가장 먼저 「기술:성스러운칼」 기술에 의한 추가행동을 얻는다.")]
-    [TestCase("T의 마지막에 추가행동권을 얻는다.", "가장 마지막에 추가행동을 얻는다.")]
-    [TestCase("T의 마지막에 추가공격을 할 수 있다.", "가장 마지막에 같은 기술에 의한 추가행동을 얻는다.")]
-    [TestCase("공격 명중 후, 추가공격을 내보낸다.", "가장 먼저 같은 기술에 의한 추가행동을 얻는다.")]
-    [TestCase("「꿰뚫어보기」을 내보낸다.", "가장 먼저 「기술:꿰뚫어보기」 기술에 의한 추가행동을 얻는다.")]
-    [TestCase("저확률로 턴의 최후에 「흡혈」을 내보낸다.", "저확률로 가장 마지막에 「기술:흡혈」 기술에 의한 추가행동을 얻는다.")]
-    [TestCase("아군이 「우드해머」를 내보낼 수 있다.", "아군 전원이 「기능확장:우드해머」를 내보낼 수 있다.")]
-    public void VariantsBecomeStandardSentences(string raw, string standard)
-    {
-      Assert.That(EffectNormalizer.Normalize(raw), Is.EqualTo(standard));
-    }
 
     [Test]
     public void ChaldeaVariantsAreReadAsExistingModules()

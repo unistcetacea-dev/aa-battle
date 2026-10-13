@@ -19,42 +19,6 @@ namespace AABattle {
   static Move Idle() { return new Move { name = "미등록", category = "변화", types = new[] { "노말" }, tags = new string[0], accuracy = 100, target = "자신" }; }
   static TurnResult Turn(Fighter a, Fighter b, Move ma, Move mb, Rules rules = null) { return Engine.Resolve(TestData.Db, new[] { a, b }, new[] { ma, mb }, rules ?? new Rules(), () => .5); }
 
-  [TestCase("필드에 나와", "장소에 나올 때")]
-  [TestCase("「죽어내밀기」로 장소에 나올 때", "죽어내밀기로 장소에 나올 때")]
-  [TestCase("상대가 「강제교대」로 나왔을 때", "상대가 강제교대로 장소에 나왔을 때")]
-  [TestCase("「전기/페어리」인 아군과 교대해 장소에 나올 때", "「전기/페어리」 타입 아군과 교대해 장소에 나올 때")]
-  [TestCase("「불꽃」타입과 교대할 때", "「불꽃」 타입 아군과 교대할 때")]
-  [TestCase("임의교대시", "아군과 임의교대할 때")]
-  [TestCase("상대가 필드를 떠날 때", "상대가 장소를 떠날 때")]
-  [TestCase("강제교대를 포함해 필드를 떠날 때", "강제교대를 포함해 장소를 떠날 때")]
-  [TestCase("「3」의 배수의 턴 종료시", "「3」배수 T 종료 시")]
-  [TestCase("필드에 나와 2T째 종료시", "장소에 나와 「2」T째 종료 시")]
-  [TestCase("필드에 나온 T 종료시에", "장소에 나와 「1」T째 종료 시")]
-  [TestCase("공격을 받은 T종료시", "「상대의 공격을 받았을 때」가 성립한 T 종료 시")]
-  [TestCase("「죽어내밀기」로 나온 T종료시", "「죽어내밀기로 장소에 나올 때」가 성립한 T 종료 시")]
-  [TestCase("「접촉기술」을 받았을 때", "상대의 「접촉」 기술을 받았을 때")]
-  [TestCase("상대의 접촉공격을 받았을 때", "상대의 「접촉」 공격을 받았을 때")]
-  [TestCase("상대의 공격이 명중했을 때", "상대의 공격을 받았을 때")]
-  [TestCase("아인의 공격을 받았을 때", "아인종 상대의 공격을 받았을 때")]
-  [TestCase("자신의 공격 명중 시", "자신의 공격이 명중했을 때")]
-  [TestCase("공격이 성공했을 때", "자신의 공격이 명중했을 때")]
-  [TestCase("자신의 「물기」「엄니」 등의 기술이 명중했을 때", "자신의 「물기」「엄니」 기술이 명중했을 때")]
-  [TestCase("자신의 우선도 +1이상의 공격이 명중했을 때", "자신의 「우선도 +」 공격이 명중했을 때")]
-  [TestCase("자신의 공격이 급소에 맞았을 때", "자신의 기술이 급소에 맞았을 때")]
-  [TestCase("「강철」포켓몬을 쓰러뜨렸을 때", "「강철」 타입 포켓몬을 쓰러뜨렸을 때")]
-  [TestCase("「아인」을 쓰러뜨렸을 때", "아인종 포켓몬을 쓰러뜨렸을 때")]
-  [TestCase("자신이 「인파이트」으로 상대를 쓰러뜨렸을 때", "자신의 「인파이트」 기술로 상대를 쓰러뜨렸을 때")]
-  [TestCase("공격기술을 내보낼 때", "「공격」 기술을 내보낼 때")]
-  [TestCase("「소리」 타입 기술을 내보낼 때", "「소리」 기술을 내보낼 때")]
-  [TestCase("자신이 「얼음」기술을 내보냈을 때", "「얼음」 기술을 내보냈을 때")]
-  [TestCase("기술 「칼춤」을 내보냈을 때", "「칼춤」 기술을 내보냈을 때")]
-  [TestCase("상대가 위력 「40」이하의 기술을 내보낼 때", "상대가 「위력 40 이하」 기술을 내보낼 때")]
-  [TestCase("서로 공격을 내보낼 때", "서로 공격기를 선택했을 때")]
-  public void NormalizesCollectedWording(string raw, string expected) {
-   Assert.That(TriggerStructures.Normalize(raw), Is.EqualTo(expected));
-   Assert.That(TriggerStructures.Normalize(expected), Is.EqualTo(expected), "canonical is stable");
-   if (!expected.StartsWith("서로")) Assert.That(TriggerModules.Classify(expected), Is.Not.Empty, "canonical is a module");
-  }
 
   // 2단계: 상태 · 체력 · 날씨 · 장소 · 랭크
   [Test] public void ForcedDepartureIsOptIn() {
@@ -67,53 +31,8 @@ namespace AABattle {
    Assert.That(TriggerModules.Matches(TriggerModules.Parse("강제교대를 포함해 장소를 떠날 때"), forced, owner), Is.True);
   }
 
-  [TestCase("「빈사」상태가 됐을 때", "자신이 「빈사」 상태가 되었을 때")]
-  [TestCase("쓰러졌을 때", "자신이 「빈사」 상태가 되었을 때")]
-  [TestCase("상대가 쓰러졌을 때", "상대가 「빈사」 상태가 되었을 때")]
-  [TestCase("상대가 「독」상태일 때", "상대가 「독」 상태이상일 때")]
-  [TestCase("자신이 「아쿠아링」상태일 때", "자신이 「아쿠아링」 상태변화일 때")]
-  [TestCase("상대가 「독(맹독)」상태가 됐을 때", "상대가 「독」「맹독」 상태이상이 되었을 때")]
-  [TestCase("「충전」상태가 해제되었을 때", "자신의 「충전」 상태가 해제되었을 때")]
-  [TestCase("상대가 「상태이상」에 걸렸을 때", "상대가 「상태이상」이 되었을 때")]
-  [TestCase("체력이 가득일 때", "자신의 체력이 가득일 때")]
-  [TestCase("자신의 체력이 1/2이하가 됐을 때", "자신의 체력이 1/2 이하가 되었을 때")]
-  [TestCase("체력이 절반 이하가 됐을 때", "자신의 체력이 1/2 이하가 되었을 때")]
-  [TestCase("체력이 「1/2」이하일 때", "자신의 체력이 1/2 이하일 때")]
-  [TestCase("체력이 가득하지 않아졌을 때", "자신의 체력이 가득하지 않게 되었을 때")]
-  [TestCase("상대의 체력이 「1」이 됐을 때", "상대의 체력이 「1」이 되었을 때")]
-  [TestCase("자신의 체력이 회복했을 때", "자신이 체력을 회복했을 때")]
-  [TestCase("날씨가 「(강한) 비」일 때", "날씨가 「비」일 때")]
-  [TestCase("날씨가 「모래날림」이 되었을 때", "날씨가 「모래바람」이 되었을 때")]
-  [TestCase("필드가 「일렉트릭필드」일때", "「일렉트릭필드」일 때")]
-  [TestCase("필드에 「중력」이 전개되어 있을 때", "「중력」이 전개되어 있을 때")]
-  [TestCase("필드가 「트릭룸」일 때", "「트릭룸」이 전개되어 있을 때")]
-  [TestCase("장소가 「그래스필드」로 변했을 때", "「그래스필드」가 되었을 때")]
-  [TestCase("상대의 속도가 내려갔을 때", "상대의 「속도」가 내려갔을 때")]
-  [TestCase("상대의 능력이 떨어졌을 때", "상대의 능력이 내려갔을 때")]
-  [TestCase("「공격」이 크게 올랐을 때", "자신의 「공격」이 크게 올랐을 때")]
-  [TestCase("자신의 「공/특공」이 올랐을 때", "자신의 「공격/특공」이 올랐을 때")]
-  [TestCase("상대가 「마비」상태가 된 T 종료시", "「상대가 「마비」 상태이상이 되었을 때」가 성립한 T 종료 시")]
-  public void NormalizesStageTwoWording(string raw, string expected) { NormalizesCollectedWording(raw, expected); }
 
   // 3단계: 구성 · 진영 · 소지품 · 특성 · 보유 · 트레이너 · 플레이버 · 행동 선택
-  [TestCase("상대가 「고스트」타입일 때", "적진에 「고스트」 포켓몬이 있을 때")]
-  [TestCase("소속이 《 칼데아 》일 때", "소속이 《칼데아》일 때")]
-  [TestCase("「캐롤」이 트레이너일 때", "「캐롤」이 트레이너일 때")]
-  [TestCase("소지품이 「달인의띠」일 때", "자신의 소지품이 「달인의띠」일 때")]
-  [TestCase("소지품이 있을 때", "자신이 소지품을 가지고 있을 때")]
-  [TestCase("「부유」 특성을 가지고 있을 때", "자신의 특성이 「부유」일 때")]
-  [TestCase("특성 「짓궂은마음」이 발동했을 때", "자신의 「짓궂은마음」 특성이 발동했을 때")]
-  [TestCase("「최후의 1체」일 때", "자신만 생존해 있을 때")]
-  [TestCase("아군의 「빈사」상태인 포켓몬의 수가 상대보다 많을 때", "아군의 빈사 수가 상대보다 많을 때")]
-  [TestCase("자진이 「순풍」일 때", "자진에 「순풍」이 있을 때")]
-  [TestCase("상대 진영의 「압정」이 2겹 이상일 때", "적진의 「압정」이 2겹 이상일 때")]
-  [TestCase("자신이 공격을 하지 않을 때", "자신이 공격하지 않을 때")]
-  [TestCase("자신이 『수렵대원』일 때", "자신이 『수렵대원』을 보유하고 있을 때")]
-  [TestCase("「방어」등의 기술로 상대의 기술을 무효화했을 때", "「방어」 등의 기술로 상대의 기술을 무효화했을 때")]
-  [TestCase("트레이너가 「통솔:A」 이상일 때", "트레이너가 「통솔:A」 이상일 때")]
-  [TestCase("『계약의 특권』이 부여되어 있을 때", "『계약의 특권』이 부여되어 있을 때")]
-  [TestCase("상대의 「속」이 내렸을 때", "상대의 「속도」가 내려갔을 때")]
-  public void NormalizesStageThreeWording(string raw, string expected) { NormalizesCollectedWording(raw, expected); }
 
   // 확정 39: 인물·소속 조건은 상시
   [Test] public void FlavorConditionActsAsPassive() {
@@ -162,11 +81,6 @@ namespace AABattle {
    Assert.That(turn.Fighters[0].Stages[2], Is.EqualTo(1), "analyzed opponent state");
   }
 
-  [TestCase("「여기다!」일 때", "「여기다！」일 때")]
-  [TestCase("상대의 데이터가 이미 해석된 상태일 때", "적진에 데이터가 해석된 상대가 있을 때")]
-  [TestCase("자신의 데이터가 해석되지 않았을 때", "자신의 데이터가 해석되지 않았을 때")]
-  [TestCase("자신이 「해석」됐을 때", "자신의 데이터가 해석되었을 때")]
-  public void NormalizesHereAndAnalysisWording(string raw, string expected) { NormalizesCollectedWording(raw, expected); }
 
   [Test] public void FaintedOwnerTriggersOnBecomingFainted() {
    var owner = F("노말", P("쓰러졌을 때", "종족 ①", "상대에게 최대 HP의 1/4 대미지를 준다.")); owner.HP = 1;
