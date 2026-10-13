@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace AABattle {
  public class AbilityDefinition { public string name,effect; public string[] triggers=new string[0],effects=new string[0]; public string support="수동",blocker=""; }
@@ -24,12 +25,20 @@ namespace AABattle {
   public static AbilityDefinition Find(string name){return All.FirstOrDefault(x=>x.name==name);}
   static AbilityDefinition Describe(AbilityDefinition ability){
    var rules=RuleText.Split(ability.effect);ability.triggers=rules.triggers;ability.effects=rules.effects;bool auto=AbilityModules.Dedicated.Contains(ability.name)||AbilityModules.Runnable(ability);
+   string pending;
+   if (AbilityModules.Pending.TryGetValue(ability.name, out pending)) {
+    ability.support = auto ? "부분 자동" : "수동"; ability.blocker = pending; return ability;
+   }
    if(auto){ability.support="자동";return ability;}
    ability.support="수동";
-   string text = (ability.effect ?? "").Replace(" ", "");
+   string text = AbilityModules.Clean(ability.effect).Replace(" ", "");
    if(text.Contains("더블배틀")||text.Contains("인접")||text.Contains("아군전체"))ability.blocker="다인전 대상/범위 엔진 필요";
    else if(text.Contains("PP")||text.Contains("마지막으로사용")||text.Contains("기술을바꾸")||text.Contains("기술을선택"))ability.blocker="PP·기술 이력/교체 엔진 필요";
-   else if(text.Contains("폼체인지")||text.Contains("변신")||text.Contains("모습")||text.Contains("진화"))ability.blocker="폼·종족 데이터 변경 엔진 필요";
+   else if(text.Contains("폼체인지")||text.Contains("변신")||text.Contains("모습")||text.Contains("진화")||text.Contains("폼으로"))ability.blocker="폼·종족 데이터 변경 엔진 필요";
+   else if(text.Contains("파괴(약탈)"))ability.blocker="사용자 판단 필요: 소지품 파괴/약탈의 선택 방식";
+   else if(text.Contains("〔특성〕")||Regex.IsMatch(text,@"이(?:〔특성〕|특성)은.*(?:변화|무효화)"))ability.blocker="특성 교체·복사·보호 모듈 미구현";
+   else if(text.Contains("소지품")||text.Contains("나무열매")||text.Contains("아이템")||text.Contains("소모")||text.Contains("소비"))ability.blocker="소지품 사건·사용·이전 모듈 미구현";
+   else if(text.Contains("추가행동"))ability.blocker="기술 호출·복사 연결 미구현";
    else if(text.Contains("특성을바꾸")||text.Contains("특성을없애")||text.Contains("특성을무효")||text.Contains("특성을복사"))ability.blocker="특성 교체·무효화 상태 엔진 필요";
    else if(text.Contains("임의")||text.Contains("랜덤")||text.Contains("무작위"))ability.blocker="선택/난수 규칙 확정 필요";
    else if(text.Contains("교대")||text.Contains("파티"))ability.blocker="교대·파티 선택 엔진 필요";

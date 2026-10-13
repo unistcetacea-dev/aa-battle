@@ -137,7 +137,7 @@ namespace AABattle {
 
   // ===== 반동: 「준 대미지의 N/M만큼 반동 대미지를 받는다」(돌머리·매직가드는 받지 않는다) =====
   public static void Recoil(Fighter a, Fighter b, Move m, Rules r, int dealt, List<string> log) {
-   if (a == null || a.HP <= 0 || dealt <= 0 || Mechanics.Ability(a, "돌머리")) return;
+   if (a == null || a.HP <= 0 || dealt <= 0 || AbilityPhrases.IgnoresMoveRecoil(a, r)) return;
    var x = Regex.Match(Plain(m), @"준 대미지의 (\d+)/(\d+)만큼 반동 대미지를 받는다");
    if (!x.Success) return;
    Mechanics.Hurt(a, b, r, Math.Max(1, dealt * int.Parse(x.Groups[1].Value) / int.Parse(x.Groups[2].Value)), m.name + " 반동", log);

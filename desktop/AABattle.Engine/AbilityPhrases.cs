@@ -13,7 +13,7 @@ namespace AABattle {
  //  특성 관통       자신의 기술은 상대의 〔방호 특성〕을 관통한다.
  //  타입 추가       자신의 타입에 「X」를 추가한다.
  //  조건 우선도     자신의 「조건」 기술의 우선도를 +N한다.
- public static class AbilityPhrases {
+ public static partial class AbilityPhrases {
   public const string NoCritical = "자신은 급소에 맞지 않는다";
   public const string Sturdy = "자신은 빈사가 되는 공격을 HP 1로 버틴다";
   public const string MagicGuard = "자신은 공격 이외의 대미지를 받지 않는다";
@@ -64,6 +64,8 @@ namespace AABattle {
   }
   static IEnumerable<string> Sentence(string raw) {
    string s = raw.TrimEnd('.', '。').Trim();
+   string remaining = RewriteRemaining(s);
+   if (remaining != null) { yield return remaining + "."; yield break; }
    Match m;
    // 흡수: 「X」 기술을 받으면 흡수해서 「S」이 오른다 / 체력을 1/N 회복한다
    m = Regex.Match(s, @"^(?:상대로부터의 )?「(?<x>[^」]+)」\s*(?:타입의\s*)?(?:기술|타입 기술)을 (?:받으면|끌어들여) 흡수(?:해서|하여|하고|한다)\s*,?\s*(?<r>.*)$");
@@ -119,6 +121,8 @@ namespace AABattle {
   }
   static string Effect(string r) {
    string s = r.Trim().TrimEnd('.', '。').Trim();
+   string remaining = RewriteRemaining(s);
+   if (remaining != null) return remaining;
    Match m;
    m = Regex.Match(s, @"^(?:자신은\s*)?(?<w>(?:「[^」]+」\s*)+)의\s*대미지를\s*받지\s*않는다$");
    if (m.Success && QuotedNames(m.Groups["w"].Value).All(WeatherNames.Contains)) return "자신은 " + string.Concat(QuotedNames(m.Groups["w"].Value).Select(x => "「" + x + "」")) + "의 대미지를 받지 않는다";
@@ -146,11 +150,14 @@ namespace AABattle {
   // ===== 새 계속 효과 모듈 =====
   public static string Normalize(string text) {
    string t = Clean(text);
+   if (ClassifyRemaining(t).Length > 0) return t + ".";
    if (ContinuousRules.ContainsKey(t) || t == NoCritical || t == Sturdy || t == MagicGuard || t == HazardProof || t == Pierce || DropImmune.IsMatch(t) || AddType.IsMatch(t) || Priority.IsMatch(t) || WeatherDamageRule(t) || StatusPower.IsMatch(t)) return t + ".";
    return null;
   }
   public static string Classify(string sentence) {
    string s = Clean(sentence);
+   string remaining = ClassifyRemaining(s);
+   if (remaining.Length > 0) return remaining;
    string module;
    if (ContinuousRules.TryGetValue(s, out module)) return module;
    if (s == NoCritical) return "급소 무효";

@@ -11,6 +11,7 @@ namespace AABattle {
  partial class DataEditorForm {
   PixelText triggerPreview;
   PixelComboBox triggerKind, triggerSubject, triggerEntryMethod, triggerType, triggerAptitude, triggerRank, triggerActivation;
+  PixelComboBox triggerCompareLeft, triggerCompareRight, triggerCompareOp;
   PixelTextBox triggerGranted, triggerCondition;
   PixelNumber triggerNumber;
   FlatButton triggerStatusButton;
@@ -18,12 +19,13 @@ namespace AABattle {
   TableLayoutPanel triggerTable;
 
   const string AlwaysKind = "상시 (X)";
-  static readonly string[] SubjectModules = { "등장", "교대", "퇴장", "기술 사용", "체력", "체력 변화", "회복", "랭크", "공격하지 않음" };
+  static readonly string[] SubjectModules = { "등장", "교대", "퇴장", "기술 사용", "체력", "체력 변화", "회복", "랭크", "공격하지 않음", "능력치 비교" };
+  static readonly string[] CompareStats = { "공격", "방어", "특공", "특방", "속도" };
   // 상태 모듈은 상태 도감 선택(상태이상·상태변화)으로 입력한다
   static readonly string[] StatusModules = { "상태", "상태 됨", "상태 해제" };
   const string ReleaseKind = "상태가 해제되었을 때", FaintKind = "빈사가 되었을 때";
   // 편집기에서 모듈 입력으로 고르는 것(나머지는 기존 구조·확정 목록 입력을 쓴다)
-  static readonly string[] OwnInputModules = { "등장", "교대", "퇴장", "타이밍", "피격", "명중", "급소", "쓰러뜨림", "기술 사용", "체력 변화", "회복", "날씨 변화", "장소 변화", "랭크", "특성 발동", "체력", "날씨", "장소", "플레이버", "공격하지 않음" };
+  static readonly string[] OwnInputModules = { "등장", "교대", "퇴장", "타이밍", "피격", "명중", "급소", "쓰러뜨림", "기술 사용", "체력 변화", "회복", "날씨 변화", "장소 변화", "랭크", "특성 발동", "체력", "날씨", "장소", "플레이버", "공격하지 않음", "능력치 비교" };
   static string[] UiModules() { return OwnInputModules; }
 
   static string[] TriggerKinds() {
@@ -64,6 +66,13 @@ namespace AABattle {
    help.ForeColor = Theme.Muted;
    triggerKind = Theme.Combo(TriggerKinds(), AlwaysKind);
    triggerSubject = Theme.Combo(new[] { "자신", "자신(상대)", "아군", "상대" }, "자신");
+   triggerSubject.AccessibleName = "트리거 주체";
+   triggerCompareLeft = Theme.Combo(CompareStats, "방어");
+   triggerCompareLeft.AccessibleName = "비교할 능력치";
+   triggerCompareRight = Theme.Combo(CompareStats, "특방");
+   triggerCompareRight.AccessibleName = "기준 능력치";
+   triggerCompareOp = Theme.Combo(new[] { "높음", "이하" }, "높음");
+   triggerCompareOp.AccessibleName = "능력치 비교 조건";
    triggerEntryMethod = Theme.Combo(new[] { "모든 등장" }, "모든 등장");
    triggerType = Theme.Combo(catalogDb.types, "불꽃");
    triggerNumber = new PixelNumber { Minimum = 1, Maximum = 99, Value = 2, Dock = DockStyle.Fill, Font = Theme.Input(), BorderStyle = BorderStyle.FixedSingle };
@@ -79,6 +88,9 @@ namespace AABattle {
    Theme.Row(triggerTable, "구조", triggerKind);
    Theme.Row(triggerTable, "주체", triggerSubject);
    Theme.Row(triggerTable, "구분", triggerEntryMethod);
+   Theme.Row(triggerTable, "비교할 능력치", triggerCompareLeft);
+   Theme.Row(triggerTable, "기준 능력치", triggerCompareRight);
+   Theme.Row(triggerTable, "비교 조건", triggerCompareOp);
    Theme.Row(triggerTable, "타입", triggerType);
    Theme.Row(triggerTable, "수치", triggerNumber);
    Theme.Row(triggerTable, "기술 조건", triggerCondition);
@@ -95,6 +107,9 @@ namespace AABattle {
    triggerKind.SelectedIndexChanged += refresh; triggerSubject.SelectedIndexChanged += refresh; triggerEntryMethod.SelectedIndexChanged += refresh;
    triggerType.SelectedIndexChanged += refresh; triggerNumber.ValueChanged += refresh; triggerCondition.TextChanged += refresh;
    triggerGranted.TextChanged += refresh; triggerAptitude.SelectedIndexChanged += refresh; triggerRank.SelectedIndexChanged += refresh;
+   triggerCompareLeft.SelectedIndexChanged += refresh;
+   triggerCompareRight.SelectedIndexChanged += refresh;
+   triggerCompareOp.SelectedIndexChanged += refresh;
    RefreshStructuredTrigger();
    return panel;
   }
@@ -133,7 +148,7 @@ namespace AABattle {
     bool faint = kind == FaintKind;
     bool status = IsStatusKind(kind), granted = kind == "XX가 부여되어 있을 때", aptitude = kind == "트레이너 자질 등급", opponentType = kind == "적진 타입 포켓몬";
     if (module) {
-     if (SubjectModules.Contains(kind)) SetChoices(triggerSubject, kind == "등장" ? new[] { "자신", "상대", "자신(상대)" } : new[] { "자신", "상대" });
+     if (SubjectModules.Contains(kind)) SetChoices(triggerSubject, kind == "등장" ? new[] { "자신", "상대", "자신(상대)" } : kind == "능력치 비교" ? new[] { "자신", "아군", "상대" } : new[] { "자신", "상대" });
      SetChoices(triggerEntryMethod, TriggerVariants(kind, triggerSubject.Text));
     } else if (faint) SetChoices(triggerSubject, new[] { "자신", "상대" });
     else SetChoices(triggerSubject, new[] { "자신", "자신(상대)", "아군", "상대" });
@@ -143,6 +158,9 @@ namespace AABattle {
     bool condition = kind == "피격" || kind == "명중" || kind == "급소" || kind == "기술 사용" || kind == "쓰러뜨림" && variant == "기술로" || kind == "타이밍" && variant.StartsWith("사건") || kind == "랭크" || kind == "특성 발동" || kind == "플레이버";
     ShowTriggerRow(triggerSubject, module && SubjectModules.Contains(kind) || status || faint, "주체");
     ShowTriggerRow(triggerEntryMethod, module && TriggerVariants(kind, triggerSubject.Text).Length > 0, kind == "등장" ? "등장 방식" : kind == "타이밍" ? "타이밍" : kind == "기술 사용" ? "시점" : "구분");
+    ShowTriggerRow(triggerCompareLeft, kind == "능력치 비교");
+    ShowTriggerRow(triggerCompareRight, kind == "능력치 비교");
+    ShowTriggerRow(triggerCompareOp, kind == "능력치 비교");
     ShowTriggerRow(triggerType, typed);
     ShowTriggerRow(triggerNumber, number, variant.StartsWith("배수") ? "배수 N" : variant.StartsWith("1/N") ? "1/N의 N" : "N T째");
     ShowTriggerRow(triggerCondition, condition, kind == "타이밍" ? "사건 트리거" : kind == "랭크" ? "능력(비우면 능력 전체)" : kind == "특성 발동" ? "특성(비우면 모든 특성)" : kind == "플레이버" ? (variant == "트레이너 성별" ? "남성 / 여성" : "이름") : "기술 조건");
@@ -173,6 +191,11 @@ namespace AABattle {
    var spec = new TriggerSpec { Module = kind, Opponent = triggerSubject.Text == "상대", Subject = triggerSubject.Text == "상대" ? "상대" : "자신" };
    int n = (int)triggerNumber.Value;
    switch (kind) {
+    case "능력치 비교":
+     spec.Subject = triggerSubject.Text;
+     spec.Stats = new[] { Array.IndexOf(CompareStats, triggerCompareLeft.Text) + 1, Array.IndexOf(CompareStats, triggerCompareRight.Text) + 1 };
+     spec.Op = triggerCompareOp.Text;
+     return TriggerModules.Canonical(spec);
     case "체력":
      spec.Op = variant == "가득" ? "가득" : variant == "가득하지 않음" ? "가득 아님" : variant.EndsWith("이상") ? "이상" : "이하"; spec.Bottom = Math.Max(1, n);
      return TriggerModules.Canonical(spec);
@@ -251,10 +274,15 @@ namespace AABattle {
     return true;
    }
    triggerKind.SelectedItem = spec.Module;
-   if (SubjectModules.Contains(spec.Module)) triggerSubject.SelectedItem = spec.Opponent || spec.Subject == "상대" ? "상대" : "자신";
+   if (SubjectModules.Contains(spec.Module)) triggerSubject.SelectedItem = spec.Module == "능력치 비교" ? spec.Subject : spec.Opponent || spec.Subject == "상대" ? "상대" : "자신";
    string variant = "";
    string condition = spec.Condition.Empty ? "" : Regex.Replace(spec.Condition.Text, "」「", " ").Trim('「', '」');
    switch (spec.Module) {
+    case "능력치 비교":
+     triggerCompareLeft.SelectedItem = CompareStats[spec.Stats[0] - 1];
+     triggerCompareRight.SelectedItem = CompareStats[spec.Stats[1] - 1];
+     triggerCompareOp.SelectedItem = spec.Op;
+     break;
     case "등장": variant = spec.Types.Length > 0 ? "타입 아군과 교대해" : spec.Method.Length > 0 ? spec.Method : "모든 등장"; break;
     case "교대": variant = spec.Types.Length > 0 ? "타입 아군과 교대" : spec.Opponent && spec.Method == "" ? "모든 교대" : "임의교대"; break;
     case "타이밍":

@@ -508,6 +508,7 @@ namespace AABattle {
       g.Side = Array.IndexOf(scope.Fighters, c.Owner); if (g.Side < 0) g.Side = Mechanics.PartySide(c.Owner, rules);
       if (g.Side < 0) return EffectOutcome.Failed;
       g.Owner = c.Owner; g.Source = c.Source.Label;
+      if ((g.SameMove || g.OpponentMove) && c.Event.Move != null) g.FixedMove = c.Event.Move.Copy();
       scope.ExtraActions.Add(g);
       c.Owner.Conditions.PendingAction = true;
       c.Say(c.Owner.Data.name + ": 추가행동을 얻었다 (" + (g.First ? "바로 다음" : "턴 마지막") + ")");
@@ -726,7 +727,7 @@ namespace AABattle {
      return EffectOutcome.Success;
     }
     if (target.HP <= 0) return EffectOutcome.Failed;
-    if (Mechanics.Ability(target, "매직가드")) { c.Say(target.Data.name + ": 매직가드로 대미지를 받지 않는다"); return EffectOutcome.Failed; }
+    if (AbilityPhrases.IgnoresIndirect(target)) { c.Say(target.Data.name + ": 간접 대미지 무효로 대미지를 받지 않는다"); return EffectOutcome.Failed; }
     if (!f.CanFaint) amount = Math.Min(amount, target.HP - 1);
     if (amount <= 0) return EffectOutcome.Failed;
     Mechanics.Hurt(target, other, rules, amount, c.Source.Label, log);

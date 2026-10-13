@@ -33,6 +33,12 @@ namespace AABattle {
     AbilityModules.Sync(f);
     if (log != null) log(f.Data.name + ": 특성 「" + Name(f) + "」 " + (next ? "무효화" : "상시 효과 재개"));
    }
+   var scope = EffectScope.Current;
+   if (scope != null) {
+    var lines = new List<string>();
+    AbilityPhrases.RefreshWeatherLock(fighters, scope.Rules, lines);
+    if (log != null) foreach (string line in lines) log(line);
+   }
   }
 
   public static void Enter(Fighter owner,Fighter opponent,Rules rules,Action<string> log){

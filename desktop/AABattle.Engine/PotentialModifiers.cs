@@ -109,6 +109,10 @@ namespace AABattle {
      factor *= s.Rate;
     }
    }
+   var scope = EffectScope.Current;
+   ScalarEffect extra;
+   if (scope != null && ReferenceEquals(scope.ExtraPowerOwner, a) && (rules == null || !rules.Critical) &&
+       EffectModules.TryScalar(scope.ExtraPowerSentence, out extra) && extra.Condition.Matches(move, a, type)) factor *= extra.Rate;
    return factor;
   }
 

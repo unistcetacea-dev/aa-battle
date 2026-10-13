@@ -407,7 +407,7 @@ namespace AABattle {
    var hitter = F("노말", P(TriggerStructures.TurnEndLabel, "상대의 체력을 1/4감소시킨다.*1")); var victim = F();
    Fire(hitter, victim, TriggerStructures.TurnEndLabel);
    Assert.That(victim.HP, Is.EqualTo(max - max / 4));
-   var guarded = F(); guarded.Data.ability = "매직가드";
+   var guarded = F(); guarded.Data.ability = "매직가드"; AbilityRuntime.Reset(guarded);
    Fire(hitter, guarded, TriggerStructures.TurnEndLabel);
    Assert.That(guarded.HP, Is.EqualTo(max), "magic guard blocks indirect damage");
   }

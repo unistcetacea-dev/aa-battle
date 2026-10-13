@@ -42,6 +42,8 @@ namespace AABattle {
   public static EffectScope Current { get { return current; } }
   public readonly Fighter[] Fighters;   // 교대하면 같은 배열의 칸이 바뀐다
   public readonly Rules Rules;
+  public Fighter ExtraPowerOwner;
+  public string ExtraPowerSentence = "";
   public readonly Func<double> Rng;
   public readonly TrainerBattleState[] States;   // 진영별 트레이너·포텐셜 사용 이력
   public readonly List<ExtraActionGrant> ExtraActions = new List<ExtraActionGrant>();   // 사건으로 얻은 추가행동(행동 사이에 넣는다)
