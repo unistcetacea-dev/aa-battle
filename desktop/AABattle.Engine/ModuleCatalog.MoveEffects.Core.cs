@@ -56,6 +56,8 @@ namespace AABattle
       CoreAdd(modules, "effect.bond.replay", "트레이너 포텐셜 재발동", BondModules.KindReplay, "트레이너", BondModules.ReplaySentence + ".");
       CoreAdd(modules, "effect.pursuit.grant", "추격 효과 부여", "추격 효과 부여", "교대", "자신의 {조건} 기술에 「추격」 효과를 부여한다.", S("조건", ModuleSlotKind.MoveCondition, ""));
       CoreAdd(modules, "effect.pursuit.scale", "추격 발동 배율", "추격 발동 배율", "교대", "자신이 「추격」 효과로 주는 대미지를 강화({배율}배)한다.", S("배율", ModuleSlotKind.Multiplier, "2"));
+      CoreBracketList(CoreAdd(modules, "effect.potential.nullify", "이름 지정 포텐셜 무효화", PotentialNullify.Kind, "포텐셜", "{대상}의 『{이름}』을 무효화한다.", S("대상", ModuleSlotKind.Subject, "상대", "자신", "상대"), S("이름", ModuleSlotKind.Text, "투쟁본능")), "이름", "』『");
+      CoreAdd(modules, "effect.potential.nullify.kind", "효과 종류별 포텐셜 무효화", PotentialNullify.ByEffectKind, "포텐셜", "{대상}의 「{효과}」 효과를 가진 포텐셜을 무효화한다.", S("대상", ModuleSlotKind.Subject, "상대", "자신", "상대"), S("효과", ModuleSlotKind.Text, "공격을 회피한다", PotentialNullify.EffectKindNames.ToArray()));
       CoreAdd(modules, "effect.release.all", "상태변화 전체 해제", "상태변화 전체 해제", family, "{주체}의 모든 상태변화를 해제한다.", S("주체", ModuleSlotKind.Subject, "상대", "자신", "상대"));
     }
   }

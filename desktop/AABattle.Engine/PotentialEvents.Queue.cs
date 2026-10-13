@@ -117,6 +117,8 @@ namespace AABattle
         var clauses = TriggerStructures.Clauses(p).ToArray();
         if (!clauses.Any(e.Matches))
           continue;
+        if (PotentialNullify.IsNullified(e.Owner, p, e.Other ?? OpponentOf(e.Owner), EffectScope.Current == null ? null : EffectScope.Current.Rules))
+          continue;
         string condition, effect;
         PotentialLibrary.Split(p.description ?? "", out condition, out effect);
         if (effect.Length == 0)

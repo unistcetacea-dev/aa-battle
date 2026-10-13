@@ -13,7 +13,7 @@ namespace AABattle {
   }
   static int FromPokemon(Fighter source,Fighter other,Fighter user,TrainerRecord trainer,Action<string> log){
    if(source==null||source.HP<=0)return 0;int total=0;
-   var active=(source.Data.potentials??new Potential[0]).Where(p=>p!=null&&p.description!=null&&p.description.Length>0&&IsContinuous(p,source,other,trainer));
+   var active=(source.Data.potentials??new Potential[0]).Where(p=>p!=null&&p.description!=null&&p.description.Length>0&&IsContinuous(p,source,other,trainer)&&!PotentialNullify.IsNullified(source,p,other,null));
    foreach(var p in active)total+=Read(p.description,source,other,user,p.name,log);return total;
   }
   static int FromTrainer(TrainerRecord trainer,Fighter owner,Fighter other,Fighter user,Action<string> log){

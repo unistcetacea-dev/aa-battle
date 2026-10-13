@@ -79,7 +79,7 @@ namespace AABattle
     // 상태 조건만 가진 포텐셜의 확률 효과는 굴릴 사건이 없다. 실행기가 있어도 판정 지점(StateRolls)이 없으면 돌지 않으므로 미지원으로 본다
     static void MarkUnrolled(JudgeResult result, List<TriggerSpec> specs)
     {
-      if (specs.Count == 0 || specs.Any(x => x.Module.Length == 0 || x.IsEvent))
+      if (specs.Any(x => x.Module.Length == 0 || x.IsEvent))
         return;
       var chanceBodies = new HashSet<string>();
       string[] lines = EffectNormalizer.NormalizeLines(result.Effect).Replace("\r", "").Split(new[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
