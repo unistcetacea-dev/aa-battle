@@ -173,6 +173,10 @@ namespace AABattle {
     Assert.That(withoutType.Collect().Name, Is.EqualTo(name));
     withoutType.Cancel();
     withoutType.Dispose();
+    form.CloseForTest();
+   }
+  }
+
   // 전용 슬롯: 범용 유형을 고르면 사용 제한·트리거·효과가 채워지고 이름 칸은 그대로다
   [Test] public void ExclusiveTypeTemplateFillsRulesButNeverTheName() {
    using (var form = OpenPokemonEditor()) {

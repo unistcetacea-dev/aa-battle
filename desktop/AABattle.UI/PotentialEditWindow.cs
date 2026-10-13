@@ -220,8 +220,7 @@ namespace AABattle {
    if (!exclusive) { notice.Text = ""; return; }
    string text = "전용: 트레이너 포텐셜입니다. 개수 제한은 파티 전체에서 셉니다. 「범용 유형」을 고르면 사용 제한·트리거·효과를 불러옵니다(이름은 직접 입력).";
    if (exclusiveType != null) {
-    text = "【" + exclusiveType.Name + "】 " + exclusiveType.Help;
-    if (exclusiveType.HasPlaceholder) text += " 채워야 할 칸: 「○」를 실제 타입·기술·설치물로 바꾸세요.";
+    text = (exclusiveType.HasPlaceholder ? "채워야 할 칸: 「○」를 실제 타입·기술·설치물로 바꾸세요. " : "") + "【" + exclusiveType.Name + "】 " + exclusiveType.Help;
     if (exclusiveType.Pending.Length > 0) text += " (미구현: " + exclusiveType.Pending + ")";
    }
    notice.Text = text;
