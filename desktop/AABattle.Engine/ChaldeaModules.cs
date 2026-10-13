@@ -179,7 +179,8 @@ namespace AABattle
       if (Regex.IsMatch(s, @"^상대의 공격이 급소에 맞지 않는다$"))
         return "자신은 급소에 맞지 않는다.";
 
-      return null;
+      // 대미지 문장 변형·타입 대미지(DamageVariantModules), 그 밖의 변형(ChaldeaVariants)
+      return DamageVariantModules.Normalize(s) ?? ChaldeaVariants.Normalize(s);
     }
 
     // 확률 접두어까지 한 문장으로 읽어야 하는 변형(방호·회피처럼 확률이 문장 안으로 들어가는 것)

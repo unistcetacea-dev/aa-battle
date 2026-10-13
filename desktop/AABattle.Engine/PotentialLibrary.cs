@@ -27,7 +27,9 @@ namespace AABattle {
   static bool ConditionOnly(string value){return Regex.IsMatch(value.Trim().TrimEnd('.','。'),@"(?:때(?:에)?도|때|일때|경우|한해서|라면|있으면|없으면|(?:으)?면(?:\([^)]*(?:으)?면\))?|나오면|있는\s*동안|있는\s*한|참가\s*시에?|발동\s*시에?|사용\s*시에?|발생\s*시에?|개시\s*시에?|종료\s*시에?|교대\s*시에?|명중\s*시에?|피격\s*시에?)$");}
   // Extract chained conditions while preserving duration phrases such as 1T 동안 and T종료시까지.
   public static void Split(string body,out string trigger,out string effect) {
+   UseConditions use;body=UseConditionModules.Prepare(body,out use);
    var rules=RuleText.Split(body);trigger=string.Join("\r\n",rules.triggers);effect=string.Join("\r\n",rules.effects);
+   if(trigger.Length==0&&use.OnHit)trigger=UseConditionModules.OnHitTrigger;
   }
   public static List<DexPotential> Load(){
    if(cache!=null)return cache;

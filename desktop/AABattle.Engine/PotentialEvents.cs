@@ -166,6 +166,8 @@ namespace AABattle
       AbilityNoEffectModules.Register();
       BondModules.Register();
       RoleModules.Register();
+      DamageVariantModules.Register();
+      PotentialGrantModules.Register();
       PotentialQueue.BuiltIn.RegisterExclusive();
       PotentialQueue.BuiltIn.RegisterExclusiveMore();
     }

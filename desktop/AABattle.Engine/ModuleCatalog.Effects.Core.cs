@@ -101,6 +101,7 @@ namespace AABattle
       RegisterCoreMoveEffects(modules);
       RegisterMoveItemEffects(modules);
       RegisterRoleEffects(modules);
+      RegisterChaldeaEffects(modules);
       RegisterExclusiveEffects(modules);
     }
 

@@ -119,6 +119,8 @@ namespace AABattle
           continue;
         if (PotentialNullify.IsNullified(e.Owner, p, e.Other ?? OpponentOf(e.Owner), EffectScope.Current == null ? null : EffectScope.Current.Rules))
           continue;
+        if (!UseConditionModules.Allows(p.description, e.Owner, EffectScope.Current))
+          continue;
         string condition, effect;
         PotentialLibrary.Split(p.description ?? "", out condition, out effect);
         if (effect.Length == 0)
@@ -283,7 +285,7 @@ namespace AABattle
         foreach (string sentence in Regex.Split(normalized, @"(?<=[.．。])\s+"))
         {
           string text = sentence.Trim();
-          if (text.Length == 0)
+          if (text.Length == 0 || UseConditionModules.IsNote(text))
             continue;
           // 확률은 큐가 포텐셜당 1회 판정하므로 실행기에는 확률 접두어를 뗀 문장을 넘긴다
           string probability, body;
