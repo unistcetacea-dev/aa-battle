@@ -908,3 +908,8 @@ Codex 공유 링크는 특정 시점의 읽기 전용 대화 스냅샷이다. �
 - 칼데아 T-01의 미해결 복합/고정 등급 문장은 `research/samples/chaldea/MODULE_GAPS.md`에 원문과 함께 남겼다. 역할 재임명 뒤 기존 역할을 대체하지 않고 추가한다.
 - 검사: `BondTrainerModulesTests` (종족값 6개·복원 원본, 지령 이력/재사용, 역할 임명/트리거, 자질 변경의 급소 판정과 원본 불변).
 - 육성 자질의 EX는 현재 AA와 동일하게 취급한다.
+
+## 2026-10-14 오레마스 전용 유형 후속 (task/C-exclusive-types)
+- 마검: 통상교대로 나온 턴의 최후 특수 트리거에서 기능확장 기술을 추가행동 큐에 넣어 실제 기술 실행·대미지까지 처리한다. 버서크는 현재 HP 절반(내림)과 HP 1 불가, 직전 공격 1회 추가를 검사한다.
+- 검사: `ExclusiveTypeTests.MakenUsesItsFunctionExtensionAtNormalSwitchTurnLast`, `Berserk*`.
+- 남은 기능 경로: 영격 회피 직후 선택 효과, 범프업 종족치 랭크, 대기 포켓몬 교대 포텐셜(스토킹/역선회), 삼점방호 대미지 계산·해제, 페이스메이커 역할 발동.

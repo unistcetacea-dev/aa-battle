@@ -94,11 +94,12 @@ namespace AABattle {
     new TriggerFact { Kind = "타이밍", Method = TriggerStructures.TurnLastLabel }, owner), Is.False);
   }
 
-  [Test] public void MakenGrantsItsFunctionExtensionAtNormalSwitchTurnLast() {
+  [Test] public void MakenUsesItsFunctionExtensionAtNormalSwitchTurnLast() {
    var potential = Exclusive("마검");
    potential.activation = "자동";
-   potential.uses = "";
+   potential.uses = "1/시";
    potential.description = potential.description.Replace("몸통박치기", "화염방사");
+   potential.triggers = new[] { ExclusiveTriggerModules.NormalSwitchLastSentence };
    var owner = F(100, potential);
    Assert.That(EffectModules.Classify(potential.description), Is.EqualTo("기능확장 부여"), potential.description);
    string subject;
@@ -117,9 +118,15 @@ namespace AABattle {
    var rules = new Rules { OptionalEffectPrompt = (f, o, p) => true };
    var log = new List<string>();
    Mechanics.SetParties(rules, new[] { owner, opponent });
-   using (EffectScope.Begin(new[] { owner, opponent }, rules, () => .5, new[] { new TrainerBattleState(), new TrainerBattleState() }))
-    RuntimeTriggers.Timing(new[] { owner, opponent }, null, TriggerStructures.TurnLastLabel, log.Add);
-   Assert.That(owner.Conditions.ExtensionMoves, Does.Contain("화염방사"), string.Join("\n", log));
+   rules.Turn = 1;
+   rules.ChooseExtraMove = (f, moves) => moves.First(m => m.name == "화염방사");
+   owner.Conditions.TurnFacts = new List<TriggerFact> {
+    new TriggerFact { Kind = "등장", Self = true, Method = "통상교대" }
+   };
+   var result = Run(owner, opponent, Use(Idle()), Use(Idle()), () => .5, rules);
+   Assert.That(result.Log.Any(x => x.Contains("추가행동: 화염방사")), Is.True, string.Join("\n", result.Log));
+   Assert.That(result.Log.Any(x => x.Contains("화염방사") && x.Contains("대미지")), Is.True, string.Join("\n", result.Log));
+   Assert.That(result.Fighters[1].HP, Is.LessThan(opponent.HP), string.Join("\n", result.Log));
   }
 
 

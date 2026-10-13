@@ -250,6 +250,7 @@ namespace AABattle
         if (waiting != null && waiting.HP > 0 && waiting.Conditions.PendingAction && waiting.Conditions.ActionOrder == 0)
           TriggerModules.Raise(new TriggerFact { Kind = "먼저 행동함" }, actor, waiting, actor.Data.name + "이 먼저 행동했다", result.Log.Add);
       };
+      bool makenTurnLastProcessed = false;
       for (int qi = 0;; qi++)
       {
         pursuit.Complete(f, side => SwitchNow(db, f, states, r, rng, result, side, commands[side].SwitchIn, SwitchReason.Normal, SwitchTiming.MidTurn, "통상 교대"), side => PursuitReturn(f, commands, r, rng, result, returnAway, returnTransfers, side), result.Log);
@@ -257,6 +258,8 @@ namespace AABattle
         flushActed();
         watch();
         ExtraActionRuntime.Pull(slots, qi, result.Log);
+        if (qi >= slots.Count)
+          MakenTurnLast.Process(f, slots, qi, result.Log, ref makenTurnLastProcessed);
         if (qi >= slots.Count)
           break;
         var slot = slots[qi];

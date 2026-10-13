@@ -153,6 +153,7 @@ namespace AABattle
 
     static PotentialExecutors()
     {
+      MakenTurnLast.Register();
       MoveMiscModules.Register();
       AbilityRemaining4Modules.Register();
       PotentialQueue.BuiltIn.Register();
