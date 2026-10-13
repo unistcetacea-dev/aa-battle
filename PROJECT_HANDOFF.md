@@ -890,3 +890,14 @@ Codex 공유 링크는 특정 시점의 읽기 전용 대화 스냅샷이다. �
 - 엔진 수정: 기술 선택 단계 우선도가 선행입력 선언과 AND 상태 절을 보게 했고, 선언한 `1/시` 포텐셜은 첫 발동 뒤 선언이 소진되며(추가행동 재발동 방지), 선언 포텐셜의 추격·유턴 부여가 사용 횟수로 막히지 않게 했다. `ActiveModifier`는 키+글자로 구분하고 `ClearCondition`은 방어 계열까지 푼다. 이름에 괄호가 있는 기능확장 표준화 버그도 고쳤다.
 - 구현하지 않은 유형: 페이스메이커(역할 발동), 메가진화(폼 변경), 스토킹·삼점방호(원문 모호). 마검의 통상교대 최후 타이밍·영격 우선도 -7·범프업 디메리트도 남겼다.
 - 검사: `ExclusiveTypeTests`(템플릿 문장 판독, 정규화, 모듈 분류·등록, 필중/관통/추격 배율/우선도/상태변화 해제/버서크/영격/역선회/범프업/추가반동/강체술 실제 배틀), `PotentialEditorWindowTests.ExclusiveTypeTemplateFillsRulesButNeverTheName`. 캡처 `catalog.png.window-exclusive.png`.
+
+## 2026-10-14 칼데아 2차: 상태 조건 확률 포텐셜 · 포텐셜 무효화 · 「할 수 있다」 일반 처리
+- 지시서 `research/tasks/2026-10-14-chaldea-phase2.md`, 브랜치 `task/chaldea-phase2`.
+- 상태 조건(상시) + 확률 효과(`대○저격`·`박격`·`반격`·`추격`·`선`)는 굴릴 사건이 없어 돌지 않았다. `StateRolls`(Engine)가 효과가 쓰이는 판정 지점마다 확률을 굴린다(`PotentialProbability.Resolve`: 같은 포켓몬·같은 지점의 중확률이 모두 실패하면 하나 보장). 지점 표는 `StateRolls.Kinds` 한 곳. 선택(추격 부여, `PursuitRuntime.Begin` 앞) / 순서 결정 직전(우선도·먼저 행동·능력치 배율·추가행동, `PrimeTurn` 앞) / 행동 판정 직전(필중·관통 부여, 위력/대미지/명중 배율, `JudgedMove` 뒤)에서 굴리고, 성공하면 `ActiveModifier(Rolled)`(행동/이번 T) 또는 우선도·먼저 행동·추가행동으로 건다. 지금 쓸 수 없는 효과(조건에 안 맞는 기술, 방어 측의 공격 배율 등)는 굴리지 않는다. `PotentialJudge`는 상태 조건만 가진 포텐셜의 확률 문장에 판정 지점이 없으면 ✅를 주지 않는다.
+- 트리거가 없는 포텐셜은 상시로 본다(`PotentialModifiers.Continuous`). 예전에는 트리거가 비면 상시 효과 판독에서 빠졌다(샘플 파티의 특권·부수 등).
+- 이름 지정 포텐셜 무효화(`NullifyModules.cs`, `PotentialNullify`): 「상대의 『X』『Y』을 무효화한다.」(○ = 한 글자) · 「상대의 「공격을 회피한다」 효과를 가진 포텐셜을 무효화한다.」 · 「자신의 『X』을 무효화한다.」. 무효화 문장을 가진 포텐셜이 장소에서 성립 중인 동안, 대상 포텐셜은 상시 효과(`Continuous`)·사건 큐(`Candidates`)·우선도 판독(`PriorityEffectRuntime`)에서 빠진다. 재귀 방지는 깊이 플래그. 플레이버 접두(「…종이 이 개체뿐이기에」)는 정규화에서 뗀다.
+- 「~할 수 있다」: `PotentialQueue.FindExecutor`가 실행기를 못 찾으면 `OptionalForm.Direct`로 직설형을 만들어 다시 찾는다. 확인(`OptionalEffectPrompt`)은 큐가 포텐셜당 한 번만 한다. 칼데아 변형 정규화(`ChaldeaModules.Pre`): 능력 상승(하락) 인계 · 자신(아군) · 「강제교대」시킨다.
+- 추가행동·기능확장 변형: 「「X」/「기능확장:X」에 의한 추가행동(권)」은 기술 이름 조건 추가행동, 추가공격 = 같은 기술의 추가행동(사용자 결정), 「「X」를 내보낸다」 = 그 기술의 추가행동, 기술 이름만 나열한 「…을 내보낼 수 있다」 = 기능확장 허용. `MoveNames.Known`이 기술 이름 여부를 본다.
+- 판정표: `research/samples/chaldea/POTENTIALS.tsv`·`MODULE_GAPS.md`를 `ChaldeaJudgeTool`로 다시 만들었다. 묶음 집계 기준을 「✅가 아니고 묶음이 있는 행」으로 통일해 일부 묶음의 행 수가 이전 표와 다르다.
+- 알려진 한계: 「저확률로 상대의 데이터(소지품)를 해석한다」(PT 상태 조건)·「중확률로 공격 이외 대미지를 무시한다」는 판정 지점이 없어 ✅에서 빠졌다. 올드 타입 줄 앞의 설정 문장(7행)은 별도 줄이라 읽히지 않는다.
+- 검사: `StateRollTests`(박격·저격·추격·반격·선 성공/실패 두 갈래, 조건 불충족 시 굴리지 않음, 중확률 보장, 템플릿·샘플 전체가 판정 지점을 가짐), `NullifyTests`, `OptionalFormTests`, `ExtraActionVariantTests`.
