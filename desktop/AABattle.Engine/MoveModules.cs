@@ -158,6 +158,7 @@ namespace AABattle {
   public static void Bind(Fighter a, Fighter b, Move m, Rules r, Func<double> rng, List<string> log) {
    int min, max;
    if (a == null || b == null || b.HP <= 0 || b.Conditions.Bound > 0 || !TryBind(m, out min, out max)) return;
+   if (StateEffects.BlockedCondition(b, a, "조이기", r, false, log)) return;
    rng = rng ?? (() => .5);
    int turns = min + Math.Min(max - min, (int)(rng() * (max - min + 1)));
    foreach (string line in Lines(a, b, "조이기")) { var x = BindTurns.Match(line); if (x.Success) turns = int.Parse(x.Groups["n"].Value); }
@@ -502,13 +503,7 @@ namespace AABattle {
    PotentialExecutors.Register("소지품 이동",
     c => Clean(c.Line) == GiveItem,
     c => {
-     var f = c.Owner; var other = c.Opponent;
-     if (f == null || other == null || other.HP <= 0 || string.IsNullOrEmpty(f.Data.item) || !string.IsNullOrEmpty(other.Data.item)) return EffectOutcome.Failed;
-     string item = f.Data.item;
-     f.Data.item = ""; ItemRuntime.Sync(f);
-     other.Data.item = item; ItemRuntime.Sync(other);
-     c.Say(f.Data.name + "의 「" + item + "」이 " + other.Data.name + "에게 옮겨졌다");
-     return EffectOutcome.Success;
+     return ItemRuntime.Transfer(c.Owner, c.Opponent, c.Say) ? EffectOutcome.Success : EffectOutcome.Failed;
     });
   }
  }

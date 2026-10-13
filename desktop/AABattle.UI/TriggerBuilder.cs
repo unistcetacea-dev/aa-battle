@@ -19,13 +19,13 @@ namespace AABattle {
   TableLayoutPanel triggerTable;
 
   const string AlwaysKind = "상시 (X)";
-  static readonly string[] SubjectModules = { "등장", "교대", "퇴장", "기술 사용", "체력", "체력 변화", "회복", "랭크", "공격하지 않음", "능력치 비교" };
+  static readonly string[] SubjectModules = { "등장", "교대", "퇴장", "기술 사용", "체력", "체력 변화", "회복", "랭크", "공격하지 않음", "능력치 비교", "소지품 소실" };
   static readonly string[] CompareStats = { "공격", "방어", "특공", "특방", "속도" };
   // 상태 모듈은 상태 도감 선택(상태이상·상태변화)으로 입력한다
   static readonly string[] StatusModules = { "상태", "상태 됨", "상태 해제" };
   const string ReleaseKind = "상태가 해제되었을 때", FaintKind = "빈사가 되었을 때";
   // 편집기에서 모듈 입력으로 고르는 것(나머지는 기존 구조·확정 목록 입력을 쓴다)
-  static readonly string[] OwnInputModules = { "등장", "교대", "퇴장", "타이밍", "피격", "명중", "급소", "쓰러뜨림", "기술 사용", "체력 변화", "회복", "날씨 변화", "장소 변화", "랭크", "특성 발동", "체력", "날씨", "장소", "플레이버", "공격하지 않음", "능력치 비교" };
+  static readonly string[] OwnInputModules = { "등장", "교대", "퇴장", "타이밍", "피격", "명중", "급소", "쓰러뜨림", "기술 사용", "체력 변화", "회복", "날씨 변화", "장소 변화", "랭크", "특성 발동", "체력", "날씨", "장소", "플레이버", "공격하지 않음", "능력치 비교", "소지품 소실" };
   static string[] UiModules() { return OwnInputModules; }
 
   static string[] TriggerKinds() {
@@ -42,6 +42,7 @@ namespace AABattle {
   static string[] TriggerVariants(string module, string subject) {
    switch (module) {
     case "등장": return subject == "자신" ? new[] { "모든 등장" }.Concat(TriggerModules.EntryMethods).Concat(new[] { "타입 아군과 교대해" }).ToArray() : new[] { "모든 등장" }.Concat(TriggerModules.EntryMethods).ToArray();
+    case "소지품 소실": return new[] { "소모", "파괴", "소모 또는 파괴" };
     case "교대": return subject == "상대" ? new[] { "모든 교대", "임의교대" } : new[] { "임의교대", "타입 아군과 교대" };
     case "타이밍": return new[] { TriggerStructures.TurnStartLabel, TriggerStructures.TurnLastLabel, TriggerStructures.TurnEndLabel, "배수 T 개시 시", "배수 T 종료 시", "장소에 나와 N T째 종료 시", "사건이 성립한 T 종료 시" };
     case "피격": case "명중": return new[] { "공격", "기술" };
@@ -202,6 +203,7 @@ namespace AABattle {
     case "체력 변화":
      spec.Op = variant.StartsWith("1/N") ? "이하" : variant.StartsWith("가득하지") ? "가득 아님" : variant.StartsWith("「1」") ? "1" : variant == "감소" ? "감소" : "가득"; spec.Bottom = Math.Max(1, n);
      return TriggerModules.Canonical(spec);
+    case "소지품 소실": spec.Method = variant; return TriggerModules.Canonical(spec);
     case "회복": case "공격하지 않음": return TriggerModules.Canonical(spec);
     case "특성 발동": spec.Names = triggerCondition.Text.Trim().Length == 0 ? new string[0] : new[] { triggerCondition.Text.Trim().Trim('「', '」') }; return TriggerModules.Canonical(spec);
     case "플레이버": {
@@ -296,6 +298,7 @@ namespace AABattle {
     case "쓰러뜨림": variant = spec.Ain ? "아인종" : spec.Types.Length > 0 ? "타입 포켓몬" : spec.Condition.Empty ? "상대" : "기술로"; break;
     case "체력": variant = spec.Op == "가득" ? "가득" : spec.Op == "가득 아님" ? "가득하지 않음" : spec.Op == "이상" ? "1/N 이상" : "1/N 이하"; triggerNumber.Value = Math.Max(1, spec.Bottom); break;
     case "체력 변화": variant = spec.Op == "이하" ? "1/N 이하가 됨" : spec.Op == "가득 아님" ? "가득하지 않게 됨" : spec.Op == "1" ? "「1」이 됨" : spec.Op == "감소" ? "감소" : "가득해짐"; triggerNumber.Value = Math.Max(1, spec.Bottom); break;
+    case "소지품 소실": variant = spec.Method; break;
     case "날씨": variant = spec.Place.Length == 0 ? "날씨 있음" : spec.Place; break;
     case "날씨 변화": variant = spec.Place.Length == 0 ? "모든 변화" : spec.Place; break;
     case "장소": variant = spec.Place; break;

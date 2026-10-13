@@ -31,7 +31,7 @@ namespace AABattle {
     if (EffectNormalizer.TryProbabilityPrefix(line, out probability, out body)) continue;
     if (Regex.IsMatch(line, @"^(?:\d+T동안|T종료시까지)\s")) continue;
     ScalarEffect scalar;
-    if (EffectModules.TryScalar(line.Trim(), out scalar)) list.Add(scalar);
+    if (EffectModules.TryScalar(line.Trim(), out scalar) || AbilityCriticalFieldModules.TryFieldScalar(line.Trim(), out scalar)) list.Add(scalar);
    }
    lock (cache) cache[effect ?? ""] = list;
    return list;
@@ -60,11 +60,14 @@ namespace AABattle {
     string condition, effect;
     PotentialLibrary.Split(p.description ?? "", out condition, out effect);
     var list = Parse(effect.Length > 0 ? effect : p.description);
-    for (int i = 0; i < list.Count; i++) yield return new Entry { Key = PotentialKeys.For(owner.Data, p) + "#" + i, Owner = owner, Effect = list[i] };
+    for (int i = 0; i < list.Count; i++) {
+     if (AbilityModules.Ignored(p, owner, opponent ?? PotentialQueue.OpponentOf(owner), list[i].Text)) continue;
+     yield return new Entry { Key = PotentialKeys.For(owner.Data, p) + "#" + i, Owner = owner, Effect = list[i] };
+    }
    }
    foreach (var m in owner.Conditions.Modifiers ?? new List<ActiveModifier>()) {
     ScalarEffect scalar;
-    if (m != null && EffectModules.TryScalar(m.Text, out scalar)) yield return new Entry { Key = m.Key, Owner = owner, Effect = scalar };
+    if (m != null && (EffectModules.TryScalar(m.Text, out scalar) || AbilityCriticalFieldModules.TryFieldScalar(m.Text, out scalar))) yield return new Entry { Key = m.Key, Owner = owner, Effect = scalar };
    }
   }
 
@@ -74,6 +77,10 @@ namespace AABattle {
   }
 
   static bool SelfSide(string subject) { return subject == "자신" || subject.StartsWith("아군"); }
+  static bool AppliesTo(ScalarEffect scalar, Fighter owner, Fighter holder) {
+   return AbilityCriticalFieldModules.FieldSubject(scalar.Subject) ? AbilityCriticalFieldModules.AppliesTo(scalar, owner, holder) :
+    ReferenceEquals(owner, holder) ? SelfSide(scalar.Subject) : scalar.Subject == "상대";
+  }
 
   // 능력치 배율(1~5 능력, 6 명중, 7 회피). holder의 능력치에 걸린 강화·약화
   public static double Stat(Fighter holder, Fighter opponent, int index, Rules rules) {
@@ -82,7 +89,7 @@ namespace AABattle {
    foreach (var e in Both(holder, opponent, rules)) {
     var s = e.Effect;
     if (s.Stage != "능력치") continue;
-    bool appliesToHolder = ReferenceEquals(e.Owner, holder) ? SelfSide(s.Subject) : s.Subject == "상대";
+    bool appliesToHolder = AppliesTo(s, e.Owner, holder);
     if (!appliesToHolder) continue;
     if (s.Stats.Contains(index) || (s.HighestStat || s.LowestStat) && index >= 1 && index <= 5 && Extreme(holder, opponent, rules, s.HighestStat) == index) factor *= s.Rate;
    }
@@ -104,7 +111,7 @@ namespace AABattle {
     var s = e.Effect;
     if (s.Stage != "위력" || !s.Condition.Matches(move, a, type)) continue;
     bool fromAttacker = ReferenceEquals(e.Owner, a);
-    if (fromAttacker ? SelfSide(s.Subject) : s.Subject == "상대") {
+    if (AppliesTo(s, e.Owner, a)) {
      if (!fromAttacker && rules != null && rules.Critical && s.Rate < 1) continue;   // 급소: 방어 측 방호 무시
      factor *= s.Rate;
     }
@@ -125,7 +132,8 @@ namespace AABattle {
     bool fromAttacker = ReferenceEquals(e.Owner, a);
     bool self = SelfSide(s.Subject);
     // 공격 측이 거는 것: 자신이 주는 / 상대가 받는. 방어 측이 거는 것: 상대가 주는 / 자신이 받는
-    bool applies = fromAttacker ? (s.Stage == "주는 대미지" ? self : !self) : (s.Stage == "주는 대미지" ? !self : self);
+    bool applies = AbilityCriticalFieldModules.FieldSubject(s.Subject) ? AppliesTo(s, e.Owner, s.Stage == "주는 대미지" ? a : b) :
+     fromAttacker ? (s.Stage == "주는 대미지" ? self : !self) : (s.Stage == "주는 대미지" ? !self : self);
     if (!applies) continue;
     if (!fromAttacker && rules != null && rules.Critical && s.Rate < 1) continue;
     factor *= s.Rate;
@@ -140,7 +148,7 @@ namespace AABattle {
     var s = e.Effect;
     if (s.Stage != "명중" || !s.Condition.Matches(move, a, 1)) continue;
     bool fromAttacker = ReferenceEquals(e.Owner, a);
-    if (fromAttacker ? SelfSide(s.Subject) : s.Subject == "상대") factor *= s.Rate;
+    if (AppliesTo(s, e.Owner, a)) factor *= s.Rate;
    }
    return factor;
   }
@@ -152,7 +160,6 @@ namespace AABattle {
    foreach (var p in (potentials ?? owner.Data.potentials ?? new Potential[0]).Where(x => x != null)) {
     if (keyword != null && (p.description ?? "").IndexOf(keyword, StringComparison.Ordinal) < 0) continue;   // 관련 낱말이 없으면 조건 판정 생략
     if (!Continuous(p, owner, opponent, rules ?? new Rules())) continue;
-    if (!ignoreAbilityBypass && AbilityModules.Ignored(p, owner, opponent ?? PotentialQueue.OpponentOf(owner))) continue;
     List<string> list;
     lock (sentenceCache) {
      if (!sentenceCache.TryGetValue(p.description ?? "", out list)) {
@@ -162,7 +169,10 @@ namespace AABattle {
       sentenceCache[p.description ?? ""] = list;
      }
     }
-    foreach (string s in list) yield return s;
+    foreach (string s in list) {
+     if (!ignoreAbilityBypass && AbilityModules.Ignored(p, owner, opponent ?? PotentialQueue.OpponentOf(owner), s)) continue;
+     yield return s;
+    }
    }
   }
   public static IEnumerable<string> Sentences(Fighter owner, Fighter opponent, Rules rules, string keyword = null, IEnumerable<Potential> potentials = null, bool ignoreAbilityBypass = false) {
@@ -181,7 +191,13 @@ namespace AABattle {
   // 상태이상 면역: 「자신은 「독」상태가 되지 않는다」
   public static bool StatusImmune(Fighter target, Fighter source, string status, Rules rules) {
    if (target == null) return false;
-   foreach (string s in ContinuousSentences(target, source, rules, "않")) { string[] list; bool opponentOnly; if (EffectModules.TryStatusImmunity(s, out list, out opponentOnly) && list.Contains(status) && (!opponentOnly || source != null && !ReferenceEquals(source, target))) return true; }
+   foreach (string s in ContinuousSentences(target, source, rules, "않")) {
+    string[] list; bool opponentOnly;
+    if (!EffectModules.TryStatusImmunity(s, out list, out opponentOnly)) continue;
+    var definition = StateEffects.Find(status);
+    bool matches = list.Contains(status) || list.Contains("상태변화") && definition != null && definition.Category == "상태변화";
+    if (matches && (!opponentOnly || source != null && !ReferenceEquals(source, target))) return true;
+   }
    return false;
   }
   // 강제교대 무효: 「자신은 강제교대되지 않는다」

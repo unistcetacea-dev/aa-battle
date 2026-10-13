@@ -255,6 +255,12 @@ namespace AABattle {
    // 「상대 기술의」처럼 조사가 빠진 주어
    string moveModule = MoveModules.Normalize(text);
    if (moveModule != null) return moveModule;
+   string criticalModule = AbilityCriticalFieldModules.Normalize(text);
+   if (criticalModule != null) return criticalModule;
+   string itemAbility = AbilityItemModules.Normalize(text);
+   if (itemAbility != null) return itemAbility;
+   string changeModule = AbilityChangeModules.Normalize(text);
+   if (changeModule != null) return changeModule;
    string abilityModule = AbilityPhrases.Normalize(text);
    if (abilityModule != null) return abilityModule;
    text = Regex.Replace(text, @"^(자신|상대)\s+(?=기술의|「)", "$1의 ");
@@ -447,10 +453,10 @@ namespace AABattle {
   public static int ActFirstTier(string text) { var m = Regex.Match(Clean(text), @"^자신은 (?<w>가장|상대보다) 먼저 행동(?:한다|할 수 있다)$"); return !m.Success ? 0 : m.Groups["w"].Value == "가장" ? 2 : 1; }
   public static bool IsActFirst(string text) { return ActFirstTier(text) > 0; }
   public static bool IsFloating(string text) { return Clean(text) == "자신은 공중에 떠오른다"; }
-  static bool IsImmunityName(string name) { return MajorStatuses.Contains(name.Trim()) || StateEffects.Find(name.Trim()) != null; }
+  static bool IsImmunityName(string name) { return name.Trim() == "상태변화" || MajorStatuses.Contains(name.Trim()) || StateEffects.Find(name.Trim()) != null; }
   public static bool TryStatusImmunity(string text, out string[] statuses) { bool opponentOnly; return TryStatusImmunity(text, out statuses, out opponentOnly); }
   public static bool TryStatusImmunity(string text, out string[] statuses, out bool opponentOnly) {
-   var m = Regex.Match(Clean(text), @"^(?<o>상대의 기술에 의해 )?자신은 「(?<s>[^」]+)」\s*상태가 되지 않는다$");
+   var m = Regex.Match(Clean(text), @"^(?<o>상대의 기술에 의해 |상대에 의해 )?자신은 「(?<s>[^」]+)」\s*상태가 되지 않는다$");
    statuses = m.Success ? m.Groups["s"].Value.Split('/').Select(x => x.Trim()).ToArray() : new string[0];
    opponentOnly = m.Success && m.Groups["o"].Success;
    return m.Success && statuses.All(IsImmunityName);
@@ -613,6 +619,12 @@ namespace AABattle {
    if (SecondaryEffects.IsModule(s)) return "추가효과 부여";
    string moveKind = MoveModules.Classify(s);
    if (moveKind.Length > 0) return moveKind;
+   string criticalKind = AbilityCriticalFieldModules.Classify(s);
+   if (criticalKind.Length > 0) return criticalKind;
+   string itemAbility = AbilityItemModules.Classify(s);
+   if (itemAbility.Length > 0) return itemAbility;
+   string changeKind = AbilityChangeModules.Classify(s);
+   if (changeKind.Length > 0) return changeKind;
    string abilityKind = AbilityPhrases.Classify(s);
    if (abilityKind.Length > 0) return abilityKind;
    string miscKind = MiscModules.Classify(s);

@@ -64,6 +64,8 @@ namespace AABattle {
   }
   static IEnumerable<string> Sentence(string raw) {
    string s = raw.TrimEnd('.', '。').Trim();
+   string shared = AbilityCriticalFieldModules.Normalize(s) ?? AbilityChangeModules.Normalize(s) ?? AbilityItemModules.Normalize(s);
+   if (shared != null) { yield return shared; yield break; }
    string remaining = RewriteRemaining(s);
    if (remaining != null) { yield return remaining + "."; yield break; }
    Match m;
@@ -120,6 +122,8 @@ namespace AABattle {
    return c;
   }
   static string Effect(string r) {
+   string shared = AbilityCriticalFieldModules.Normalize(r) ?? AbilityChangeModules.Normalize(r) ?? AbilityItemModules.Normalize(r);
+   if (shared != null) return shared.TrimEnd('.');
    string s = r.Trim().TrimEnd('.', '。').Trim();
    string remaining = RewriteRemaining(s);
    if (remaining != null) return remaining;

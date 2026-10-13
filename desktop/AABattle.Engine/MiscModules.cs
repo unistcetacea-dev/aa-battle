@@ -98,13 +98,20 @@ namespace AABattle {
   public static bool Lags(Fighter f, Fighter other, Rules rules) { return f != null && f.HP > 0 && Lines(f, other, rules, "우선도").Any(x => x == Lag); }
 
   // ===== 특성 변경(교대하면·기간이 끝나면 원래대로) =====
-  public static void ChangeAbility(Fighter target, string ability, int turns, List<string> log, string source) {
+  public static bool ChangeAbility(Fighter target, string ability, int turns, List<string> log, string source, bool refresh = true) {
+   if (target == null || target.HP <= 0 || AbilityRuntime.Name(target) == (ability ?? "")) return false;
+   if (AbilityChangeModules.CannotChange(target)) {
+    if (log != null) log.Add(target.Data.name + ": 특성은 변화되지 않는다 (" + source + ")");
+    return false;
+   }
    var c = target.Conditions;
    if (c.AbilityBefore == null) c.AbilityBefore = AbilityRuntime.Name(target);
    target.CurrentAbility = ability; target.AbilityChanged = true;
    AbilityModules.Sync(target);
    c.AbilityTurns = turns;
    if (log != null) log.Add(target.Data.name + ": 특성이 「" + ability + "」" + EffectModules.Ro(ability) + " 바뀌었다 (" + source + ")");
+   if (refresh) AbilityChangeModules.Refresh(log);
+   return true;
   }
   public static void RestoreAbility(Fighter target, List<string> log) {
    var c = target.Conditions;

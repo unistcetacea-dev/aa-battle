@@ -73,6 +73,15 @@ namespace AABattle {
 
   public static readonly StateEffectRule[] Table = BuildTable();
 
+  // 기술의 직접 부여 경로도 같은 면역을 조회한다. 틀깨기는 특성 문장만 무시한다.
+  public static bool BlockedCondition(Fighter target, Fighter source, string state, Rules rules, bool ignoreImmunity = false, List<string> log = null) {
+   var rule = Find(state);
+   if (rule == null || rule.Category == "상태이상" || ignoreImmunity) return false;
+   if (!PotentialModifiers.StatusImmune(target, source, rule.Name, rules ?? new Rules())) return false;
+   if (log != null) log.Add(target.Data.name + ": 특성/포텐셜로 「" + rule.Name + "」 상태가 되지 않는다");
+   return true;
+  }
+
   // 효과 문장 한 줄을 상태 부여로 읽는다. 상태 부여 문장이 아니면 null
   public static StateEffectSentence Parse(string line) {
    string text = PotentialParts.Clean(line ?? "").Replace("드믈게", "드물게").Trim().TrimEnd('.', '。', '．').Trim();
@@ -119,7 +128,7 @@ namespace AABattle {
     if (log != null) log.Add(source + ": 「" + rule.Name + "」 확률 판정 실패");
     return true;
    }
-   if (rule.Category != "상태이상" && !sentence.IgnoreImmunity && self != null && !Mechanics.BypassAbility(self) && PotentialModifiers.StatusImmune(target, self, rule.Name, rules ?? new Rules())) { if (log != null) log.Add(target.Data.name + ": 특성/포텐셜로 「" + rule.Name + "」 상태가 되지 않는다"); return true; }
+   if (BlockedCondition(target, self, rule.Name, rules, sentence.IgnoreImmunity, log)) return true;
    if (rule.Category == "상태변화" && Mechanics.AlreadyHas(target, rule.Name, log)) return true;
    var context = new StateEffectContext {
     Target = target, Source = self, Rules = rules ?? new Rules(), Rng = rng, Log = log,
@@ -136,7 +145,7 @@ namespace AABattle {
    if (rule == null) return EffectOutcome.Pending;
    var target = sentence.Target == "자신" || sentence.Target.Length == 0 && rule.SelfByDefault ? self : opponent;
    if (target == null || target.HP <= 0) { if (log != null) log.Add(source + ": 「" + rule.Name + "」 대상이 없다."); return EffectOutcome.Failed; }
-   if (rule.Category != "상태이상" && !sentence.IgnoreImmunity && self != null && !Mechanics.BypassAbility(self) && PotentialModifiers.StatusImmune(target, self, rule.Name, rules ?? new Rules())) { if (log != null) log.Add(target.Data.name + ": 특성/포텐셜로 「" + rule.Name + "」 상태가 되지 않는다"); return EffectOutcome.Failed; }
+   if (BlockedCondition(target, self, rule.Name, rules, sentence.IgnoreImmunity, log)) return EffectOutcome.Failed;
    if (rule.Category == "상태변화" && Mechanics.AlreadyHas(target, rule.Name, log)) return EffectOutcome.Failed;
    var context = new StateEffectContext { Target = target, Source = self, Rules = rules ?? new Rules(), Rng = rng, Log = log, Turns = sentence.UntilTurnEnd ? 1 : sentence.Turns, IgnoreImmunity = sentence.IgnoreImmunity };
    if (!rule.Apply(context)) return EffectOutcome.Failed;
@@ -165,7 +174,7 @@ namespace AABattle {
    }
    rules.Add(Rule("혼란", c => {
     var t = c.Target;
-    if (c.Source != null && !Mechanics.BypassAbility(c.Source) && PotentialModifiers.StatusImmune(t, c.Source, "혼란", c.Rules) || c.Rules.Terrain == "미스트필드" && Mechanics.Grounded(t, c.Rules)) { c.Say("혼란 무효: 특성/포텐셜 / 미스트필드"); return false; }
+    if (BlockedCondition(t, c.Source, "혼란", c.Rules, c.IgnoreImmunity, c.Log) || c.Rules.Terrain == "미스트필드" && Mechanics.Grounded(t, c.Rules)) { c.Say("혼란 무효: 특성/포텐셜 / 미스트필드"); return false; }
     if (StateTicks.Guarded(t, c.Source, c.Rules)) { c.Say("신비의부적: 혼란 무효"); return false; }
     t.Conditions.Confusion = c.Turns > 0 ? c.Turns : 1 + (int)(c.Roll() * 4);
     return true;

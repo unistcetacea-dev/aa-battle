@@ -104,7 +104,13 @@ namespace AABattle {
   public static bool TripleHit(Move move){return MultiHit(move)&&(move.name.StartsWith("트리플킥")||move.name.StartsWith("트리플악셀"));}
   public static int HitCount(Move move,Func<double> rng,List<string> log){if(!MultiHit(move))return 1;string effect=move.effect??"";if(System.Text.RegularExpressions.Regex.IsMatch(effect,@"2\s*[～~∼–-]\s*5\s*회")){double roll=rng();return roll<.35?2:roll<.7?3:roll<.85?4:5;}var fixedHits=System.Text.RegularExpressions.Regex.Match(effect,@"(?<![0-9])([23])\s*회\s*「연속」");if(fixedHits.Success)return int.Parse(fixedHits.Groups[1].Value);log.Add(move.name+": 횟수 수동 판정 (1회)");return 1;}
   public static Move HitMove(Move move,int hit){if(!TripleHit(move))return move;var copy=move.Copy();copy.power=(move.name.StartsWith("트리플킥")?10:20)*hit;return copy;}
-  public static bool HitCritical(Fighter a,Move move,Rules r,Func<double> rng){if(r.Critical)return true;if(MoveModules.AlwaysCrit(move)||a.Conditions.LaserFocus>0)return true;int stage=Math.Max(0,Math.Min(4,a.CriticalStage+MiscModules.CritBonus(a,null,move,r)+MoveModules.CritBonus(move)+(a.Conditions.FocusEnergy?2:0)));return rng()<1.0/new[]{16,8,4,3,2}[stage];}
+  public static bool HitCritical(Fighter a, Move move, Rules r, Func<double> rng, Fighter target = null) {
+   if (r.Critical) return true;
+   if (MoveModules.AlwaysCrit(move) || a.Conditions.LaserFocus > 0) return true;
+   int stage = Math.Max(0, Math.Min(4, a.CriticalStage + MiscModules.CritBonus(a, target, move, r) + MoveModules.CritBonus(move) + (a.Conditions.FocusEnergy ? 2 : 0)));
+   if (AbilityCriticalFieldModules.HasCriticalRankZero(target, a, r)) stage = 0;
+   return rng() < 1.0 / new[] { 16, 8, 4, 3, 2 }[stage];
+  }
   public static bool Ohko(Move move){return move!=null&&(new[]{"가위자르기","뿔드릴","땅가르기","절대영도"}.Contains(move.name)||(move.tags??new string[0]).Any(x=>x.Contains("일격필살")));}
   public static bool SureHit(Fighter target,Move move,int sourceSide){return sourceSide>=0&&target.Conditions.MindReaderSide==sourceSide||!Ohko(move)&&SureHit(move);}
   // 기술 전체의 본체 대미지를 받아 한 번만 반동을 처리한다.

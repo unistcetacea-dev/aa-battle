@@ -81,7 +81,7 @@ namespace AABattle {
  public static class PotentialExecutors {
   static readonly List<PotentialExecutor> all = new List<PotentialExecutor>();
   public static IEnumerable<PotentialExecutor> All { get { return all; } }
-  static PotentialExecutors() { PotentialQueue.BuiltIn.Register(); MoveModules.RegisterExecutors(); }
+  static PotentialExecutors() { PotentialQueue.BuiltIn.Register(); MoveModules.RegisterExecutors(); AbilityChangeModules.Register(); AbilityItemModules.Register(); }
   public static PotentialExecutor Register(string name, Func<EffectCall, bool> canRun, Func<EffectCall, EffectOutcome> run) {
    var executor = new PotentialExecutor { Name = name, CanRun = canRun, Run = run };
    all.Add(executor);
@@ -566,8 +566,8 @@ namespace AABattle {
       var target = sj == "상대" ? c.Opponent : c.Owner;
       if (target == null || target.HP <= 0) return EffectOutcome.Failed;
       if (AbilityRuntime.Name(target) == ab) { c.Say(target.Data.name + ": 이미 「" + ab + "」 특성이다"); return EffectOutcome.Failed; }
-      var lines = new List<string>(); MiscModules.ChangeAbility(target, ab, turns, lines, c.Source.Label); foreach (var x in lines) c.Say(x);
-      return EffectOutcome.Success;
+      var lines = new List<string>(); bool changed = MiscModules.ChangeAbility(target, ab, turns, lines, c.Source.Label); foreach (var x in lines) c.Say(x);
+      return changed ? EffectOutcome.Success : EffectOutcome.Failed;
      });
     PotentialExecutors.Register("소지품 소실",
      c => MiscModules.IsBreak(c.Line),

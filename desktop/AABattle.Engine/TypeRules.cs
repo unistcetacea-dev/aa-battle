@@ -27,6 +27,8 @@ namespace AABattle {
   static readonly Regex Rating = new Regex(@"^(?:「(?<vs>[^」]+)」 타입에게 )?(?<s>자신|상대)의 (?<c>(?:「[^」]+」)*)\s*기술의 상성을 「(?<r>효과가 굉장|효과가 별로|효과 보통)」(?:으로|로) 한다$");
   static readonly Regex TypeChange = new Regex(@"^(?<s>자신|상대)의 타입을 「(?<t>[^」]+)」(?:으로|로) (?:한다|할 수 있다)$");
   const string Favorable = "자신의 기술을 유리한 상성으로 판정한다";
+  public const string InverseField = "필드에 있는 전원의 타입 상성을 반전한다";
+  public const string NeutralField = "필드에 있는 전원의 기술의 타입 상성을 「효과 보통」으로 한다";
 
   static string Clean(string text) { return Regex.Replace(PotentialParts.Clean(text ?? "").Trim().TrimEnd('.', '。', '．').Trim(), @"\s+", " "); }
   static bool Types(string value) { return value.Split('/').All(x => MoveCondition.TypeNames.Contains(x.Trim())); }
@@ -43,6 +45,8 @@ namespace AABattle {
   public static string Normalize(string text) {
    string t = Regex.Replace(text ?? "", @"\s+", " ").Trim().TrimEnd('.', '。', '．').Trim();
    if (!t.Contains("타입") && !t.Contains("상성")) return null;
+   if (Clean(t) == InverseField) return InverseField + ".";
+   if (Regex.IsMatch(Clean(t), @"^필드에 있는 전원의 기술의 타입\s*상성이 「등배」가 된다$")) return NeutralField + ".";
    if (Classify(t).Length > 0) return Clean(t) + ".";
    Match m; MoveCondition c;
    m = Regex.Match(t, Owner + @"(?:상대의\s*|「(?<vs>[^」]+)」\s*타입의\s*)?「?타입\s*내성」?(?:을|를)\s*(?:관통|무시)한다$");
@@ -98,6 +102,8 @@ namespace AABattle {
   public static string Classify(string sentence) {
    string s = Clean(sentence);
    if (!s.Contains("타입") && !s.Contains("상성")) return "";
+   if (s == InverseField) return "필드 타입 상성 반전";
+   if (s == NeutralField) return "필드 타입 상성 중립";
    if (Resist.IsMatch(s)) return "타입 내성 관통";
    if (IgnoreAll.IsMatch(s)) return "타입 상성 무시";
    if (Immune.IsMatch(s) || ImmuneTaken.IsMatch(s)) return "상성 무효 관통";
@@ -131,13 +137,18 @@ namespace AABattle {
   // 공격 측 포텐셜이 바꾸는 상성 계산 방식
   public sealed class Profile {
    public List<string> Added = new List<string>();
-   public bool Favorable, IgnoreAll, PierceImmune, PierceAll, IgnoreGhostImmune;
+   public bool Favorable, IgnoreAll, PierceImmune, PierceAll, IgnoreGhostImmune, Inverse;
    public List<string> PierceTypes = new List<string>();
   }
 
   public static Profile For(Fighter a, Fighter b, Move m, Rules r) {
    var p = new Profile();
    if (a == null || m == null) return p;
+   // 필드 전원 효과는 장소의 양쪽 모두에게 작용한다. 복수 보유해도 반전은 한 번이다.
+   foreach (string line in Lines(a, b, r).Concat(Lines(b, a, r))) {
+    if (line == InverseField) p.Inverse = true;
+    if (line == NeutralField) p.IgnoreAll = true;
+   }
    foreach (string line in Lines(a, b, r)) {
     Match x;
     if ((x = AddType.Match(line)).Success && Applies(x, m, a)) { foreach (string t in x.Groups["t"].Value.Split('/')) if (!p.Added.Contains(t)) p.Added.Add(t); p.Favorable = true; }
@@ -150,6 +161,12 @@ namespace AABattle {
    // 받는 쪽의 「상대의 기술이 타입 상성에 의한 무효를 관통한다」(겨냥표적)
    foreach (string line in Lines(b, a, r)) { var x = ImmuneTaken.Match(line); if (Applies(x, m, a)) p.PierceImmune = true; }
    return p;
+  }
+
+  // 상성 반전은 단일 타입 조합마다 적용하고 그 뒤 복수 타입 배율을 곱한다.
+  public static double Matchup(Profile profile, double factor) {
+   if (profile == null || !profile.Inverse) return factor;
+   return factor == 0 ? 2 : 1 / factor;
   }
 
   // 판정에 쓰는 기술 타입(타입 추가 포함). 자속도 이 목록으로 본다

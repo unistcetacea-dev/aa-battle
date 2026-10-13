@@ -113,7 +113,7 @@ namespace AABattle {
    if (f == null || f.Data == null) return;
    var list = (f.Data.potentials ?? new Potential[0]).Where(p => p == null || p.id != Slot).ToList();
    var d = ItemCatalog.Find(f.Data.item);
-   if (Runnable(d) && f.Conditions.Embargo <= 0) list.AddRange(ToPotentials(d));
+   if (Runnable(d) && AbilityItemModules.CanUseItem(f)) list.AddRange(ToPotentials(d));
    f.Data.potentials = list.ToArray();
   }
 
@@ -125,7 +125,7 @@ namespace AABattle {
    if (Coded.Contains(d.Name) || d.Name.StartsWith("기술머신")) return "자동 구현";
    return d.Name == "플레이트" || d.Name == "○주얼" ? "자동 구현" : Runnable(d) ? "자동 구현" : "미구현";
   }
-  public static string Name(Fighter f) { if (f != null && f.Conditions.Embargo > 0) return ""; var d = f == null || f.Data == null ? null : ItemCatalog.Find(f.Data.item); return d != null ? d.Name : f == null || f.Data == null ? "" : f.Data.item ?? ""; }
+  public static string Name(Fighter f) { if (!AbilityItemModules.CanUseItem(f)) return ""; var d = ItemCatalog.Find(f.Data.item); return d != null ? d.Name : f.Data.item ?? ""; }
   public static bool Holds(Fighter f, params string[] names) { string n = Name(f); return n.Length > 0 && names.Contains(n); }
   public static bool Choice(Fighter f) { return Holds(f, "구애머리띠", "구애안경", "구애스카프"); }
 
@@ -158,6 +158,20 @@ namespace AABattle {
    f.Data.item = "";
    Sync(f);
    if (log != null) log(f.Data.name + ": 「" + item + "」" + (reason == "소비" ? "을 사용했다" : " — " + reason));
+   string method = reason == "소비" ? "소모" : reason == "파괴" || reason == "부서졌다" ? "파괴" : "";
+   if (method.Length > 0) TriggerModules.Raise(new TriggerFact { Kind = "소지품 소실", Method = method }, f,
+    f.FieldOpponent ?? PotentialQueue.OpponentOf(f), f.Data.name + "의 「" + item + "」 소실", log);
+  }
+  // 이동은 소모·파괴 사건과 구분한다.
+  public static bool Transfer(Fighter from, Fighter to, Action<string> log, bool steal = false) {
+   if (from == null || to == null || from.HP <= 0 || to.HP <= 0 || ReferenceEquals(from, to) ||
+    string.IsNullOrEmpty(from.Data.item) || !string.IsNullOrEmpty(to.Data.item)) return false;
+   string item = from.Data.item;
+   Lose(from, steal ? "약탈" : "이동", log);
+   to.Data.item = item;
+   Sync(to);
+   if (log != null) log(from.Data.name + "의 「" + item + "」이 " + to.Data.name + "에게 옮겨졌다");
+   return true;
   }
  }
 }

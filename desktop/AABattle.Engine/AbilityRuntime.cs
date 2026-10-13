@@ -12,7 +12,13 @@ namespace AABattle {
   public static bool Has(Fighter fighter,string name){return fighter!=null&&fighter.OnField&&Name(fighter)==name&&!fighter.AbilitySuppressed;}
   public static void Reset(Fighter fighter){if(fighter==null)return;fighter.OriginalAbility=fighter.Data==null?"":fighter.Data.ability??"";fighter.CurrentAbility=fighter.OriginalAbility;fighter.AbilityChanged=false;fighter.AbilitySuppressed=false;AbilityModules.Sync(fighter);}
   // 특성 교체·복사는 등장으로 보지 않으므로 여기서는 이름만 바꾼다.
-  public static void SetCurrent(Fighter fighter,string ability){if(fighter!=null){fighter.CurrentAbility=ability??"";fighter.AbilityChanged=true;AbilityModules.Sync(fighter);}}
+  public static void SetCurrent(Fighter fighter,string ability){
+   if(fighter==null||AbilityChangeModules.CannotChange(fighter))return;
+   fighter.CurrentAbility=ability??"";
+   fighter.AbilityChanged=true;
+   AbilityModules.Sync(fighter);
+   AbilityChangeModules.Refresh(null);
+  }
 
   public static void RefreshSuppression(Fighter[] fighters,Action<string> log){
    if (fighters == null || fighters.Length != 2) return;
@@ -27,7 +33,7 @@ namespace AABattle {
    for (int i = 0; i < 2; i++) {
     var f = fighters[i];
     if (f == null) continue;
-    bool next = suppresses[1 - i] && !immune[i];
+    bool next = suppresses[1 - i] && !immune[i] && !AbilityChangeModules.CannotSuppress(f, fighters[1 - i]);
     if (f.AbilitySuppressed == next) continue;
     f.AbilitySuppressed = next;
     AbilityModules.Sync(f);
@@ -39,6 +45,7 @@ namespace AABattle {
     AbilityPhrases.RefreshWeatherLock(fighters, scope.Rules, lines);
     if (log != null) foreach (string line in lines) log(line);
    }
+   foreach (var fighter in fighters) ItemRuntime.Sync(fighter);
   }
 
   public static void Enter(Fighter owner,Fighter opponent,Rules rules,Action<string> log){
