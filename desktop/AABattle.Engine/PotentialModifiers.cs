@@ -123,11 +123,16 @@ namespace AABattle {
    ScalarEffect extra;
    if (scope != null && ReferenceEquals(scope.ExtraPowerOwner, a) && (rules == null || !rules.Critical) &&
        EffectModules.TryScalar(scope.ExtraPowerSentence, out extra) && extra.Condition.Matches(move, a, type)) factor *= extra.Rate;
-   return factor;
+   return factor * AbaddonRuntime.PowerFactor(a, b, rules);
   }
 
   // 최종 대미지 단계
   public static double Damage(Fighter a, Fighter b, Move move, Rules rules, double type) {
+   var matchTarget = MoveCondition.MatchTarget;
+   MoveCondition.MatchTarget = b;   // 「자신과 같은 타입」은 기술을 받는 쪽의 타입으로 판정한다
+   try { return DamageFactor(a, b, move, rules, type); } finally { MoveCondition.MatchTarget = matchTarget; }
+  }
+  static double DamageFactor(Fighter a, Fighter b, Move move, Rules rules, double type) {
    double factor = 1;
    foreach (var e in Both(a, b, rules)) {
     var s = e.Effect;

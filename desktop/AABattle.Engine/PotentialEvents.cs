@@ -168,6 +168,7 @@ namespace AABattle
       RoleModules.Register();
       DamageVariantModules.Register();
       PotentialGrantModules.Register();
+      AbaddonModules.Register();
       PotentialQueue.BuiltIn.RegisterExclusive();
       PotentialQueue.BuiltIn.RegisterExclusiveMore();
     }

@@ -6,7 +6,7 @@ namespace AABattle {
  // 상태변화(타입 변경·행동 제한·반응·자동 행동·수면 등) 부여·해제·판정
  public static partial class Mechanics {
   // 타입 변경 후 위력을 판정하며 원본 기술은 보존한다.
-  public static Move JudgedMove(Fighter a,Move m,Fighter b=null,Rules r=null){r=r??new Rules();m=VariablePower.Transform(a,b,m,r);m=AbilityPhrases.ChangeMoveType(a,b,m,r);m=AbilityMoveModules.Judge(a,b,m,r);m=PursuitModules.Judge(a,b,m,r);var c=a.Conditions;string type=c.Dark?"악":c.Soaked?"물":c.Electrified?"전기":"";if(type.Length==0)return m;var copy=m.Copy();copy.types=new[]{type};return copy;}
+  public static Move JudgedMove(Fighter a,Move m,Fighter b=null,Rules r=null){r=r??new Rules();m=VariablePower.Transform(a,b,m,r);m=AbilityPhrases.ChangeMoveType(a,b,m,r);m=AbilityMoveModules.Judge(a,b,m,r);m=PursuitModules.Judge(a,b,m,r);m=AbaddonRuntime.JudgeMove(a,b,m,r);var c=a.Conditions;string type=c.Dark?"악":c.Soaked?"물":c.Electrified?"전기":"";if(type.Length==0)return m;var copy=m.Copy();copy.types=new[]{type};return copy;}
   public static double ChargePower(Fighter a,Move m){var c=a.Conditions;double v=1;if(c.Heated&&m.types.Contains("불꽃"))v*=2;if(c.Chilled&&m.types.Contains("얼음"))v*=2;if(c.Charged&&m.types.Contains("전기"))v*=2;return v;}
   static void ClearFlag(ref bool flag,Fighter a,string name,List<string> log){if(!flag)return;flag=false;if(log!=null)log.Add(a.Data.name+"의 "+name+"이 풀렸다");}
   public static void ClearTypeSwap(Fighter a,List<string> log){var c=a.Conditions;ClearFlag(ref c.Dark,a,"악인",log);ClearFlag(ref c.Soaked,a,"침수",log);ClearFlag(ref c.Electrified,a,"송전",log);}
@@ -84,6 +84,7 @@ namespace AABattle {
     case "동면":return c.Hibernate>0;
     case "죽음의 카운트":return c.DeathCount>0;
     case "먹이를 문":return c.Gulping;
+    case "번개구름":return (c.DelayedAttacks??new List<DelayedAttackState>()).Any(x=>x!=null&&x.Move!=null&&x.Move.name=="번개구름");
     default:return false;
    }
   }

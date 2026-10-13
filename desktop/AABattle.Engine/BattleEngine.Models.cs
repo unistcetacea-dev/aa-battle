@@ -10,7 +10,7 @@ namespace AABattle
 {
   public class SideFieldState
   {
-    public bool StealthRock, StickyWeb;
+    public bool StealthRock, StickyWeb, IceBurn;
     public int Spikes, ToxicSpikes;
     public int Reflect, LightScreen, IceWall, Tailwind;
     public int Safeguard, Mist, LuckyChant, WishTurns, WishHeal, SeaOfFire, Swamp, Rainbow;
@@ -22,7 +22,7 @@ namespace AABattle
 
     public void ClearHazards()
     {
-      StealthRock = StickyWeb = false;
+      StealthRock = StickyWeb = IceBurn = false;
       Spikes = ToxicSpikes = 0;
     }
 
@@ -44,12 +44,12 @@ namespace AABattle
 
     public bool Any()
     {
-      return StealthRock || StickyWeb || Spikes > 0 || ToxicSpikes > 0 || Reflect > 0 || LightScreen > 0 || IceWall > 0 || Tailwind > 0;
+      return StealthRock || StickyWeb || IceBurn || Spikes > 0 || ToxicSpikes > 0 || Reflect > 0 || LightScreen > 0 || IceWall > 0 || Tailwind > 0;
     }
 
     public bool HasHazards()
     {
-      return StealthRock || StickyWeb || Spikes > 0 || ToxicSpikes > 0;
+      return StealthRock || StickyWeb || IceBurn || Spikes > 0 || ToxicSpikes > 0;
     }
   }
 

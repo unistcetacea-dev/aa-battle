@@ -390,6 +390,7 @@ namespace AABattle
       if (!declared && usage != null)
         usage.Use(source.Key, source.Uses);
       RecordTrainerUse(scope, source);
+      AbaddonTriggers.ExclusiveUsed(source, x => Say(log, x));
       Say(log, head + " · 효과 적용: " + source.Effect);
       // 사용 제한이 있는 선행입력은 한 번 발동하면 이번 T의 선언이 끝난다(추가행동 등으로 같은 사건이 다시 와도 또 발동하지 않는다)
       if (declared && usage != null && !string.IsNullOrWhiteSpace(source.Uses))

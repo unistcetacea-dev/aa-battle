@@ -36,6 +36,7 @@ namespace AABattle {
    if (f == null || f.HP <= 0) return false;
    bool cured = false;
    foreach (string name in names) {
+    if (AbaddonRuntime.Sealed(f, name, log)) continue;
     if ((name == "상태이상" || name == f.Status || name == "독" && f.Status == "맹독") && f.Status != "정상") {
      if (log != null) log.Add(f.Data.name + ": 「" + f.Status + "」 치유");
      f.Status = "정상"; f.Conditions.ToxicStage = 1; f.Conditions.SleepFromRest = false; cured = true;

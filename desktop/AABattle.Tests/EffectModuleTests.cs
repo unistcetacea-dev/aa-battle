@@ -75,7 +75,6 @@ namespace AABattle {
 
   [TestCase("상대의 「위력:40」이하인 기술의 추가효과가 발생하지 않는다")]
   [TestCase("최초로 내보내는 기술의 위력을 배화한다")]
-  [TestCase("자신과 같은 타입의 기술의 데미지를 반감한다")]
   public void LeavesUnknownWordingPending(string raw) {
    Assert.That(EffectModules.Classify(raw), Is.Empty);
   }

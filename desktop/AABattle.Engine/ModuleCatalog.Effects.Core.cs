@@ -103,6 +103,7 @@ namespace AABattle
       RegisterRoleEffects(modules);
       RegisterChaldeaEffects(modules);
       RegisterExclusiveEffects(modules);
+      RegisterAbaddonEffects(modules);
     }
 
     static void RegisterCoreStats(List<ModuleDefinition> modules)

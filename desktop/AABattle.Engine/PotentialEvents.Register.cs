@@ -355,6 +355,8 @@ namespace AABattle
           var target = t == "상대" ? c.Opponent : c.Owner;
           if (target == null || target.HP <= 0 || target.Status == "정상")
             return EffectOutcome.Failed;
+          if (AbaddonRuntime.Sealed(target, "상태이상", c.Log))
+            return EffectOutcome.Failed;
           c.Say(target.Data.name + ": " + target.Status + " 치유 (" + c.Source.Label + ")");
           target.Status = "정상";
           target.Conditions.ToxicStage = 1;

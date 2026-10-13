@@ -118,6 +118,7 @@ namespace AABattle {
    RegisterTurnConditions(modules);
    RegisterTriggerConditions(modules);
    RegisterExclusiveTriggers(modules);
+   RegisterAbaddonTriggers(modules);
   }
 
   static void RegisterTriggerEvents(List<ModuleDefinition> modules) {

@@ -18,6 +18,7 @@ namespace AABattle {
    var enteredTurn=Regex.Match(value,@"^(.+?교대해\s*필드에\s*나온)\s*T\s*종료\s*시\s*까지\s+(.+)$");if(enteredTurn.Success){condition=enteredTurn.Groups[1].Value.Trim()+" 때";remainder="T 종료시까지 "+enteredTurn.Groups[2].Value.Trim();return true;}
    var enteredSecond=Regex.Match(value,@"^(.+?교대해\s*필드에\s*나와\s*[0-9０-９]+T째)\s*[,，、]\s*(.+)$");if(enteredSecond.Success){condition=enteredSecond.Groups[1].Value.Trim();remainder=enteredSecond.Groups[2].Value.Trim();return true;}
    var switchedTurn=Regex.Match(value,@"^(.+?교대로?\s*(?:필드에\s*)?나온\s*T)\s*[,，、]\s*(.+)$");if(switchedTurn.Success){condition=switchedTurn.Groups[1].Value.Trim();remainder=switchedTurn.Groups[2].Value.Trim();return true;}
+   var factTurn=Regex.Match(value,@"^(.+?(?:반전한|바뀐|받은|(?:이|가)\s*된)\s*T)\s*[,，、]\s*(.+)$");if(factTurn.Success){condition=factTurn.Groups[1].Value.Trim();remainder=factTurn.Groups[2].Value.Trim();return true;}
    var ending=@"(?:때(?:에)?도|때|일때|경우|한해서|라면|있으면|없으면|(?:으)?면(?:\([^)]*(?:으)?면\))?|나오면|있는\s*동안|있는\s*한|참가\s*시에?|발동\s*시에?|사용\s*시에?|발생\s*시에?|개시\s*시에?|종료\s*시에?|교대\s*시에?|명중\s*시에?|피격\s*시에?)";
    var match=Regex.Match(value,@"^(.+?"+ending+@")[\s]*(?:[,，、.]\s*|\s+)(.+)$");if(!match.Success)return false;condition=match.Groups[1].Value.Trim();remainder=match.Groups[2].Value.Trim();return remainder.Length>0;
   }

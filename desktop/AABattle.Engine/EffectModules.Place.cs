@@ -47,7 +47,7 @@ namespace AABattle
           return n + "「" + t + "」을 전개" + opt;
       }
 
-      m = Regex.Match(text, @"^적진에\s*「(?<h>스텔스록|압정뿌리기|압정|독압정|끈적끈적네트)」(?:을|를)\s*설치" + optional + "$");
+      m = Regex.Match(text, @"^적진에\s*「(?<h>스텔스록|압정뿌리기|압정|독압정|끈적끈적네트|아이스번)」(?:을|를)\s*설치" + optional + "$");
       if (m.Success)
       {
         string h = m.Groups["h"].Value == "압정" ? "압정뿌리기" : m.Groups["h"].Value;

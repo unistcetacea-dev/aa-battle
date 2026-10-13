@@ -933,3 +933,9 @@ Codex 공유 링크는 특정 시점의 읽기 전용 대화 스냅샷이다. �
 - 새 파일: `UseConditionModules`(사용 조건 수식문, 본문 앞처리, `IsNote`), `DamageVariantModules`(타입 대미지), `ChaldeaVariants`(효과 변형 정규화), `PotentialGrantModules`(포텐셜 부여), `ModuleCatalog.Effects.Chaldea.cs`. 연결 줄: `PotentialLibrary.Split`(앞처리, 명중시 트리거), `PotentialQueue.Candidates`(등급 제한)와 `Split`(`IsNote`), `ChaldeaModules.Normalize` 끝, `EffectModules.Classify`, `PotentialExecutors` 등록.
 - 타입을 단 대미지는 상성을 받는다(사용자 결정). 기존 검사 `EffectModuleTests`의 「고스트 대미지」 기대값을 이 결정에 맞춰 바꿨다.
 - 검사: `ChaldeaPhase3Tests`. 판정표는 `research/samples/chaldea/POTENTIALS.tsv`, `MODULE_GAPS.md`에 갱신.
+## 실프 인헨스먼츠 남은 모듈 (지시서 F)
+- 새 파일: `AbaddonModules.cs`(효과 표준 문장·정규화·실행기·편집기 등록), `AbaddonTriggers.cs`(트리거), `AbaddonRuntime.cs`(기술 변형·위력 약화·치유 봉인·최초 우선도·회복 반납·아이스번), `StateEffectsAbaddon.cs`(번개구름).
+- 타입을 단 대미지는 상성을 받는다: 「상대에게 최대 HP의 1/N 「X」 타입 대미지를 준다.」(칼데아 대미지 변형도 이 문장으로 모은다).
+- 「…한 T」 상태는 같은 사건의 순간에도 성립한다(한 번 일어나는 효과가 그 순간 실행). `ConditionState.Repay`(턴 끝 반납)와 `WatchTypes`(타입 변화 비교)가 새로 생겼다.
+- 최초 접촉 기술 우선도 「올릴 수 있다」는 손해가 없어 선택 확인 없이 항상 적용한다. 「필드에 없어도 발동」은 문장만 인식한다(대기석 발동은 미구현).
+- 검사: `AbaddonGapTests`.

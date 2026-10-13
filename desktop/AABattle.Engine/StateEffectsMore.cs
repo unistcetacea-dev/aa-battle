@@ -166,6 +166,7 @@ namespace AABattle {
   }
 
   public static void EndTurn(Fighter[] f, Rules r, List<string> log, Func<double> rng) {
+   AbaddonRuntime.EndTurn(f, r, log);
    foreach (var x in f) {
     if (x == null) continue;
     var c = x.Conditions;

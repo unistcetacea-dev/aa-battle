@@ -235,6 +235,7 @@ namespace AABattle {
    }, false, "멸망의노래", "멸망의 노래"));
    AddMore(rules);
    AddMisc(rules);
+   AddAbaddonStates(rules);
    return rules.ToArray();
   }
  }

@@ -56,6 +56,8 @@ namespace AABattle
         batonKind = DamageVariantModules.Classify(s);
       if (batonKind.Length == 0)
         batonKind = PotentialGrantModules.Classify(s);
+      if (batonKind.Length == 0)
+        batonKind = AbaddonModules.Classify(s);
       if (batonKind.Length > 0)
         return batonKind;
       if (moveKind.Length > 0)

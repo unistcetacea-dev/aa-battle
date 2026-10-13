@@ -200,6 +200,7 @@ namespace AABattle {
   }
   public static bool Holds(TriggerSpec s, Fighter owner, Fighter opponent, Rules rules) {
    if (owner == null || rules == null) return false;
+   if (AbaddonTriggers.IsMine(s)) return AbaddonTriggers.Holds(s, owner, opponent, rules);
    var target = s.Subject == "상대" ? opponent : owner;
    switch (s.Module) {
     case "종족치 등급": return SpeciesGradeTrigger.Holds(s, target);
@@ -281,6 +282,7 @@ namespace AABattle {
    c.WatchStates = string.Join("|", TriggerModules.ActiveStates(f));
    c.WatchHP = f.HP;
    c.WatchStages = string.Join(",", Stages(f));
+   AbaddonTriggers.ResetTypes(f);
   }
   // 효과 범위를 시작할 때 비교 기준이 없는 포켓몬·장소는 지금 값으로 맞춘다
   public static void Prime(Fighter[] fighters, Rules rules) {
@@ -304,6 +306,7 @@ namespace AABattle {
     int hpBefore = c.WatchHP;
     var stagesBefore = c.WatchStages.Split(',').Select(int.Parse).ToArray();
     var stagesNow = Stages(f);
+    string typesBefore = c.WatchTypes;
     Reset(f);
     int max = rules == null ? 0 : Mechanics.MaxHP(f, other ?? f, rules);
     if (f.HP != hpBefore) TriggerModules.Raise(new TriggerFact { Kind = "체력", Before = hpBefore, After2 = f.HP, Max = max }, f, other, f.Data.name + "의 HP " + hpBefore + "→" + f.HP, log);
@@ -311,6 +314,7 @@ namespace AABattle {
     if (f.HP > 0) foreach (string name in before.Where(x => !now.Contains(x) && x != "빈사")) TriggerModules.Raise(new TriggerFact { Kind = "상태 해제", Method = name }, f, other, f.Data.name + ": 「" + name + "」 상태가 해제되었다", log);
     for (int k = 1; k < stagesNow.Length && k < stagesBefore.Length; k++)
      if (stagesNow[k] != stagesBefore[k]) TriggerModules.Raise(new TriggerFact { Kind = "랭크", Stat = k, Delta = stagesNow[k] - stagesBefore[k], ByOpponent = c.StageByOpponent }, f, other, f.Data.name + "의 랭크 변화 (" + k + ": " + stagesBefore[k] + "→" + stagesNow[k] + ")", log);
+    AbaddonTriggers.TypesChanged(f, other, typesBefore, log);
    }
    if (rules == null) return;
    string place = Place(rules);

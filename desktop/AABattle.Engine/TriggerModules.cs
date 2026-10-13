@@ -54,8 +54,8 @@ namespace AABattle {
  }
 
  public static partial class TriggerModules {
-  public static readonly string[] EventModules = { "등장", "교대", "퇴장", "타이밍", "피격", "명중", "급소", "쓰러뜨림", "기술 사용", "상태 됨", "상태 해제", "체력 변화", "회복", "날씨 변화", "장소 변화", "랭크", "특성 발동", "빗나감", "명중 확정", "먼저 행동함", "무효화", "배틀 시작", "지령", "해석", "피격·무효화", "대미지", "행동 선택", "방어 성공", "간접 대미지", "드레인", "해석당함", "소지품 소실", "급소 받음", "필드 빈사", "나무열매 사용", "작은 대미지", "하락 무효", "위협 받음", "가득 피격" };
-  public static readonly string[] StateModules = { "행동 선후", "상태", "체력", "날씨", "장소", "상시", "PT 참가", "적진 타입", "트레이너 자질", "플레이버", "여기다", "해석 상태", "부여", "포텐셜 보유", "소지품", "특성", "생존", "빈사 수", "진영", "공격하지 않음", "능력 변화 합", "능력치 비교", "또는", "속도 비교", "첫 행동 전", "공중", "같은 타입", "최후 아님", "PT 특성" };
+  public static readonly string[] EventModules = { "등장", "교대", "퇴장", "타이밍", "피격", "명중", "급소", "쓰러뜨림", "기술 사용", "능력 반전", "상대 능력 내림", "타입 바뀜", "전용 받음", "전용 받고 등장", "상태 됨", "상태 해제", "체력 변화", "회복", "날씨 변화", "장소 변화", "랭크", "특성 발동", "빗나감", "명중 확정", "먼저 행동함", "무효화", "배틀 시작", "지령", "해석", "피격·무효화", "대미지", "행동 선택", "방어 성공", "간접 대미지", "드레인", "해석당함", "소지품 소실", "급소 받음", "필드 빈사", "나무열매 사용", "작은 대미지", "하락 무효", "위협 받음", "가득 피격" };
+  public static readonly string[] StateModules = { "행동 선후", "상태", "체력", "날씨", "장소", "상시", "PT 참가", "적진 타입", "트레이너 자질", "플레이버", "여기다", "해석 상태", "부여", "포텐셜 보유", "소지품", "특성", "생존", "빈사 수", "진영", "공격하지 않음", "능력 변화 합", "능력치 비교", "또는", "속도 비교", "첫 행동 전", "공중", "같은 타입", "최후 아님", "PT 특성", "종족치 등급", "능력 반전 T", "기술 우선도", "타입 바뀜 T", "전용 받음 T", "종족치 동일 등급" };
   public static readonly string[] EntryMethods = { "선발", "죽어내밀기", "임의교대", "통상교대", "강제교대", "선발 또는 죽어내밀기" };
   static readonly ConcurrentDictionary<string, TriggerSpec> specs = new ConcurrentDictionary<string, TriggerSpec>();
   static readonly TriggerSpec None = new TriggerSpec();
@@ -90,6 +90,7 @@ namespace AABattle {
 
   // ===== 표준 문장 =====
   public static string Canonical(TriggerSpec s) {
+   if (AbaddonTriggers.IsMine(s)) return AbaddonTriggers.Canonical(s);
    if (RoleModules.IsRoleSpec(s)) return RoleModules.Canonical(s);
    if (TriggerTheft.IsTheft(s)) return TriggerTheft.Canonical(s);
    if (s.Module == "소지품 소실") return CanonicalItemLoss(s);
@@ -123,6 +124,7 @@ namespace AABattle {
    spec = null;
    string t = Clean(text);
    if (t.Length == 0) return false;
+   if (AbaddonTriggers.TryParse(t, out spec)) return true;
    if (RoleModules.TryParse(t, out spec)) return true;
    if (ExclusiveTriggerModules.TryParse(t, out spec)) return true;
    if (TriggerTheft.TryParse(t, out spec)) return true;
@@ -240,6 +242,7 @@ namespace AABattle {
    p = Regex.Replace(p, @"쓰러(?:뜨|트)린$", "쓰러뜨렸을 때");
    p = Regex.Replace(p, @"교대한$", "교대할 때");
    p = Regex.Replace(p, @"해제된$", "해제되었을 때");
+   p = Regex.Replace(p, @"(?:바뀐|반전한)$", m => m.Value == "바뀐" ? "바뀌었을 때" : "반전했을 때");
    p = Regex.Replace(p, @"(?<=(?:가|이))\s*된$", " 되었을 때");
    if (!p.EndsWith("때")) return null;
    if (Regex.IsMatch(p, @"^공격을\s*받았을\s*때$")) p = "상대의 " + p;
@@ -276,6 +279,7 @@ namespace AABattle {
   }
   public static bool Matches(TriggerSpec s, TriggerFact f, Fighter owner) {
    if (s == null || f == null || s.Module.Length == 0) return false;
+   if (AbaddonTriggers.IsMine(s)) return AbaddonTriggers.Matches(s, f, owner);
    if (RoleModules.IsRoleSpec(s)) return RoleModules.Matches(s, f);
    if (ExclusiveTriggerModules.IsNormalSwitchLast(s)) return ExclusiveTriggerModules.MatchesNormalSwitchLast(f, owner);
    if (TriggerTheft.IsTheft(s)) return TriggerTheft.Matches(s, f);
@@ -365,7 +369,7 @@ namespace AABattle {
    if (normalized == TriggerStructures.FieldLabel) return owner != null && owner.HP > 0 && owner.OnField;
    var spec = Parse(normalized);
    if (spec.IsEvent) return false;
-   if (spec.Module == "종족치 등급" || spec.Module == "턴 조건") return Holds(spec, owner, opponent, rules ?? new Rules());
+   if (spec.Module == "종족치 등급" || spec.Module == "턴 조건" || AbaddonTriggers.StateNames.Contains(spec.Module)) return Holds(spec, owner, opponent, rules ?? new Rules());
    if (StateModules.Contains(spec.Module)) return Holds(spec, owner, opponent, rules ?? new Rules());
    return AnsweredTriggers.StateHolds(clause, owner, opponent, rules ?? new Rules());
   }
