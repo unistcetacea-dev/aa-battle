@@ -1,0 +1,55 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace AABattle
+{
+  public static partial class ModuleCatalog
+  {
+    // 기술의 설명으로만 실행되는 문장은 포텐셜 입력에 제시하지 않는다.
+    // 아래 이름은 Classify 종류와 별개인 기술 설명 처리기의 범위다.
+    public static readonly Dictionary<string, string> CoreEffectExclusions = new Dictionary<string, string>
+    {
+      { "기술 설명:실패 조건 (FailModules)", "기술을 내기 직전의 실패 조건이며 포텐셜 효과 실행 대상이 아니다." },
+      { "기술 설명:가변 위력 (VariablePower)", "기술의 기본 위력·타입 계산과 랜덤 분기이며 포텐셜 효과 실행 대상이 아니다." },
+      { "기술 설명:드레인·반동", "명중으로 준 대미지와 기술 정보가 필요한 기술 전용 설명이다. 드레인 강화는 등록한다." },
+      { "기술 설명:모으기·숨기", "기술 태그와 준비 턴·자동 공격을 함께 처리하는 설명이다. 모으기 생략은 등록한다." },
+      { "기술 설명:명중·위력·상성·대미지 계산", "MoveModules의 기술 설명 처리이며 EffectModules.Classify의 효과 종류가 아니다." }
+    };
+
+    static void RegisterCoreMoveEffects(List<ModuleDefinition> modules)
+    {
+      const string family = "기술·소지품";
+      CoreAdd(modules, "effect.move.drain.boost", "드레인 회복량 강화", "드레인 강화", family, "자신의 「드레인」 기술의 회복량을 {배율}배로 한다.", S("배율", ModuleSlotKind.Multiplier, "1.3"));
+      CoreAdd(modules, "effect.move.bind.turns", "조이기 지속 지정", "조이기 지속", family, "자신이 거는 「조이기」의 지속 T를 {기간}T로 한다.", CoreNumber("기간", ModuleSlotKind.Turns, "5"));
+      CoreAdd(modules, "effect.move.bind.damage", "조이기 대미지 지정", "조이기 대미지", family, "자신이 거는 「조이기」의 대미지를 최대 HP의 1/{분모}로 한다.", CoreNumber("분모", ModuleSlotKind.Denominator, "6"));
+      CoreAdd(modules, "effect.move.repeat", "연속 사용 위력 강화", "연속 사용 강화", family, "자신이 같은 기술을 연속으로 내보낼 때마다 그 기술의 위력을 {배율}배씩 강화한다(최대 {최대배율}배).", S("배율", ModuleSlotKind.Multiplier, "0.1"), S("최대배율", ModuleSlotKind.Multiplier, "2"));
+      CoreAdd(modules, "effect.move.priority.next", "다음 턴 우선도 상승", "다음 T 우선도", family, "다음 T 자신의 기술 우선도를 {수치} 올린다.", CoreNumber("수치", ModuleSlotKind.Rank, "1", 7));
+      CoreAdd(modules, "effect.move.charge.skip", "모으기 생략", "모으기 생략", family, "자신의 「모으기」 기술의 모으기를 생략한다.");
+      CoreAdd(modules, "effect.move.contact.ignore", "접촉 반응 무시", "접촉 반응 무시", family, "자신의 「접촉」 기술에 반응하는 효과를 받지 않는다.");
+      CoreAdd(modules, "effect.move.rank.restore", "능력 하락 복구", "능력 하락 복구", family, "자신의 내려간 능력을 원래대로 되돌린다.");
+      CoreAdd(modules, "effect.item.give", "소지품 상대에게 이동", "소지품 이동", family, "자신의 소지품을 상대에게 옮긴다.");
+      CoreAdd(modules, "effect.field.clear", "전체 필드 상태 해제", "장 해제", family, MoveModules.ClearField + ".");
+      CoreAdd(modules, "effect.wall.clear", "진영의 벽 해제", "벽 해제", family, "{진영}의 「벽」을 해제한다.", S("진영", ModuleSlotKind.Text, "적진", "자진", "적진"));
+      CoreAdd(modules, "effect.analysis.execute", "데이터 해석 실행", "데이터 해석", "데이터", MoveModules.Analyze + ".");
+      CoreAdd(modules, "effect.field.clear.substitute", "대타·설치물 해제", "대타·설치물 해제", family, MoveModules.ClearSubsAndHazards + ".");
+      CoreAdd(modules, "effect.stockpile.heal", "비축하기 횟수에 따른 회복", "비축 회복", family, MoveModules.Swallow + ".");
+      CoreAdd(modules, "effect.rank.reset", "능력 변화 초기화", "능력 변화 초기화", "능력 랭크", "{주체}의 능력 변화를 초기화한다.", S("주체", ModuleSlotKind.Subject, "전원", "자신", "상대", "전원"));
+      CoreAdd(modules, "effect.critical.rank", "기술 급소 랭크 보정", "급소 보정", family, "자신의 {조건} 기술의 급소 랭크를 +{랭크}한다.", S("조건", ModuleSlotKind.MoveCondition, ""), CoreNumber("랭크", ModuleSlotKind.Rank, "1", 9));
+      CoreBracketList(CoreAdd(modules, "effect.place.extend", "전개 상태 지속 연장", "지속 연장", "장소", "자신이 전개하는 「{상태}」의 지속 T를 +{기간}한다.", S("상태", ModuleSlotKind.Text, "쾌청", Mechanics.Weathers.Where(x => x != "없음").Concat(EffectModules.TerrainNames).Concat(new[] { "리플렉터", "빛의장막" }).ToArray()), CoreNumber("기간", ModuleSlotKind.Turns, "3")), "상태");
+      CoreBracketList(CoreAdd(modules, "effect.weather.ignore", "날씨 영향 무시", "날씨 무시", "장소", "자신은 「{날씨}」의 영향을 받지 않는다.", S("날씨", ModuleSlotKind.Weather, "쾌청", Mechanics.Weathers.Where(x => x != "없음").ToArray())), "날씨");
+      CoreAdd(modules, "effect.priority.lag", "우선도 0.5 감소", "우선도 -0.5", "행동", "자신의 기술의 우선도를 -0.5한다.");
+      foreach (string verb in new[] { "한다", "할 수 있다" })
+        CoreAdd(modules, "effect.ability.change." + verb, "특성 변경 " + verb, "특성 변경", family, "{주체}의 특성을 「{특성}」@ro:특성@ " + verb + ".", S("주체", ModuleSlotKind.Subject, "자신", "자신", "상대"), S("특성", ModuleSlotKind.Ability, "위협"));
+      CoreAdd(modules, "effect.item.break", "소지품 소실", "소지품 소실", family, "자신의 소지품이 부서진다.");
+      foreach (string verb in new[] { "한다", "할 수 있다" })
+        CoreAdd(modules, "effect.baton.transfer." + verb, "교대 시 인계 " + verb, "교대 인계", "교대", "{주체}의 {인계}를 인계" + verb + ".", S("주체", ModuleSlotKind.Subject, "자신", "자신", "상대"), S("인계", ModuleSlotKind.Text, "「능력변화」", "「능력변화」", "「상태변화」", "「능력변화」「상태변화」"));
+      CoreAdd(modules, "effect.baton.bilateral", "양방향 임의교대 인계", "양방향 임의교대 인계", "교대", BatonModules.BilateralRanks + ".");
+      CoreAdd(modules, "effect.baton.first", "교대 아군 첫 기술 강화", "교대 아군 첫 기술 강화", "교대", "교대해 나온 아군이 최초로 내보내는 {조건} 기술의 위력을 강화({배율}배)한다.", S("조건", ModuleSlotKind.MoveCondition, "「불꽃」"), S("배율", ModuleSlotKind.Multiplier, "1.5"));
+      CoreAdd(modules, "effect.pursuit.immune", "추격 효과 면역", "추격 효과 면역", "교대", PursuitModules.Immune + ".");
+      CoreAdd(modules, "effect.pursuit.followup", "추격 추가공격", "추격 추가공격", "교대", PursuitModules.Followup + ".");
+      CoreAdd(modules, "effect.pursuit.grant", "추격 효과 부여", "추격 효과 부여", "교대", "자신의 {조건} 기술에 「추격」 효과를 부여한다.", S("조건", ModuleSlotKind.MoveCondition, ""));
+    }
+  }
+}
+
