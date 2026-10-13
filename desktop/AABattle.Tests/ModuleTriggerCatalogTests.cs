@@ -46,10 +46,10 @@ namespace AABattle {
   }
 
   [Test]
-  public void LabelModuleEditsOnlyTheArgumentSlots() {
-   var module = ModuleCatalog.All.First(x => x.Kind == ModuleKind.TriggerLabel && x.Name == "상대의 「속도」 종족치가 「B」 이하일 때");
+  public void SpeciesGradeModuleEditsOnlyTheArgumentSlots() {
+   var module = ModuleCatalog.All.First(x => x.Id == "trigger.species.grade");
    var values = module.Defaults();
-   values["값2"] = "A";
+   values["등급"] = "A";
    Assert.That(module.Fill(values), Is.EqualTo("상대의 「속도」 종족치가 「A」 이하일 때"));
   }
 
