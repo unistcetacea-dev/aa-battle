@@ -276,6 +276,11 @@ namespace AABattle
     {
       string t = Regex.Replace(text, @"추가\s*행동권?", "추가행동");
       t = Regex.Replace(t, @"^(?<head>(?:「?\d+」?\s*(?:의\s*)?배수\s*(?:의\s*)?T\s*,?\s*)?)(?:아군|자신)이\s+", "${head}");
+      ExtraActionGrant standard;
+      int standardEvery;
+      string standardText = Regex.Replace(PotentialParts.Clean(t), @"\s+", " ").Trim().TrimEnd('.', '。', '．') + ".";
+      if (ExtraActionRuntime.TryParse(t, out standard, out standardEvery) && !standard.OpponentMove && standard.PowerRate == 1 && ExtraActionRuntime.Canonical(standardEvery, standard.First, standard.Condition, standard.SameMove) == standardText)
+        return standardText;
       string named = NormalizeExtraByName(t) ?? NormalizeExtraRepeat(t);
       if (named != null)
         return named;
