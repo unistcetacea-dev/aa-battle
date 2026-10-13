@@ -85,6 +85,7 @@ namespace AABattle
       for (int i = 0; i < 2; i++)
         if (fresh[1 - i])
           RuntimeTriggers.OpponentEntered(f[i], f[1 - i], r, result.Log.Add);
+      StateRolls.Selection(db, f, commands, r, rng, result.Log);
       var pursuit = PursuitRuntime.Begin(db, f, commands, r, states, result.Log);
       var returnTransfers = new BatonSnapshot[2];
       for (int i = 0; i < 2; i++)
@@ -185,6 +186,7 @@ namespace AABattle
       StateWatch.Check(f, r, result.Log.Add);
       BattleRecords.UpdateHere(f, r, states, result.Log.Add);
       var movers = Enumerable.Range(0, 2).Where(i => !commands[i].IsSwitch && commands[i].Move != null).ToArray();
+      StateRolls.Order(db, f, commands, r, rng, result.Log);
       PriorityEffectRuntime.PrimeTurn(f, commands, states, result.Log.Add);
       if (movers.Length == 2)
       {
@@ -346,6 +348,7 @@ namespace AABattle
         MoveModules.Record(a, m);
         a.Conditions.PiercingAbility = MoveModules.PiercesAbility(m);
         m = Mechanics.JudgedMove(a, m, b, r);
+        StateRolls.Action(db, f, i, m, r, rng, result.Log);
         usedMove = m;
         AbilityPhrases.ChangeUserType(a, b, m, r, result.Log);
         IceWallRules.BreakByFire(m, r, 1 - i, result.Log);

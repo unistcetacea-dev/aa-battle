@@ -31,7 +31,7 @@ namespace AABattle {
   }
   public static Move Judge(Fighter owner,Fighter other,Move move,Rules rules) {
    if(move==null || IsPursuit(move))return move;
-   foreach(string line in PotentialModifiers.Sentences(owner,other,rules,"추격")) {
+   foreach(string line in PotentialModifiers.Sentences(owner,other,rules,"추격").Concat(StateRolls.RolledSentences(owner,"추격"))) {
     var m=Grant.Match(Clean(line));MoveCondition condition;
     if(!m.Success || !MoveCondition.TryParse(m.Groups["c"].Value,out condition) || !condition.Matches(move,owner,1))continue;
     var copy=move.Copy();copy.tags=(copy.tags??new string[0]).Concat(new[]{"추격"}).Distinct().ToArray();return copy;

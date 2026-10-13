@@ -72,7 +72,34 @@ namespace AABattle
       result.TriggerOk = result.BadTriggers.Count == 0;
       result.TriggerModules = string.Join(" + ", specs.Where(x => x.Module.Length > 0).Select(x => x.Module).Distinct());
       result.Steps = PotentialQueue.JudgeSteps(effect, trainer);
+      MarkUnrolled(result, specs);
       return result;
+    }
+
+    // 상태 조건만 가진 포텐셜의 확률 효과는 굴릴 사건이 없다. 실행기가 있어도 판정 지점(StateRolls)이 없으면 돌지 않으므로 미지원으로 본다
+    static void MarkUnrolled(JudgeResult result, List<TriggerSpec> specs)
+    {
+      if (specs.Count == 0 || specs.Any(x => x.Module.Length == 0 || x.IsEvent))
+        return;
+      var chanceBodies = new HashSet<string>();
+      string[] lines = EffectNormalizer.NormalizeLines(result.Effect).Replace("\r", "").Split(new[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
+      foreach (string line in lines)
+      {
+        string probability, body;
+        if (EffectNormalizer.TryProbabilityPrefix(line.Trim(), out probability, out body))
+          chanceBodies.Add(body.Trim());
+      }
+
+      foreach (var step in result.Steps)
+      {
+        if (!step.Ok || !chanceBodies.Contains(step.Line.Trim()))
+          continue;
+        bool elsewhere = step.Kind.StartsWith("방호") || step.Kind.StartsWith("관통") || step.Kind.StartsWith(BondModules.ExecutorPrefix) || step.Kind == "해석 면역";
+        if (elsewhere || StateRolls.IsRollable(step.Line.Trim()))
+          continue;
+        step.Ok = false;
+        step.Kind = "";
+      }
     }
   }
 

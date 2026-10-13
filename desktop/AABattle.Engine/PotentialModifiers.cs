@@ -10,6 +10,7 @@ namespace AABattle {
   public int Turns = -1;
   public bool Action;   // 기술·피격 사건으로 걸린 배율: 그 행동(기술 한 번)이 끝나면 해제
   public bool Trainer;  // 트레이너 포텐셜에서 걸린 것(트레이너 방호)
+  public bool Rolled;   // 상태 조건 + 확률 포텐셜이 판정 지점에서 굴려 성공한 것(StateRolls)
   public ActiveModifier Copy() { return (ActiveModifier)MemberwiseClone(); }
  }
 
