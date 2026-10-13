@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 namespace AABattle {
- public enum ModuleKind { TriggerEvent, TriggerState, Effect }
+ public enum ModuleKind { TriggerEvent, TriggerState, Effect, TriggerLabel }
  public enum ModuleSlotKind {
   Subject, MoveCondition, Stats, Rank, Multiplier, Denominator, State, Weather, Terrain, Room,
   Hazard, Item, Ability, Move, Type, Turns, Probability, Count, HpRatio, Comparison, Text,
@@ -19,6 +19,8 @@ namespace AABattle {
   public decimal Minimum = 0, Maximum = 999;
   public int Decimals;
   public bool Multiple;
+  // true면 선택지에 있는 값만 읽는다(인접한 빈칸 사이를 가르는 +/- 같은 짧은 값).
+  public bool Strict;
   public Func<PokemonRecord,IDictionary<string,string>,int[]> ContextRange;
   public ModuleSlot(string id, ModuleSlotKind kind, string defaultValue, params string[] choices) {
    Id = Name = id; Kind = kind; Default = defaultValue; Choices = choices ?? new string[0];
@@ -101,6 +103,25 @@ namespace AABattle {
     if (Slots.Any(s => !s.Valid(result[s.Id]))) return false;
     values = result; return true;
    }
+   if (!BuildTemplateRegex()) return false;
+   var match = templateRegex.Match((text ?? "").Trim());
+   if (!match.Success) return false;
+   var parsed = Defaults();
+   for (int i = 0; i < Slots.Length; i++) {
+    if (templateSeen.Contains(Slots[i].Id)) parsed[Slots[i].Id] = match.Groups["v" + i].Value.Trim();
+    if (!Slots[i].Valid(parsed[Slots[i].Id])) return false;
+   }
+   if (Fill(parsed) != (text ?? "").Trim()) return false;
+   values = parsed; return true;
+  }
+
+  // 문장 틀 → 정규식은 한 번만 만든다(편집기가 모든 모듈을 차례로 읽어 보기 때문).
+  Regex templateRegex;
+  HashSet<string> templateSeen;
+  bool templateBuilt, templateBroken;
+  bool BuildTemplateRegex() {
+   if (templateBuilt) return !templateBroken;
+   templateBuilt = true;
    string pattern = "^";
    int position = 0;
    var seen = new HashSet<string>();
@@ -108,21 +129,15 @@ namespace AABattle {
     pattern += Regex.Escape(Template.Substring(position, token.Index - position)).Replace(@"\ ", @"\s*");
     string id = token.Groups[1].Value;
     int index = Array.FindIndex(Slots, s => s.Id == id);
-    if (index < 0) return false;
+    if (index < 0) { templateBroken = true; return false; }
     string group = "v" + index;
     pattern += seen.Add(id) ? "(?<" + group + ">.*?)" : @"\k<" + group + ">";
     position = token.Index + token.Length;
    }
    pattern += Regex.Escape(Template.Substring(position)).Replace(@"\ ", @"\s*") + "$";
-   var match = Regex.Match((text ?? "").Trim(), pattern, RegexOptions.Singleline);
-   if (!match.Success) return false;
-   var parsed = Defaults();
-   for (int i = 0; i < Slots.Length; i++) {
-    if (seen.Contains(Slots[i].Id)) parsed[Slots[i].Id] = match.Groups["v" + i].Value.Trim();
-    if (!Slots[i].Valid(parsed[Slots[i].Id])) return false;
-   }
-   if (Fill(parsed) != (text ?? "").Trim()) return false;
-   values = parsed; return true;
+   templateRegex = new Regex(pattern, RegexOptions.Singleline);
+   templateSeen = seen;
+   return true;
   }
  }
  public static partial class ModuleCatalog {
@@ -130,7 +145,7 @@ namespace AABattle {
   public static ModuleDefinition[] All { get { return entries.Value.ToArray(); } }
   static ModuleDefinition[] Build() {
    var list = new List<ModuleDefinition>();
-   RegisterTriggers(list); RegisterCoreEffects(list); RegisterAbilityEffects(list);
+   RegisterTriggers(list); RegisterTriggerLabels(list); RegisterCoreEffects(list); RegisterAbilityEffects(list);
    if (list.GroupBy(x => x.Id).Any(x => x.Count() > 1)) throw new InvalidOperationException("중복 모듈 ID");
    foreach (var module in list.Where(x => x.Kind == ModuleKind.Effect)) AttachModifiers(module);
    return list.ToArray();

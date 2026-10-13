@@ -815,3 +815,15 @@ Codex 공유 링크는 특정 시점의 읽기 전용 대화 스냅샷이다. �
 - 검사: EngineFileSplitTests 18개(강제교대 1, 인형사 양쪽 수락/거부·임의교대 범위·강제/빈사 제외·가스 무효화·발동 반응·화면 선택). 새 동작 검사는 실패를 확인한 뒤 통과시켰다. 상태 도감 집계는 자동 564/부분 자동 1/수동 22, 인형사 보류는 해결했다.
 - 최종 verify: `./desktop/verify.ps1 -Visual -OutputPath outputs/candidate` — 빌드 경고/오류 0, 전체 회귀 1,197개 통과. 인계 선택 캡처는 `outputs/candidate/puppet-choice.png`, 배틀·도감·진행 캡처도 확인했다. 최신 origin/main 위로 rebase 뒤 같은 명령을 재실행하고 ff 병합·push한다.
 - 범위 밖: 다른 선택형 효과의 기존 데이터 해석 전용 UI 연결은 일반화하지 않았다. 모듈 스키마 편집기와 폼 변경 등 기존 보류는 후속 작업이다.
+
+## 2026-10-14 모듈 입력 통일 (지시서 B: 모듈 목록 + 빈칸 채우기 편집기)
+
+- 지시서 B(`research/tasks/2026-10-14-module-schema-editor.md`), 브랜치 `task/module-schema-editor`. Codex가 만든 엔진 모듈 목록(`88dad26`)을 이어받아 보완하고 편집기를 바꿨다.
+- 엔진 `ModuleCatalog`(`ModuleCatalog*.cs`): 모듈 하나 = 이름·종류(`TriggerEvent`/`TriggerState`/`Effect`/`TriggerLabel`)·분류(편집기 묶음)·문장 틀·빈칸. 각 모듈은 `Fill(값) → 표준 문장`, `TryRead(문장) → 값`을 가진다. 표준 문장은 엔진이 이미 읽는 문장과 글자 그대로 같고(트리거는 `TriggerModules.Canonical`, 효과는 기존 `EffectNormalizer`·`TypeRules`·`PotentialProtection` 등의 표기), 새 문장 형식은 만들지 않았다. 효과 모듈에는 공통 빈칸 「발동확률」(+기간이 붙는 모듈은 「효과기간」)이 자동으로 붙는다(`AttachModifiers`).
+- 등록 수: 트리거 사건 77 · 트리거 상태 55 · 효과 233(특성·계속 효과 99 포함) · 문장 틀 전용(`TriggerLabel`) 10. `TriggerLabel`은 `TriggerModules`가 모듈로 읽지 않는 문장(확정 목록 9개 + 「자신과 상대의 등장」 두 줄 문장)을 편집기에서 계속 입력할 수 있게 한 것이며 엔진 자동 실행을 뜻하지 않는다(`ModuleCatalog.Triggers.Labels.cs`, 인자 자리는 확정 목록의 「…」·『…』·숫자·조건 A/B).
+- 빈칸 종류(`ModuleSlotKind`) → 편집기 입력 칸: 숫자(랭크·배율·분모·횟수·기간·종족치 수치) = `PixelNumber`; 기술 조건·트리거 문장 = `PixelTextBox`(느슨한 입력을 `ModuleCatalog.ConditionFromInput`/`TriggerFromInput`이 표준 표기로 바꾼다); 선택지가 있는 빈칸(주체·날씨·지형·룸·설치물·상태·타입·능력·특성·소지품·기술·등급·자질·타이밍·확률·상성…) = 14개 이하는 `PixelComboBox`, 많으면 `FlatButton`+검색 창; 여럿을 고르는 빈칸(`Multiple`: 상태·타입·능력·기술) = 검색/토글 창, 값은 「/」로 잇는다.
+- 누락 검사: 도감 문장(포텐셜·특성·소지품 3,898문장)이 돌려주는 효과 종류는 모두 등록되어 있다(`ModuleCoverageTests`). 등록에서 제외한 효과 종류는 없다(`ModuleCatalog.OmittedEffectKinds`는 비어 있고, 쓰려면 이유를 적어야 한다). 트리거는 `TriggerModules.EventModules`·`StateModules`의 모든 이름이 등록되어 있다.
+- 편집기: `ModuleBuilder.cs`(`ModuleBuilderPanel`: 분류 → 모듈 → 빈칸 입력 → 미리보기 → 추가), `ModuleSlotEditors.cs`(빈칸 입력 칸 4종), `TriggerBuilder.cs`(트리거: 상태 여럿은 기존처럼 상태마다 한 줄, 두 줄 등장·옛 구조 문장 불러오기), `EffectBuilder.cs`(효과: 효과 주체·추가). 손으로 짠 종류별 분기와 `ConfirmedTriggerCatalog` 콤보 추가·`조건 값 | 구분` 입력은 모두 모듈 목록으로 옮기고 지웠다. 저장된 문장은 `TryRead`로 읽어 빈칸을 다시 채운다(읽을 수 없으면 화면을 바꾸지 않는다). 새 모듈은 `ModuleCatalog`에 등록하기만 하면 편집기에 나타난다.
+- 보완한 점(WIP 대비): 인접한 빈칸이 글자를 가로채던 읽기 오류(추가행동 조건·추가효과 랭크, 「『야생의 두목』의 능력」)를 선택지 우선 읽기(`StrictSlotPattern`)로 고쳤다. 문장 틀 정규식은 모듈마다 한 번만 만든다. 느슨한 입력 정규화(`ConditionFromInput`)를 UI에서 엔진으로 옮겼다.
+- 검사: `ModuleCoverageTests`(누락·제외 이유·확정 목록 입력 가능), `ModuleTriggerCatalogTests`·`ModuleEffectCoreTests`(왕복·읽기 분리)·`TriggerBuilderUiTests`·`EffectBuilderUiTests`(화면 입력 → 같은 문장, 옛 편집기 문장 재현, 상태 여러 줄·확률 접두어·자격 꼬리표)를 갱신/추가했다. UI 검사는 `[Category("UI")]`.
+- 사용자 판단 필요/보류: `AGENTS.md`의 「새 트리거 종류는 모듈·사건 지점·편집기(`TriggerBuilder.cs`)를 함께 추가」 문구는 이제 「`ModuleCatalog`에 등록」으로 바꾸는 것이 맞다(이번 지시서 범위 밖이라 수정하지 않음). 확정 목록의 옛 표기(예: 「자신의 체력을 회복했을 때」)는 모듈이 표준 문장(「자신이 체력을 회복했을 때」)으로 낸다.

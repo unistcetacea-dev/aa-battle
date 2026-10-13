@@ -6,7 +6,7 @@ namespace AABattle {
  [TestFixture]
  public class ModuleTriggerCatalogTests {
   public static IEnumerable<TestCaseData> TriggerDefaults() {
-   return ModuleCatalog.All.Where(x => x.Kind != ModuleKind.Effect)
+   return ModuleCatalog.All.Where(x => x.Kind == ModuleKind.TriggerEvent || x.Kind == ModuleKind.TriggerState)
     .Select(x => new TestCaseData(x).SetName("TriggerCatalog_" + x.Id));
   }
 
@@ -24,8 +24,33 @@ namespace AABattle {
 
   [Test]
   public void EveryRecognizedEventAndStateHasAnInputTemplate() {
-   var names = ModuleCatalog.All.Where(x => x.Kind != ModuleKind.Effect).Select(x => x.Expected).Distinct();
+   var names = ModuleCatalog.All.Where(x => x.Kind == ModuleKind.TriggerEvent || x.Kind == ModuleKind.TriggerState)
+    .Select(x => x.Expected).Distinct();
    Assert.That(TriggerModules.EventModules.Concat(TriggerModules.StateModules).Except(names), Is.Empty);
+  }
+
+  // 편집기에서 되던 확정 목록 문장과 두 줄 등장 문장은 모듈 목록으로 모두 입력할 수 있다.
+  [Test]
+  public void EveryConfirmedTriggerSentenceCanBeFilledAndReopened() {
+   var sentences = ConfirmedTriggerCatalog.Items.Concat(new[] { TriggerStructures.SelfAndOpponentEntryLabel });
+   foreach (string sentence in sentences) {
+    var kinds = new[] { ModuleKind.TriggerEvent, ModuleKind.TriggerState, ModuleKind.TriggerLabel };
+    ModuleDefinition module = null;
+    Dictionary<string, string> values = null;
+    foreach (var kind in kinds)
+     if (module == null) ModuleCatalog.TryRead(kind, sentence, out module, out values);
+    Assert.That(module, Is.Not.Null, sentence);
+    // 확정 목록의 옛 표기("자신의 체력을 회복했을 때")는 표준 문장으로 같은 뜻이다.
+    Assert.That(TriggerStructures.Normalize(module.Fill(values)), Is.EqualTo(TriggerStructures.Normalize(sentence)), module.Id);
+   }
+  }
+
+  [Test]
+  public void LabelModuleEditsOnlyTheArgumentSlots() {
+   var module = ModuleCatalog.All.First(x => x.Kind == ModuleKind.TriggerLabel && x.Name == "상대의 「속도」 종족치가 「B」 이하일 때");
+   var values = module.Defaults();
+   values["값2"] = "A";
+   Assert.That(module.Fill(values), Is.EqualTo("상대의 「속도」 종족치가 「A」 이하일 때"));
   }
 
   [TestCase("trigger.entry.method", "주체", "상대", "방식", "강제교대")]

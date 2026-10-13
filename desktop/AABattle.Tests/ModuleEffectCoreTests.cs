@@ -51,6 +51,18 @@ namespace AABattle
       Assert.That(restored, Is.EquivalentTo(edited));
     }
 
+    // 「야생의 두목」처럼 값 안에 문장 틀의 글자(의)가 들어 있어도 빈칸이 엉뚱하게 갈리지 않는다.
+    [Test]
+    public void ReaderKeepsValuesContainingTemplateLettersWhole()
+    {
+      string sentence = EffectNormalizer.CanonicalStatIgnore("『야생의 두목』", "능력", "상승(강화)");
+      var module = ModuleCatalog.Find("effect.stat.ignore.상승(강화)");
+      Dictionary<string, string> values;
+      Assert.That(module.TryRead(sentence, out values), Is.True);
+      Assert.That(values["대상"], Is.EqualTo("『야생의 두목』"));
+      Assert.That(values["능력"], Is.EqualTo("능력"));
+    }
+
     [Test]
     public void ParticleReaderRejectsSentenceThatFormatterWouldNotProduce()
     {

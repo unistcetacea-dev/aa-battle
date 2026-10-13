@@ -36,14 +36,9 @@ namespace AABattle
         bool batchim = ch == 0 || (ch - '가') % 28 != 0;
         return m.Groups[1].Value == "object" ? (batchim ? "을" : "를") : (batchim ? "이" : "가");
       });
-      string pattern = Regex.Escape(template);
-      foreach (var slot in slots)
-        pattern = pattern.Replace(Regex.Escape("{" + slot.Id + "}"), "(?<" + slot.Id + ">.*?)");
-      pattern = Regex.Replace(pattern, @"@(ro|object|subject):([^@]+)@", m =>
-        m.Groups[1].Value == "ro" ? "(?:으로|로)" : m.Groups[1].Value == "object" ? "(?:을|를)" : "(?:이|가)");
-      // 빈 기술 조건의 공백은 Fill에서 한 칸으로 줄어든다.
-      pattern = pattern.Replace(@"\ ", @"\s*");
-      var regex = new Regex("^" + pattern + "$", RegexOptions.CultureInvariant);
+      // 선택지가 있는 빈칸은 먼저 선택지 값으로만 읽고(strict), 안 맞으면 느슨하게 읽는다.
+      var strictRegex = CoreTemplateRegex(template, slots, true);
+      var regex = CoreTemplateRegex(template, slots, false);
       var module = new ModuleDefinition(id, name, ModuleKind.Effect, family, display, slots)
       {
         Expected = expected,
@@ -51,10 +46,14 @@ namespace AABattle
         Formatter = fill,
         Reader = text =>
         {
-          var match = regex.Match(text ?? "");
-          if (!match.Success) return null;
-          var values = slots.ToDictionary(x => x.Id, x => match.Groups[x.Id].Value.Trim());
-          return fill(values) == text ? values : null;
+          foreach (var candidate in new[] { strictRegex, regex })
+          {
+            var match = candidate.Match(text ?? "");
+            if (!match.Success) continue;
+            var values = slots.ToDictionary(x => x.Id, x => match.Groups[x.Id].Value.Trim());
+            if (fill(values) == text) return values;
+          }
+          return null;
         }
       };
       modules.Add(module);
@@ -62,7 +61,20 @@ namespace AABattle
       return module;
     }
 
-    static string CoreSlotPattern(ModuleSlot slot)
+    static Regex CoreTemplateRegex(string template, ModuleSlot[] slots, bool preferChoices)
+    {
+      string pattern = Regex.Escape(template);
+      // 인접한 빈칸이 서로 글자를 가로채지 않도록 종류가 정해진 빈칸은 모양을 제한한다.
+      foreach (var slot in slots)
+        pattern = pattern.Replace(Regex.Escape("{" + slot.Id + "}"), "(?<" + slot.Id + ">" + CoreSlotPattern(slot, preferChoices) + ")");
+      pattern = Regex.Replace(pattern, @"@(ro|object|subject):([^@]+)@", m =>
+        m.Groups[1].Value == "ro" ? "(?:으로|로)" : m.Groups[1].Value == "object" ? "(?:을|를)" : "(?:이|가)");
+      // 빈 기술 조건의 공백은 Fill에서 한 칸으로 줄어든다.
+      pattern = pattern.Replace(@"\ ", @"\s*");
+      return new Regex("^" + pattern + "$", RegexOptions.CultureInvariant);
+    }
+
+    static string CoreSlotPattern(ModuleSlot slot, bool preferChoices)
     {
       if (slot.Numeric)
         return slot.Decimals > 0 ? @"[0-9]+(?:\.[0-9]+)?" : @"[0-9]+";
@@ -70,7 +82,8 @@ namespace AABattle
         return @"(?:「[^」]+」\s*)*";
       if (slot.Kind == ModuleSlotKind.Stats)
         return @"[^+\-{}「」]+?";
-      if (slot.Choices.Length > 0 && !slot.Multiple)
+      bool closed = slot.Strict || slot.Kind == ModuleSlotKind.Timing || preferChoices;
+      if (closed && slot.Choices.Length > 0 && !slot.Multiple)
         return "(?:" + string.Join("|", slot.Choices.OrderByDescending(x => x.Length).Select(Regex.Escape)) + ")";
       return ".*?";
     }

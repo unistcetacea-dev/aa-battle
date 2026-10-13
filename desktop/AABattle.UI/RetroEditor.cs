@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -15,7 +16,6 @@ namespace AABattle {
   bool inlineLoading;PixelScrollPanel pokemonWorkspace;
   SplitContainer inlineSplit;bool responsiveLayoutPending;
   Panel pokemonInfo,trainerInfo;TableLayoutPanel workspaceStack,inlineCatalog;
-  PixelTextBox triggerArguments;string argumentKind="";bool argumentLoading;
   ListBox editorMenu;
   int[] editorPages={7,0,1,4,6,3,8,9};
   void BuildRetroEditor(){
@@ -30,13 +30,10 @@ namespace AABattle {
    menuFrame.Controls.Add(editorMenu);Controls.Add(menuFrame);menuFrame.SendToBack();
    var hint=Theme.Label("  ↑↓ 메뉴 이동     SPACE 선택     TAB 다음 입력     F6 메뉴로     마우스·한글 입력 가능",30);hint.Dock=DockStyle.Bottom;Controls.Add(hint);hint.SendToBack();
    tabs.SelectedIndexChanged+=(s,e)=>{if(tabs.SelectedIndex==5||tabs.SelectedIndex==2){ShowEditorPage(1);return;}if(tabs.SelectedIndex==1&&pokemonWorkspace!=null){ShowEditorPage(1);return;}int index=Array.IndexOf(editorPages,tabs.SelectedIndex);if(index>=0&&editorMenu.SelectedIndex!=index)editorMenu.SelectedIndex=index;};
-   BuildInlinePotentials();EmbedPotentialsInPokemon();foreach(string item in ConfirmedTriggerCatalog.Items)if(!triggerKind.Items.Contains(item))triggerKind.Items.Add(item);
-   triggerArguments=Box(false);Theme.Row(triggerTable,"조건 값 (| 구분)",triggerArguments);
-   triggerKind.SelectedIndexChanged+=(s,e)=>RefreshTriggerArguments();triggerArguments.TextChanged+=(s,e)=>UpdateTriggerArguments();
+   BuildInlinePotentials();EmbedPotentialsInPokemon();
    StyleEditor(this);aa.Font=new Font(Fonts.AA,16,FontStyle.Regular,GraphicsUnit.Pixel);tAA.Font=aa.Font;
    InstallSelector(pTypes,"타입 찾기",PickTypes);InstallSelector(pAbility,"특성 찾기",PickAbility);InstallSelector(pMoves,"기술 찾기",PickMoves);
-   RefreshTriggerArguments();
-   InstallPixelChoice(triggerKind);InstallPixelChoice(triggerActivation);InstallPixelChoice(triggerSubject);InstallPixelChoice(effectProbability);InstallPixelChoice(effectSubject);
+   InstallPixelChoice(triggerActivation);InstallPixelChoice(effectSubject);
    potentials.CellPainting+=(s,e)=>{if(e.RowIndex!=-1||e.ColumnIndex<0)return;e.PaintBackground(e.ClipBounds,false);Theme.Text(e.Graphics,Convert.ToString(e.FormattedValue),Theme.UI(8),e.CellBounds,Color.White,ContentAlignment.MiddleLeft);e.Handled=true;};
    tree.ItemHeight=32;tree.ShowLines=false;tree.ShowPlusMinus=false;tree.ShowRootLines=false;tree.FullRowSelect=true;
    potentials.RowTemplate.Height=34;
@@ -51,9 +48,6 @@ namespace AABattle {
   }
   void InstallSelector(PixelTextBox box,string title,Action action){var table=box.Parent as TableLayoutPanel;if(table==null)return;int column=table.GetColumn(box),row=table.GetRow(box);var panel=new Panel{Dock=DockStyle.Fill};table.Controls.Remove(box);var button=Button(title,105,action);button.Dock=DockStyle.Right;panel.Controls.Add(box);panel.Controls.Add(button);table.Controls.Add(panel,column,row);}
   void InstallPixelChoice(PixelComboBox combo){if(combo==null)return;var table=combo.Parent as TableLayoutPanel;if(table==null)return;int row=table.GetRow(combo),column=table.GetColumn(combo);var choice=new FlatButton{Dock=DockStyle.Fill,Font=Theme.UI(8),Text=combo.Text+" ▼"};table.Controls.Remove(combo);choice.Controls.Add(combo);combo.Visible=false;table.Controls.Add(choice,column,row);combo.SelectedIndexChanged+=(s,e)=>choice.Text=combo.Text+" ▼";choice.Click+=(s,e)=>{using(var dialog=new SearchToggleForm("선택 · 검색 / SPACE",combo.Items.Cast<object>().Select(x=>x.ToString()),new[]{combo.Text},1))if(dialog.ShowDialog(this)==DialogResult.OK&&dialog.Selected.Length>0)combo.SelectedItem=dialog.Selected[0];};}
-  static MatchCollection ArgumentMatches(string text){return Regex.Matches(text??"",@"(?<=「)[^」]+(?=」)|(?<=『)[^』]+(?=』)|[+-]?\d+(?:/\d+)?|(?<=조건 )[AB]");}
-  void RefreshTriggerArguments(){if(triggerArguments==null)return;argumentLoading=true;argumentKind=triggerKind.Text;triggerArguments.Text=string.Join(" | ",ArgumentMatches(argumentKind).Cast<Match>().Select(x=>x.Value));ShowTriggerRow(triggerArguments,ConfirmedTriggerCatalog.Items.Contains(argumentKind)&&ArgumentMatches(argumentKind).Count>0,"조건 값 (| 구분)");argumentLoading=false;UpdateTriggerArguments();}
-  void UpdateTriggerArguments(){if(argumentLoading||triggerArguments==null||!ConfirmedTriggerCatalog.Items.Contains(argumentKind))return;var values=triggerArguments.Text.Split('|').Select(x=>x.Trim()).ToArray();var matches=ArgumentMatches(argumentKind);if(matches.Count==0){triggerPreview.Text=argumentKind;return;}if(values.Length!=matches.Count||values.Any(x=>x.Length==0)){triggerPreview.Text="";return;}string result=argumentKind;for(int i=matches.Count-1;i>=0;i--)result=result.Remove(matches[i].Index,matches[i].Length).Insert(matches[i].Index,values[i]);triggerPreview.Text=result;}
   void StyleEditor(Control root){
    foreach(Control c in root.Controls){
     if(c is PixelTextBox){c.Font=Theme.Input();c.ImeMode=ImeMode.NoControl;}
@@ -186,21 +180,31 @@ namespace AABattle {
   void TestRetroEditor(){
     ShowEditorPage(1);Application.DoEvents();if(!pokemonWorkspace.Visible||!potentials.Visible||!inlineEffect.Visible)throw new Exception("Pokemon and potential editors must be visible together");
     var trainerNode=tree.Nodes.Cast<TreeNode>().SelectMany(x=>x.Nodes.Cast<TreeNode>()).First(x=>x.Tag is TrainerRecord);tree.SelectedNode=trainerNode;Application.DoEvents();ShowEditorPage(1);Application.DoEvents();var slotColumn=(DataGridViewComboBoxColumn)potentials.Columns["slot"];if(!(Current is PokemonRecord)||!slotColumn.Items.Contains("역할"))throw new Exception("Pokemon potential slots must follow Pokemon navigation");
-    triggerKind.SelectedItem="날씨가 「비」일 때";triggerArguments.Text="쾌청";if(ConfiguredTrigger()!="날씨가 「쾌청」일 때")throw new Exception("Weather parameter editing");
-   triggerKind.SelectedItem="자신의 체력이 1/2 이하가 되었을 때";triggerArguments.Text="1/4";if(ConfiguredTrigger()!="자신의 체력이 1/4 이하가 되었을 때")throw new Exception("HP threshold parameter editing");
+    triggerBuilder.Select("trigger.weather");triggerBuilder.SetValue("장소","쾌청");if(ConfiguredTrigger()!="날씨가 「쾌청」일 때")throw new Exception("Weather slot editing");
+    triggerBuilder.Select("trigger.hpchange.이하",new Dictionary<string,string>{{"분자","1"},{"분모","4"}});if(ConfiguredTrigger()!="자신의 체력이 1/4 이하가 되었을 때")throw new Exception("HP threshold slot editing");
    var row=potentials.Rows.Cast<DataGridViewRow>().First(x=>!x.IsNewRow&&Cell(x,"slot")=="역할");potentials.CurrentCell=row.Cells["name"];
    string name=Cell(row,"name");row.Cells["name"].Value="귀인";RefreshInline();
    if(!inlineEffect.Text.Contains("공격")||inlineTrigger.Text.Length==0)throw new Exception("Template must populate inline trigger and effect");
    inlineEffect.Text="한글 입력 검증";if(Cell(row,"effect")!="한글 입력 검증")throw new Exception("Inline Korean text must persist");
    row.Cells["name"].Value=name;RefreshInline();if(inlineEffect.Text!=Cell(row,"effect")||inlineTrigger.Text!=Cell(row,"trigger"))throw new Exception("Template and inline editor synchronization");
-   row.Cells["name"].Value="탐사대원";RefreshInline();string explorerEffect=EffectNormalizer.CanonicalRank("자신의 임의의 능력",1);if(Cell(row,"trigger")!=TriggerStructures.EntryLabel||Cell(row,"effect")!=explorerEffect||triggerKind.Text!="등장"||ConfiguredTrigger()!=TriggerStructures.EntryLabel||effectKind.Text!="능력 랭크 변화"||effectTarget.Text!="자신의 임의의 능력"||effectAction.Text!="상승"||effectDenominator.Value!=1)throw new Exception("Structured explorer role template loading");
-   row.Cells["name"].Value="추적대원";RefreshInline();string trackerEffect=EffectNormalizer.CanonicalSwitchRestriction()+" (필요 「통솔：A」 이상)";if(Cell(row,"trigger")!=TriggerStructures.FieldLabel||Cell(row,"effect")!=trackerEffect||triggerKind.Text!=TriggerStructures.FieldLabel||effectKind.Text!="교대 제한"||effectTarget.Text!="상대"||effectAction.Text!="통상교대 외 수단 제한"||ConfiguredEffect()!=EffectNormalizer.CanonicalSwitchRestriction())throw new Exception("Structured tracker role template loading");
-   row.Cells["name"].Value="야생 포켓몬";RefreshInline();LoadPotentialStructureSettings();RefreshStructuredTrigger();RefreshStructuredEffect();RefreshStatIgnoreEffect();if(Cell(row,"trigger")!=TriggerStructures.EntryLabel||Cell(row,"effect")!=EffectNormalizer.CanonicalRank("자신의 임의의 능력",2)||effectKind.Text!="능력 랭크 변화"||effectTarget.Text!="자신의 임의의 능력"||effectAction.Text!="상승"||effectDenominator.Value!=2)throw new Exception("Structured wild random role template loading");
-   row.Cells["name"].Value="야생의 두목";RefreshInline();LoadPotentialStructureSettings();RefreshStructuredTrigger();RefreshStructuredEffect();RefreshStatIgnoreEffect();if(Cell(row,"trigger")!=TriggerStructures.EntryLabel||Cell(row,"effect")!=EffectNormalizer.CanonicalRank("자신의 전능력치",2)||effectKind.Text!="능력 랭크 변화"||effectTarget.Text!="자신의 전능력치"||effectAction.Text!="상승"||effectDenominator.Value!=2)throw new Exception("Structured wild boss role template loading");
-   row.Cells["name"].Value="수렵대원";RefreshInline();LoadPotentialStructureSettings();RefreshStructuredTrigger();RefreshStructuredEffect();RefreshStatIgnoreEffect();string hunterEffect=EffectNormalizer.CanonicalStatIgnore("『야생의 두목』","능력","상승(강화)")+" (필요 「통솔：A」 이상)";if(Cell(row,"trigger")!=TriggerStructures.FieldLabel||Cell(row,"effect")!=hunterEffect||effectKind.Text!="능력 상승·강화 무시"||effectTarget.Text!="『야생의 두목』"||effectIgnoreStat.Text!="능력"||effectAction.Text!="상승(강화) 무시"||ConfiguredEffect()!=EffectNormalizer.CanonicalStatIgnore("『야생의 두목』","능력","상승(강화)"))throw new Exception("Structured hunter stat-ignore template loading");
-   row.Cells["name"].Value="조사대원";RefreshInline();LoadPotentialStructureSettings();RefreshStructuredTrigger();RefreshStructuredEffect();string researcherEffect=EffectNormalizer.CanonicalAnalysisPermission()+" (필요 「통솔：A」 이상)";if(Cell(row,"trigger")!=TriggerStructures.SelfAndOpponentEntryLabel||Cell(row,"effect")!=researcherEffect||triggerSubject.Text!="자신(상대)"||effectKind.Text!="데이터 해석"||effectTarget.Text!="상대"||effectAction.Text!="해석할 수 있다"||ConfiguredEffect()!=EffectNormalizer.CanonicalAnalysisPermission())throw new Exception("Structured researcher analysis template loading");
+    row.Cells["name"].Value="탐사대원";RefreshInline();LoadPotentialStructureSettings();
+    string explorerEffect=EffectNormalizer.CanonicalRank("자신의 임의의 능력",1);
+    if(Cell(row,"trigger")!=TriggerStructures.EntryLabel||Cell(row,"effect")!=explorerEffect||triggerBuilder.Module.Expected!="등장"||ConfiguredTrigger()!=TriggerStructures.EntryLabel||effectBuilder.Module.Id!="effect.rank.raise1"||effectBuilder.GetValue("대상")!="자신의 임의의 능력")throw new Exception("Structured explorer role template loading");
+    row.Cells["name"].Value="추적대원";RefreshInline();LoadPotentialStructureSettings();
+    string trackerEffect=EffectNormalizer.CanonicalSwitchRestriction()+" (필요 「통솔：A」 이상)";
+    if(Cell(row,"trigger")!=TriggerStructures.FieldLabel||Cell(row,"effect")!=trackerEffect||ConfiguredTrigger()!=TriggerStructures.FieldLabel||effectBuilder.Module.Id!="effect.switch.restrict"||ConfiguredEffect()!=EffectNormalizer.CanonicalSwitchRestriction())throw new Exception("Structured tracker role template loading");
+    row.Cells["name"].Value="야생 포켓몬";RefreshInline();LoadPotentialStructureSettings();
+    if(Cell(row,"trigger")!=TriggerStructures.EntryLabel||Cell(row,"effect")!=EffectNormalizer.CanonicalRank("자신의 임의의 능력",2)||effectBuilder.Module.Id!="effect.rank.raise2"||effectBuilder.GetValue("대상")!="자신의 임의의 능력")throw new Exception("Structured wild random role template loading");
+    row.Cells["name"].Value="야생의 두목";RefreshInline();LoadPotentialStructureSettings();
+    if(Cell(row,"trigger")!=TriggerStructures.EntryLabel||Cell(row,"effect")!=EffectNormalizer.CanonicalRank("자신의 전능력치",2)||effectBuilder.Module.Id!="effect.rank.raise2"||effectBuilder.GetValue("대상")!="자신의 전능력치")throw new Exception("Structured wild boss role template loading");
+    row.Cells["name"].Value="수렵대원";RefreshInline();LoadPotentialStructureSettings();
+    string hunterEffect=EffectNormalizer.CanonicalStatIgnore("『야생의 두목』","능력","상승(강화)")+" (필요 「통솔：A」 이상)";
+    if(Cell(row,"trigger")!=TriggerStructures.FieldLabel||Cell(row,"effect")!=hunterEffect||effectBuilder.Module.Id!="effect.stat.ignore.상승(강화)"||effectBuilder.GetValue("대상")!="『야생의 두목』"||effectBuilder.GetValue("능력")!="능력"||ConfiguredEffect()!=EffectNormalizer.CanonicalStatIgnore("『야생의 두목』","능력","상승(강화)"))throw new Exception("Structured hunter stat-ignore template loading");
+    row.Cells["name"].Value="조사대원";RefreshInline();LoadPotentialStructureSettings();
+    string researcherEffect=EffectNormalizer.CanonicalAnalysisPermission()+" (필요 「통솔：A」 이상)";
+    if(Cell(row,"trigger")!=TriggerStructures.SelfAndOpponentEntryLabel||Cell(row,"effect")!=researcherEffect||triggerBuilder.Module.Id!="trigger.entry.both"||effectBuilder.Module.Id!="effect.analysis.permission"||ConfiguredEffect()!=EffectNormalizer.CanonicalAnalysisPermission())throw new Exception("Structured researcher analysis template loading");
    row.Cells["name"].Value=name;RefreshInline();
-   if(editorMenu.Items.Count!=8||inlineEffect.ImeMode==ImeMode.Disable||potentials.Columns["targetType"].Visible||triggerKind.Items.Count<ConfirmedTriggerCatalog.Items.Length)throw new Exception("Integrated menu, trigger catalog and IME configuration");
+   if(editorMenu.Items.Count!=8||inlineEffect.ImeMode==ImeMode.Disable||potentials.Columns["targetType"].Visible)throw new Exception("Integrated menu and IME configuration");
   }
   protected override bool ProcessCmdKey(ref Message msg,Keys keyData){
    if(keyData==Keys.F6){editorMenu.Focus();return true;}

@@ -73,11 +73,12 @@ namespace AABattle {
    Assert.That(gas.Fighters[0].HP, Is.GreaterThan(a.HP));
   }
   [Test, Category("UI"), Apartment(ApartmentState.STA)] public void ItemLossTriggerEditorRoundTrips() {
-   var type = typeof(DataEditorForm); var flags = BindingFlags.Static | BindingFlags.NonPublic;
-   var kinds = (string[])type.GetMethod("TriggerKinds", flags).Invoke(null, null);
-   Assert.That(kinds, Does.Contain("소지품 소실"));
-   var variants = (string[])type.GetMethod("TriggerVariants", flags).Invoke(null, new object[] { "소지품 소실", "자신" });
-   Assert.That(variants, Does.Contain("소모 또는 파괴"));
+   using (var form = new DataEditorForm()) {
+    var builder = (ModuleBuilderPanel)typeof(DataEditorForm).GetField("triggerBuilder", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(form);
+    Assert.That(builder.Select("trigger.itemloss.소모 또는 파괴", new Dictionary<string, string> { { "주체", "상대" } }), Is.True);
+    Assert.That(builder.Result, Is.EqualTo("상대의 소지품이 소모(파괴)됐을 때"));
+    Assert.That(builder.Families, Does.Contain("소지품·특성"));
+   }
    var spec = TriggerModules.Parse("상대의 소지품이 소모됐을 때");
    Assert.That(spec.Module, Is.EqualTo("소지품 소실"));
    Assert.That(TriggerModules.Canonical(spec), Is.EqualTo("상대의 소지품이 소모됐을 때"));

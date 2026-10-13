@@ -42,19 +42,24 @@ namespace AABattle {
    };
    var formatter = definition.Formatter;
    definition.Reader = text => {
-    string pattern = "^";
-    int position = 0;
-    foreach (Match token in Regex.Matches(template, @"\{([^{}]+)\}")) {
-     pattern += AbilityLiteral(template.Substring(position, token.Index - position));
-     int i = Array.FindIndex(slots, s => s.Id == token.Groups[1].Value);
-     pattern += "(?<v" + i + ">.*?)";
-     position = token.Index + token.Length;
+    if (EffectModules.Classify(text) != expected) return null;
+    // 선택지·숫자 모양으로 먼저 읽고(엄격), 안 맞으면 느슨하게 읽는다.
+    foreach (bool strict in new[] { true, false }) {
+     string pattern = "^";
+     int position = 0;
+     foreach (Match token in Regex.Matches(template, @"\{([^{}]+)\}")) {
+      pattern += AbilityLiteral(template.Substring(position, token.Index - position));
+      int i = Array.FindIndex(slots, s => s.Id == token.Groups[1].Value);
+      pattern += "(?<v" + i + ">" + (strict ? StrictSlotPattern(slots[i]) : ".*?") + ")";
+      position = token.Index + token.Length;
+     }
+     pattern += AbilityLiteral(template.Substring(position)) + "$";
+     var match = Regex.Match((text ?? "").Trim(), pattern);
+     if (!match.Success) continue;
+     var values = slots.Select((s, i) => new { s.Id, Value = match.Groups["v" + i].Value.Trim() }).ToDictionary(x => x.Id, x => x.Value);
+     if (formatter(values) == text.Trim()) return values;
     }
-    pattern += AbilityLiteral(template.Substring(position)) + "$";
-    var match = Regex.Match((text ?? "").Trim(), pattern);
-    if (!match.Success || EffectModules.Classify(text) != expected) return null;
-    var values = slots.Select((s, i) => new { s.Id, Value = match.Groups["v" + i].Value.Trim() }).ToDictionary(x => x.Id, x => x.Value);
-    return formatter(values) == text.Trim() ? values : null;
+    return null;
    };
    modules.Add(definition);
   }

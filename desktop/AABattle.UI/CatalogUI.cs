@@ -97,48 +97,25 @@ namespace AABattle {
    var columns=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=2,RowCount=1};columns.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));columns.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));columns.RowStyles.Add(new RowStyle(SizeType.Percent,100));
    columns.Controls.Add(BuildPartPanel(true),0,0);columns.Controls.Add(BuildPartPanel(false),1,0);
    var compose=Button("선택한 조건 + 효과로 포텐셜 만들기",360,ComposePotential);compose.Dock=DockStyle.Bottom;
-   page.Controls.Add(columns);page.Controls.Add(compose);columns.BringToFront();RefreshPotentialDex();
+   page.Controls.Add(columns);page.Controls.Add(compose);columns.BringToFront();
    page=Page("특성 도감");var abilityHeader=new Panel{Dock=DockStyle.Top,Height=78};abilitySearch=new PixelSearchBox{Dock=DockStyle.Bottom,Font=Theme.UI(8)};abilityCount=Theme.Label("특성 도감",36);abilityHeader.Controls.Add(abilitySearch);abilityHeader.Controls.Add(abilityCount);abilityDex=DexGrid();DexColumn(abilityDex,"특성",130);DexColumn(abilityDex,"트리거",180);DexColumn(abilityDex,"효과",450);DexColumn(abilityDex,"구현",80);abilityDetail=new PixelText{Dock=DockStyle.Bottom,Height=175};var useAbility=Button("선택 특성을 포켓몬에 설정",240,AddDexAbility);useAbility.Dock=DockStyle.Bottom;page.Controls.Add(new PixelGridHost(abilityDex));page.Controls.Add(abilityDetail);page.Controls.Add(useAbility);page.Controls.Add(abilityHeader);page.Controls[0].BringToFront();abilitySearch.TextChanged+=(s,e)=>RefreshAbilityDex();abilityDex.SelectionChanged+=(s,e)=>ShowDexAbility();abilityDex.CurrentCellChanged+=(s,e)=>ShowDexAbility();abilityDex.CellDoubleClick+=(s,e)=>{if(e.RowIndex>=0)AddDexAbility();};RefreshAbilityDex();
   }
   Panel BuildPartPanel(bool trigger){
    return trigger?BuildStructuredTriggerPanel():BuildStructuredEffectPanel();
   }
+  // 선택한 포텐셜 행의 트리거·효과 문장을 모듈 빈칸으로 다시 채운다
   void LoadPotentialStructureSettings(){
-   if(loading)return;var row=SelectedPotentialRow();var record=row==null?null:row.Tag as PotentialRecord;if(record==null)return;loading=true;
+   if(loading)return;
+   var row=SelectedPotentialRow();
+   var record=row==null?null:row.Tag as PotentialRecord;
+   if(record==null)return;
+   loading=true;
    if(triggerActivation!=null)triggerActivation.SelectedItem=triggerActivation.Items.Contains(record.activation)?record.activation:"자동";
-   if(triggerSubject!=null)triggerSubject.SelectedItem=triggerSubject.Items.Contains(record.triggerSubject)?record.triggerSubject:"자신";
    if(effectSubject!=null)effectSubject.SelectedItem=effectSubject.Items.Contains(record.effectSubject)?record.effectSubject:"자신";
-   triggerStatusNames=new string[0];string[] lines=(Cell(row,"trigger")??"").Split(new[]{'\r','\n'},StringSplitOptions.RemoveEmptyEntries);string name;
-   var statusLines=lines.Select(x=>{string s,n;bool b,c;return TriggerStructures.TryStatusCondition(x,out s,out n,out b,out c)?new{subject=s,name=n,became=b,change=c}:null;}).Where(x=>x!=null).ToArray();
-   if(statusLines.Length>0){var first=statusLines[0];triggerSubject.SelectedItem=first.subject;triggerStatusNames=statusLines.Where(x=>x.subject==first.subject&&x.became==first.became&&x.change==first.change).Select(x=>x.name).Distinct().ToArray();string kind=first.change?(first.became?"상태변화가 되었을 때":"상태변화일 때"):(first.became?"상태이상이 되었을 때":"상태이상일 때");if(triggerKind.Items.Contains(kind))triggerKind.SelectedItem=kind;}
-   else if(lines.Length>0&&TriggerStructures.TryGranted(lines[0],out name)){triggerGranted.Text=name;if(triggerKind.Items.Contains("XX가 부여되어 있을 때"))triggerKind.SelectedItem="XX가 부여되어 있을 때";}
-   else {
-    var normalized=TriggerStructures.NormalizeLines(string.Join("\r\n",lines)).Replace("\r","").Split(new[]{'\n'},StringSplitOptions.RemoveEmptyEntries);
-    string first=normalized.FirstOrDefault()??"";string type,aptitude,rank;
-    if(normalized.Contains(TriggerStructures.EntryLabel)&&normalized.Contains(TriggerStructures.OpponentEntryLabel)){triggerKind.SelectedItem="등장";triggerSubject.SelectedItem="자신(상대)";triggerEntryMethod.SelectedItem="모든 등장";}
-    else if(LoadTriggerModule(first)){}
-    else if(first==TriggerStructures.AlwaysLabel)triggerKind.SelectedItem=AlwaysKind;
-    else if(TriggerStructures.TryOpponentType(first,out type)){triggerKind.SelectedItem="적진 타입 포켓몬";if(triggerType.Items.Contains(type))triggerType.SelectedItem=type;}
-    else if(TriggerStructures.TryTrainerAptitude(first,out aptitude,out rank)){triggerKind.SelectedItem="트레이너 자질 등급";triggerAptitude.SelectedItem=aptitude;if(triggerRank.Items.Contains(rank))triggerRank.SelectedItem=rank;}
-    else if(triggerKind.Items.Contains(first))triggerKind.SelectedItem=first;
-   }
-    LoadStructuredEffectSettings(Cell(row,"effect"),record.effectSubject);loading=false;RefreshStructuredTrigger();RefreshStructuredEffect();RefreshStatIgnoreEffect();
+   LoadTriggerModule(Cell(row,"trigger"));
+   LoadStructuredEffectSettings(Cell(row,"effect"),record.effectSubject);
+   loading=false;
   }
-   void SelectStructuredEffect(string kind,string target,string action){effectKind.SelectedItem=kind;RefreshEffectActions();RefreshEffectTargets();RefreshSpeciesSources();if(effectTarget.Items.Contains(target))effectTarget.SelectedItem=target;else effectTarget.Text=target;if(effectAction.Items.Contains(action))effectAction.SelectedItem=action;else effectAction.Text=action;}
-   void LoadStructuredEffectSettings(string text,string subject=""){
-   if(effectKind==null||effectTarget==null||effectAction==null)return;string probability,effectBody;if(effectProbability!=null){effectProbability.SelectedItem="없음";if(EffectNormalizer.TryProbabilityPrefix(text,out probability,out effectBody)){if(effectProbability.Items.Contains(probability))effectProbability.SelectedItem=probability;text=effectBody;}}string normalized=EffectNormalizer.Normalize(text??"");
-    if(EffectStructures.IsAnalysisPermission(normalized)){SelectStructuredEffect("데이터 해석","상대","해석할 수 있다");return;}
-    if(EffectStructures.IsSwitchEffect(normalized)){SelectStructuredEffect("교대 효과","아군","임의교대");return;}
-    if(EffectStructures.IsPivotGrant(normalized)){SelectStructuredEffect("유턴 효과","자신의 기술","유턴 효과 부여");return;}
-    if(EffectStructures.IsSwitchRestriction(normalized)){SelectStructuredEffect("교대 제한","상대","통상교대 외 수단 제한");return;}
-    if(subject!=""&&subject!="자신")normalized=Regex.Replace(normalized,"^"+Regex.Escape(subject)+@"(?=의|이|가|에게)","자신");
-    string target,action;double rate;if(EffectStructures.TryScalar(normalized,out target,out action,out rate)){SelectStructuredEffect("수치 배율",target,action);if(rate>0&&(decimal)rate<=effectRate.Maximum)effectRate.Value=(decimal)rate;return;}
-    int denominator;if(EffectStructures.TryFraction(text,out target,out action,out denominator)){SelectStructuredEffect("최대 HP의 1/N",target,action);effectDenominator.Value=Math.Min(effectDenominator.Maximum,denominator);effectCanFaint.Checked=!PotentialParts.Clean(text).Contains("빈사로 할 수 없다");return;}
-    int amount;if(EffectStructures.TryPriority(normalized,out target,out action,out amount)){SelectStructuredEffect("우선도 변화",target,action);effectDenominator.Value=Math.Min(7,amount);return;}
-    string ignoreTarget,ignoreStat,ignoreMode;if(EffectStructures.TryStatIgnore(normalized,out ignoreTarget,out ignoreStat,out ignoreMode)&&effectIgnoreStat.Items.Contains(ignoreStat)){SelectStructuredEffect("능력 상승·강화 무시",ignoreTarget,ignoreMode=="강화"?"강화 무시":"상승(강화) 무시");effectIgnoreStat.SelectedItem=ignoreStat;return;}
-    if(!EffectStructures.IsRank(normalized))return;target=RankEffectTargets.FirstOrDefault(x=>normalized.StartsWith(x));if(target==null)return;
-    amount=normalized.Contains("매우 크게")?3:normalized.Contains("크게")?2:1;SelectStructuredEffect("능력 랭크 변화",target,normalized.Contains("내린다")?"하락":"상승");effectDenominator.Value=amount;
-   }
   void RefreshMoveDex(){string q=dexMoveSearch.Text.Trim();moveDex.Rows.Clear();foreach(var m in catalogDb.moves.Where(x=>(x.name+" "+string.Join(" ",x.types??new string[0])+" "+x.category+" "+x.target+" "+string.Join(" ",x.tags??new string[0])+" "+x.effect).IndexOf(q,StringComparison.OrdinalIgnoreCase)>=0).OrderBy(x=>x.name)){int i=moveDex.Rows.Add(m.name,string.Join("/",m.types??new string[0]),m.category,m.power,m.accuracy,m.target,Mechanics.Contact(m)?"○":"×",m.priority,string.Join(", ",m.tags??new string[0]),m.effect);moveDex.Rows[i].Tag=m;}if(moveDex.RowCount>0)moveDex.CurrentCell=moveDex.Rows[0].Cells[0];moveCount.Text="기술 도감 · "+moveDex.RowCount+"개 · 이름 / 타입 / 대상 / 태그 / 효과 검색";ShowDexMove();}
   Move SelectedDexMove(){return moveDex.CurrentRow==null?null:moveDex.CurrentRow.Tag as Move;}
   void ShowDexMove(){var m=SelectedDexMove();dexMoveDetail.Text=m==null?"검색 결과가 없습니다.":"【"+m.name+"】  "+string.Join(" / ",m.types??new string[0])+" · "+m.category+"\r\n위력 "+m.power+"   명중 "+m.accuracy+"   우선도 "+m.priority+"   대상 "+m.target+"\r\n판정 "+m.attack+" / "+m.defense+"   태그 "+string.Join(", ",m.tags??new string[0])+"\r\n효과: "+m.effect;}
@@ -147,37 +124,110 @@ namespace AABattle {
   AbilityDefinition SelectedDexAbility(){return abilityDex.CurrentRow==null?null:abilityDex.CurrentRow.Tag as AbilityDefinition;}
   void ShowDexAbility(){var ability=SelectedDexAbility();abilityDetail.Text=ability==null?"검색 결과가 없습니다.":"【"+ability.name+"】  "+ability.support+"\r\n트리거: "+(ability.triggers==null||ability.triggers.Length==0?"상시/원문 직접 효과":string.Join(" / ",ability.triggers))+"\r\n효과: "+(ability.effects==null||ability.effects.Length==0?ability.effect:string.Join(" ",ability.effects))+"\r\n"+(ability.blocker.Length==0?"전투 런타임 연결됨.":ability.support=="자동"?"전투 런타임 연결됨. "+ability.blocker:"수동 사유: "+ability.blocker)+"\r\n원문: "+ability.effect;}
   void AddDexAbility(){var ability=SelectedDexAbility();if(ability==null)return;if(!(Current is PokemonRecord)){GameDialog.Show(this,"포켓몬을 선택한 뒤 특성을 설정하세요.");return;}pAbility.Text=ability.name;SaveCurrent();ShowEditorPage(1);}
-  void RefreshPotentialDex(){
-   RefreshStructuredTrigger();RefreshStructuredEffect();
-  }
   void ApplyPart(bool trigger){
-   if(trigger&&string.IsNullOrWhiteSpace(ConfiguredTrigger())){GameDialog.Show(this,"조건 값을 모두 입력하세요.");return;}
-   var row=SelectedPotentialRow();if(row==null){GameDialog.Show(this,"포텐셜 편집에서 입력할 행을 먼저 선택하세요.");return;}
-   if(trigger&&IsStatusKind(triggerKind.Text)&&triggerStatusNames.Length==0){GameDialog.Show(this,"상태이상 또는 상태변화 도감에서 하나 이상 선택하세요.");return;}
-   loading=true;row.Cells[trigger?"trigger":"effect"].Value=trigger?ConfiguredTrigger():ConfiguredEffect();
-   var record=row.Tag as PotentialRecord??new PotentialRecord();if(trigger){record.activation=triggerActivation==null?"자동":triggerActivation.Text;record.triggerSubject=triggerSubject==null?"":triggerSubject.Text;}else record.effectSubject=effectSubject==null?"":effectSubject.Text;row.Tag=record;
-   loading=false;GridChanged();
+   if(trigger&&string.IsNullOrWhiteSpace(ConfiguredTrigger())){GameDialog.Show(this,"빈칸을 모두 채우세요.");return;}
+   var row=SelectedPotentialRow();
+   if(row==null){GameDialog.Show(this,"포텐셜 편집에서 입력할 행을 먼저 선택하세요.");return;}
+   loading=true;
+   row.Cells[trigger?"trigger":"effect"].Value=trigger?ConfiguredTrigger():ConfiguredEffect();
+   var record=row.Tag as PotentialRecord??new PotentialRecord();
+   if(trigger){record.activation=triggerActivation==null?"자동":triggerActivation.Text;record.triggerSubject=TriggerSubjectText();}
+   else record.effectSubject=effectSubject==null?"":effectSubject.Text;
+   row.Tag=record;
+   loading=false;
+   GridChanged();
   }
-  void ComposePotential(){AddPotential(new PotentialRecord{name="새 포텐셜",slot=Current is TrainerRecord?"고유":"종족 ①",activation="자동",triggerSubject=triggerSubject==null?"":triggerSubject.Text,effectSubject=effectSubject==null?"":effectSubject.Text,trigger=ConfiguredTrigger(),effect=ConfiguredEffect(),raw=""});}
-  void TestStructuredEffectUi(){effectSubject.SelectedItem="자신";effectKind.SelectedItem="교대 효과";if(effectTarget.Text!="아군"||effectAction.Text!="임의교대"||ConfiguredEffect()!=EffectNormalizer.CanonicalSwitch())throw new Exception("Switch effect structure UI failed");effectKind.SelectedItem="유턴 효과";if(effectTarget.Text!="자신의 기술"||effectAction.Text!="유턴 효과 부여"||ConfiguredEffect()!=EffectNormalizer.CanonicalPivotGrant())throw new Exception("Pivot effect structure UI failed");effectKind.SelectedItem="능력 상승·강화 무시";effectTarget.SelectedItem="상대";effectIgnoreStat.SelectedItem="공격";effectAction.SelectedItem="강화 무시";if(!ConfiguredEffect().Contains("상대의 공격 강화")||!ConfiguredEffect().Contains("무시한다"))throw new Exception("Stat ignore structure UI failed");effectKind.SelectedItem="데이터 해석";if(effectTarget.Text!="상대"||effectAction.Text!="해석할 수 있다"||ConfiguredEffect()!=EffectNormalizer.CanonicalAnalysisPermission())throw new Exception("Analysis effect structure UI failed");}
+  void ComposePotential(){AddPotential(new PotentialRecord{name="새 포텐셜",slot=Current is TrainerRecord?"고유":"종족 ①",activation="자동",triggerSubject=TriggerSubjectText(),effectSubject=effectSubject==null?"":effectSubject.Text,trigger=ConfiguredTrigger(),effect=ConfiguredEffect(),raw=""});}
+  void Expect(bool ok,string message){if(!ok)throw new Exception(message);}
+  void TestStructuredEffectUi(){
+   effectSubject.SelectedItem="자신";
+   effectBuilder.Select("effect.switch.voluntary");
+   Expect(ConfiguredEffect()==EffectNormalizer.CanonicalSwitch(),"Switch effect module UI failed");
+   effectBuilder.Select("effect.switch.pivot");
+   Expect(ConfiguredEffect()==EffectNormalizer.CanonicalPivotGrant(),"Pivot effect module UI failed");
+   effectBuilder.Select("effect.stat.ignore.강화");
+   effectBuilder.SetValue("대상","상대");
+   effectBuilder.SetValue("능력","공격");
+   Expect(ConfiguredEffect().Contains("상대의 공격 강화")&&ConfiguredEffect().Contains("무시한다"),"Stat ignore module UI failed");
+   effectBuilder.Select("effect.analysis.permission");
+   Expect(ConfiguredEffect()==EffectNormalizer.CanonicalAnalysisPermission(),"Analysis effect module UI failed");
+  }
   public void TestCatalogUi(){
    TestRetroEditor();
-   if(tabs.TabPages[4].Text!="기술 도감"||tabs.TabPages[6].Text!="특성 도감"||abilityDex==null||triggerKind==null||triggerKind.Items.Count<31||!UiModules().All(x=>triggerKind.Items.Contains(x))||triggerKind.Items.Contains(TriggerStructures.AttackMoveUseLabel)||triggerKind.Items.Contains(TriggerStructures.StatusMoveUseLabel)||!ConfirmedTriggerCatalog.Items.All(x=>triggerKind.Items.Contains(x))||effectKind==null||triggerSubject==null||effectSubject==null||effectProbability==null||!EffectNormalizer.ProbabilityChoices.All(x=>effectProbability.Items.Contains(x)))throw new Exception("Structured trigger, subject and effect UI missing");
-   abilitySearch.Text="가뭄";var drought=abilityDex.Rows.Cast<DataGridViewRow>().FirstOrDefault(x=>!x.IsNewRow&&((AbilityDefinition)x.Tag).name=="가뭄");if(drought==null||!((AbilityDefinition)drought.Tag).effect.Contains("쾌청")||((AbilityDefinition)drought.Tag).support!="자동"||abilityDex.Columns.Count!=4)throw new Exception("Ability dex trigger/effect classification missing");abilityDex.CurrentCell=drought.Cells[0];AddDexAbility();if(pAbility.Text!="가뭄")throw new Exception("Ability dex must link to the current pokemon");
+   Expect(tabs.TabPages[4].Text=="기술 도감"&&tabs.TabPages[6].Text=="특성 도감"&&abilityDex!=null,"Catalog tabs missing");
+   Expect(triggerBuilder!=null&&effectBuilder!=null&&triggerPreview!=null&&effectPreview!=null&&effectSubject!=null&&triggerActivation!=null,"Module builder UI missing");
+   Expect(ConfirmedTriggerCatalog.Items.All(x=>triggerBuilder.Load(x)),"Every confirmed trigger sentence must be loadable into the module builder");
+   Expect(effectBuilder.Editor("발동확률")!=null,"Probability slot missing");
+   abilitySearch.Text="가뭄";
+   var drought=abilityDex.Rows.Cast<DataGridViewRow>().FirstOrDefault(x=>!x.IsNewRow&&((AbilityDefinition)x.Tag).name=="가뭄");
+   Expect(drought!=null&&((AbilityDefinition)drought.Tag).effect.Contains("쾌청")&&((AbilityDefinition)drought.Tag).support=="자동"&&abilityDex.Columns.Count==4,"Ability dex trigger/effect classification missing");
+   abilityDex.CurrentCell=drought.Cells[0];AddDexAbility();
+   Expect(pAbility.Text=="가뭄","Ability dex must link to the current pokemon");
    tabs.SelectedIndex=1;Application.DoEvents();TestStructuredEffectUi();
-   triggerKind.SelectedItem="등장";triggerSubject.SelectedItem="자신(상대)";triggerEntryMethod.SelectedItem="모든 등장";RefreshStructuredTrigger();if(ConfiguredTrigger()!=TriggerStructures.SelfAndOpponentEntryLabel)throw new Exception("Self and opponent entry trigger UI failed");triggerSubject.SelectedItem="자신";
-   if(!potentials.Columns.Contains("targetType")||potentials.Columns["targetType"].Visible||potentials.Columns.Contains("activation")||potentials.Columns.Contains("uses")||!potentials.Columns.Contains("disabled")||!(potentials.Columns["disabled"] is PixelDisableColumn))throw new Exception("Potential editor columns or pixel toggle invalid");
-    dexMoveSearch.Text="비바라기";if(moveDex.Rows.Count==0||moveDex.Columns.Count!=10)throw new Exception("Move classification columns missing");moveDex.CurrentCell=moveDex.Rows[0].Cells[0];ShowDexMove();if(!dexMoveDetail.Text.Contains("비바라기")||!dexMoveDetail.Text.Contains("대상")||!dexMoveDetail.Text.Contains("태그"))throw new Exception("Move details missing");
-    triggerKind.SelectedItem="기술 사용";triggerSubject.SelectedItem="자신";triggerEntryMethod.SelectedItem="내보낼 때(직전)";triggerCondition.Text="";if(!triggerCondition.Visible||triggerType.Visible||ConfiguredTrigger()!=TriggerStructures.MoveUseLabel)throw new Exception("Move use module failed");triggerCondition.Text="공격";if(ConfiguredTrigger()!=TriggerStructures.AttackMoveUseLabel)throw new Exception("Attack move module failed");triggerCondition.Text="불꽃";if(ConfiguredTrigger()!=TriggerStructures.MoveType("불꽃"))throw new Exception("Move type module failed");triggerEntryMethod.SelectedItem="내보냈을 때(직후)";if(ConfiguredTrigger()!="「불꽃」 기술을 내보냈을 때")throw new Exception("Move used-after module failed");
-    triggerKind.SelectedItem="타이밍";triggerEntryMethod.SelectedItem="사건이 성립한 T 종료 시";triggerCondition.Text="공격을 받았을 때";if(ConfiguredTrigger()!="「상대의 공격을 받았을 때」가 성립한 T 종료 시")throw new Exception("Turn-end after event module failed");triggerEntryMethod.SelectedItem="배수 T 종료 시";triggerNumber.Value=3;if(!triggerNumber.Visible||ConfiguredTrigger()!="「3」배수 T 종료 시")throw new Exception("Turn multiple module failed");
-    triggerKind.SelectedItem="등장";triggerSubject.SelectedItem="상대";triggerEntryMethod.SelectedItem="강제교대";if(ConfiguredTrigger()!="상대가 강제교대로 장소에 나왔을 때")throw new Exception("Opponent entry method module failed");triggerSubject.SelectedItem="자신";
-    triggerKind.SelectedItem="적진 타입 포켓몬";triggerType.SelectedItem="불꽃";if(!triggerType.Visible||triggerEntryMethod.Visible||triggerAptitude.Visible||ConfiguredTrigger()!=TriggerStructures.OpponentType("불꽃"))throw new Exception("Trigger-specific controls failed");triggerKind.SelectedItem="상태이상이 되었을 때";triggerStatusNames=new[]{"화상"};RefreshStructuredTrigger();if(triggerGranted.Visible||!triggerStatusButton.Visible||ConfiguredTrigger()!=TriggerStructures.StatusCondition("자신","화상",true,false))throw new Exception("Status trigger must use the status dex selector");triggerKind.SelectedItem="XX가 부여되어 있을 때";triggerGranted.Text="계약의 특권";if(!triggerGranted.Visible||triggerStatusButton.Visible||ConfiguredTrigger()!=TriggerStructures.Granted("계약의 특권"))throw new Exception("Granted trigger must stay separate from status selector");triggerKind.SelectedItem="쓰러뜨림";triggerEntryMethod.SelectedItem="상대";var row=potentials.Rows.Cast<DataGridViewRow>().First(r=>!r.IsNewRow&&Cell(r,"name")=="샘플의 전도");potentials.CurrentCell=row.Cells["effect"];string before=Cell(row,"raw");ApplyPart(true);string condition=Cell(row,"trigger");effectKind.SelectedItem="최대 HP의 1/N";effectAction.SelectedItem="회복";ApplyPart(false);if(condition!=DefeatTriggers.Label||Cell(row,"trigger")!=condition||!Cell(row,"effect").Contains("최대 HP")||Cell(row,"raw")!=before)throw new Exception("Independent structured input corrupted data");
-    string legacyTrigger=Cell(row,"trigger");row.Cells["trigger"].Value="공격기술을 내보낼 때";LoadPotentialStructureSettings();if(triggerKind.Text!="기술 사용"||triggerCondition.Text!="공격"||ConfiguredTrigger()!=TriggerStructures.AttackMoveUseLabel)throw new Exception("Legacy attack move trigger loading failed: "+triggerKind.Text+" / "+triggerCondition.Text+" / "+ConfiguredTrigger());row.Cells["trigger"].Value=legacyTrigger;LoadPotentialStructureSettings();
-   row.Cells["disabled"].Value=true;SaveCurrent();if(CurrentPotentials().First(x=>x.name=="샘플의 전도").enabled)throw new Exception("Never activate toggle failed");
-   if(triggerPreview.Font.FontFamily.Name!=Theme.UI(10).FontFamily.Name||dexMoveDetail.Font.FontFamily.Name!=Theme.UI(10).FontFamily.Name)throw new Exception("Catalog font missing");
-   var rail=new PixelScrollBar{Maximum=10,Page=3};rail.Value=100;if(rail.Value!=10)throw new Exception("Scroll upper bound");rail.Value=-10;if(rail.Value!=0)throw new Exception("Scroll lower bound");rail.Dispose();
+   triggerBuilder.Select("trigger.entry.both");
+   Expect(ConfiguredTrigger()==TriggerStructures.SelfAndOpponentEntryLabel,"Self and opponent entry trigger UI failed");
+   Expect(potentials.Columns.Contains("targetType")&&!potentials.Columns["targetType"].Visible&&!potentials.Columns.Contains("activation")&&!potentials.Columns.Contains("uses")&&potentials.Columns.Contains("disabled")&&potentials.Columns["disabled"] is PixelDisableColumn,"Potential editor columns or pixel toggle invalid");
+   dexMoveSearch.Text="비바라기";
+   Expect(moveDex.Rows.Count>0&&moveDex.Columns.Count==10,"Move classification columns missing");
+   moveDex.CurrentCell=moveDex.Rows[0].Cells[0];ShowDexMove();
+   Expect(dexMoveDetail.Text.Contains("비바라기")&&dexMoveDetail.Text.Contains("대상")&&dexMoveDetail.Text.Contains("태그"),"Move details missing");
+   triggerBuilder.Select("trigger.move.False");
+   Expect(triggerBuilder.GetValue("기술조건")==""&&ConfiguredTrigger()==TriggerStructures.MoveUseLabel,"Move use module failed");
+   triggerBuilder.SetValue("기술조건","공격");
+   Expect(ConfiguredTrigger()==TriggerStructures.AttackMoveUseLabel,"Attack move module failed");
+   triggerBuilder.SetValue("기술조건","불꽃");
+   Expect(ConfiguredTrigger()==TriggerStructures.MoveType("불꽃"),"Move type module failed");
+   triggerBuilder.Select("trigger.move.True",new Dictionary<string,string>{{"기술조건","「불꽃」"}});
+   Expect(ConfiguredTrigger()=="「불꽃」 기술을 내보냈을 때","Move used-after module failed");
+   triggerBuilder.Select("trigger.timing.event.False",new Dictionary<string,string>{{"사건","공격을 받았을 때"}});
+   Expect(ConfiguredTrigger()=="「상대의 공격을 받았을 때」가 성립한 T 종료 시","Turn-end after event module failed");
+   triggerBuilder.Select("trigger.timing.every",new Dictionary<string,string>{{"배수","3"},{"시점",TriggerStructures.TurnEndLabel}});
+   Expect(ConfiguredTrigger()=="「3」배수 T 종료 시","Turn multiple module failed");
+   triggerBuilder.Select("trigger.entry.method",new Dictionary<string,string>{{"주체","상대"},{"방식","강제교대"}});
+   Expect(ConfiguredTrigger()=="상대가 강제교대로 장소에 나왔을 때","Opponent entry method module failed");
+   triggerBuilder.Select("trigger.opponent.type",new Dictionary<string,string>{{"이름","불꽃"}});
+   Expect(ConfiguredTrigger()==TriggerStructures.OpponentType("불꽃"),"Opponent type module failed");
+   triggerBuilder.Select("trigger.state.상태 됨",new Dictionary<string,string>{{"주체","자신"},{"이름","화상"}});
+   Expect(ConfiguredTrigger()==TriggerStructures.StatusCondition("자신","화상",true,false),"Status trigger module failed");
+   triggerBuilder.Select("trigger.named.부여",new Dictionary<string,string>{{"이름","계약의 특권"}});
+   Expect(ConfiguredTrigger()==TriggerStructures.Granted("계약의 특권"),"Granted trigger module failed");
+   triggerBuilder.Select("trigger.defeat");
+   var row=potentials.Rows.Cast<DataGridViewRow>().First(r=>!r.IsNewRow&&Cell(r,"name")=="샘플의 전도");
+   potentials.CurrentCell=row.Cells["effect"];
+   string before=Cell(row,"raw");
+   ApplyPart(true);
+   string condition=Cell(row,"trigger");
+   effectBuilder.Select("effect.hp.회복");
+   ApplyPart(false);
+   Expect(condition==DefeatTriggers.Label&&Cell(row,"trigger")==condition&&Cell(row,"effect").Contains("최대 HP")&&Cell(row,"raw")==before,"Independent structured input corrupted data");
+   string legacyTrigger=Cell(row,"trigger");
+   row.Cells["trigger"].Value="공격기술을 내보낼 때";
+   LoadPotentialStructureSettings();
+   Expect(triggerBuilder.Module.Id=="trigger.move.False"&&triggerBuilder.GetValue("기술조건")=="「공격」"&&ConfiguredTrigger()==TriggerStructures.AttackMoveUseLabel,"Legacy attack move trigger loading failed: "+triggerBuilder.Module.Id+" / "+ConfiguredTrigger());
+   row.Cells["trigger"].Value=legacyTrigger;
+   LoadPotentialStructureSettings();
+   row.Cells["disabled"].Value=true;SaveCurrent();
+   Expect(!CurrentPotentials().First(x=>x.name=="샘플의 전도").enabled,"Never activate toggle failed");
+   Expect(triggerPreview.Font.FontFamily.Name==Theme.UI(10).FontFamily.Name&&dexMoveDetail.Font.FontFamily.Name==Theme.UI(10).FontFamily.Name,"Catalog font missing");
+   var rail=new PixelScrollBar{Maximum=10,Page=3};rail.Value=100;Expect(rail.Value==10,"Scroll upper bound");rail.Value=-10;Expect(rail.Value==0,"Scroll lower bound");rail.Dispose();
    potentials.HorizontalScrollingOffset=0;if(potentials.RowCount>0)potentials.FirstDisplayedScrollingRowIndex=0;
-   effectKind.SelectedItem="수치 배율";effectAction.SelectedItem="약화";effectRate.Value=.8M;if(effectKind.SelectedIndex<0||effectAction.SelectedIndex<0||!effectRate.Visible||effectDenominator.Visible||effectSpeciesRank.Visible||!ConfiguredEffect().Contains("약화(0.8배)"))throw new Exception("Inline structured effect configuration failed");effectKind.SelectedItem="능력 랭크 변화";effectAction.SelectedItem="하락";effectDenominator.Value=3;if(effectKind.SelectedIndex<0||effectAction.SelectedIndex<0||effectRate.Visible||!effectDenominator.Visible||!ConfiguredEffect().Contains("매우 크게 내린다"))throw new Exception("Rank structure configuration failed");effectKind.SelectedItem="우선도 변화";effectTarget.SelectedItem="상대";effectAction.SelectedItem="하락";effectDenominator.Value=2;RefreshStructuredEffect();if(effectKind.SelectedIndex<0||effectAction.SelectedIndex<0||!effectDenominator.Visible||!ConfiguredEffect().Contains("상대의 기술 우선도를 2 내린다"))throw new Exception("Priority structure configuration failed");effectProbability.SelectedItem="중확률";string probabilistic=ConfiguredEffect();if(probabilistic!="중확률로 상대의 기술 우선도를 2 내린다.")throw new Exception("Probability effect prefix configuration failed: "+probabilistic+" / "+effectProbability.Text+" / "+effectPreview.Text);row.Cells["effect"].Value=probabilistic;LoadPotentialStructureSettings();if(effectProbability.Text!="중확률"||ConfiguredEffect()!=probabilistic)throw new Exception("Probability effect prefix loading failed");effectProbability.SelectedItem="없음";string firstEffect=Cell(row,"effect");AppendConfiguredEffect();if(Cell(row,"effect")==firstEffect||!Cell(row,"effect").Contains("\r\n"))throw new Exception("Multiple structured effects append failed");triggerKind.SelectedItem=TriggerStructures.ReceivedOrNullifiedLabel;
+   effectBuilder.Select("effect.scalar.stats.약화");effectBuilder.SetValue("배율","0.8");
+   Expect(ConfiguredEffect().Contains("약화(0.8배)"),"Scalar module configuration failed");
+   effectBuilder.Select("effect.rank.lower3");
+   Expect(ConfiguredEffect().Contains("매우 크게 내린다"),"Rank module configuration failed");
+   effectBuilder.Select("effect.priority.내린다");effectBuilder.SetValue("주체","상대");effectBuilder.SetValue("수치","2");
+   Expect(ConfiguredEffect().Contains("상대의 기술 우선도를 2 내린다"),"Priority module configuration failed");
+   effectBuilder.SetValue("발동확률","중확률");
+   string probabilistic=ConfiguredEffect();
+   Expect(probabilistic=="중확률로 상대의 기술 우선도를 2 내린다.","Probability effect prefix failed: "+probabilistic);
+   row.Cells["effect"].Value=probabilistic;LoadPotentialStructureSettings();
+   Expect(effectBuilder.GetValue("발동확률")=="중확률"&&ConfiguredEffect()==probabilistic,"Probability effect prefix loading failed");
+   effectBuilder.SetValue("발동확률","없음");
+   string firstEffect=Cell(row,"effect");
+   AppendConfiguredEffect();
+   Expect(Cell(row,"effect")!=firstEffect&&Cell(row,"effect").Contains("\r\n"),"Multiple structured effects append failed");
+   triggerBuilder.Select("trigger.nullified",new Dictionary<string,string>{{"기술조건","「불꽃」「접촉」"}});
+   effectBuilder.Select("effect.secondary.state");effectBuilder.SetValue("발동확률","없음");
   }
  }
 }

@@ -55,24 +55,23 @@ namespace AABattle {
   [Category("UI"), Apartment(ApartmentState.STA)]
   public void StatComparisonSelectorsBuildAndReload(string subject, string left, string right, string op, string expected) {
    using (var form = new DataEditorForm()) {
-    Field<PixelComboBox>(form, "triggerKind").SelectedItem = "능력치 비교";
-    Field<PixelComboBox>(form, "triggerSubject").SelectedItem = subject;
-    Field<PixelComboBox>(form, "triggerCompareLeft").SelectedItem = left;
-    Field<PixelComboBox>(form, "triggerCompareRight").SelectedItem = right;
-    Field<PixelComboBox>(form, "triggerCompareOp").SelectedItem = op;
-    Invoke(form, "RefreshStructuredTrigger");
+    var builder = Field<ModuleBuilderPanel>(form, "triggerBuilder");
+    string id = "trigger.stats.compare." + op;
+    Assert.That(builder.Select(id, new Dictionary<string, string> { { "주체", subject }, { "왼쪽", left }, { "오른쪽", right } }), Is.True);
+    Assert.That(builder.Result, Is.EqualTo(expected));
     Assert.That(Invoke(form, "ConfiguredTrigger"), Is.EqualTo(expected));
     Assert.That(TriggerModules.Parse(expected).IsEvent, Is.False);
-    foreach (string selector in new[] { "triggerCompareLeft", "triggerCompareRight" })
-     Assert.That(Field<PixelComboBox>(form, selector).Items.Cast<object>().Select(x => x.ToString()), Is.EquivalentTo(new[] { "공격", "방어", "특공", "특방", "속도" }));
+    foreach (string selector in new[] { "왼쪽", "오른쪽" }) {
+     var choices = ((ChoiceSlotEditor)builder.Editor(selector)).Items;
+     Assert.That(choices, Is.EquivalentTo(new[] { "공격", "방어", "특공", "특방", "속도" }));
+    }
 
-    Field<PixelComboBox>(form, "triggerKind").SelectedItem = "체력";
+    builder.Select("trigger.hp.가득");
     Assert.That(Invoke(form, "LoadTriggerModule", expected), Is.True);
-    Invoke(form, "RefreshStructuredTrigger");
-    Assert.That(Field<PixelComboBox>(form, "triggerSubject").Text, Is.EqualTo(subject));
-    Assert.That(Field<PixelComboBox>(form, "triggerCompareLeft").Text, Is.EqualTo(left));
-    Assert.That(Field<PixelComboBox>(form, "triggerCompareRight").Text, Is.EqualTo(right));
-    Assert.That(Field<PixelComboBox>(form, "triggerCompareOp").Text, Is.EqualTo(op));
+    Assert.That(builder.Module.Id, Is.EqualTo(id));
+    Assert.That(builder.GetValue("주체"), Is.EqualTo(subject));
+    Assert.That(builder.GetValue("왼쪽"), Is.EqualTo(left));
+    Assert.That(builder.GetValue("오른쪽"), Is.EqualTo(right));
     Assert.That(Invoke(form, "ConfiguredTrigger"), Is.EqualTo(expected));
    }
   }
