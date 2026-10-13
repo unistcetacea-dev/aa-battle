@@ -939,3 +939,17 @@ Codex 공유 링크는 특정 시점의 읽기 전용 대화 스냅샷이다. �
 - 「…한 T」 상태는 같은 사건의 순간에도 성립한다(한 번 일어나는 효과가 그 순간 실행). `ConditionState.Repay`(턴 끝 반납)와 `WatchTypes`(타입 변화 비교)가 새로 생겼다.
 - 최초 접촉 기술 우선도 「올릴 수 있다」는 손해가 없어 선택 확인 없이 항상 적용한다. 「필드에 없어도 발동」은 문장만 인식한다(대기석 발동은 미구현).
 - 검사: `AbaddonGapTests`.
+
+## 2026-10-14 지시서 K / 정규화 규칙 기능별 재배치
+동작은 바꾸지 않았다(정규화 출력을 36,704개 문장 말뭉치로 전후 비교해 같음을 확인).
+
+| 위치 | 내용 |
+|---|---|
+| `Engine/Phrases/PhrasePipeline.cs` | 정규화 규칙의 적용 순서(한 곳). 순서 의존 규칙의 이유가 주석에 있다 |
+| `Engine/Phrases/Common·Moves·Damage·Potentials·Items·Rank·Switch·States·Timing·Chance.cs` | 기능별 효과 규칙(`PhraseRules` partial). 규칙마다 `// 출처:` 주석 |
+| `Engine/TriggerPhrases/Notation·Events·Switch·States.cs` | 기능별 트리거 규칙(`TriggerPhraseRules`) |
+| `Engine/Phrases/AbilitySentenceTable*.cs` | 특성별 표준 문장 표(`Core`, `Answered`, 합친 `Table`) |
+| `Engine/AbilityPhrases.TypeChange.cs`, `AbilityMiscModules.cs`, `AbilityEventRuntime.cs`, `TriggerModules.AbilityEvents.cs` | 차수 이름이던 파일을 기능 이름으로 바꾼 것 |
+| `Tests/Data/phrases-*.tsv` + `PhraseTableTests.cs` | 정규화 왕복 검사 표(효과 93 · 트리거 86줄) |
+| `Tests/ModuleCleanupTests.cs` | 재정규화 불변 · 중복 모듈 없음 · 계열 간 분류 공유 목록 |
+| `research/potentials/MODULE_OVERLAPS.md` | 뜻이 겹치는 모듈 조사(합치기는 하지 않음) |
