@@ -99,13 +99,22 @@ namespace AABattle {
    potential.activation = "자동";
    potential.uses = "";
    potential.description = potential.description.Replace("몸통박치기", "화염방사");
-   Assert.That(EffectModules.Classify(potential.description), Is.EqualTo("기능확장 부여"), potential.description);
    var owner = F(100, potential);
+   Assert.That(EffectModules.Classify(potential.description), Is.EqualTo("기능확장 부여"), potential.description);
+   string subject;
+   string[] extensionMoves;
+   Assert.That(FunctionExtensions.TryGrant(potential.description, out subject, out extensionMoves), Is.True, potential.description);
+   Assert.That(PotentialExecutors.Find(new EffectCall
+   {
+    Line = potential.description,
+    Event = new PotentialEvent(),
+    Source = new PotentialInstance { Owner = owner, Pokemon = potential, Name = potential.name, Slot = potential.id }
+   }).Name, Is.EqualTo("기능확장 부여"), potential.description);
    owner.Conditions.TurnFacts = new List<TriggerFact> {
     new TriggerFact { Kind = "등장", Self = true, Method = "통상교대" }
    };
    var opponent = F();
-   var rules = new Rules();
+   var rules = new Rules { OptionalEffectPrompt = (f, o, p) => true };
    var log = new List<string>();
    Mechanics.SetParties(rules, new[] { owner, opponent });
    using (EffectScope.Begin(new[] { owner, opponent }, rules, () => .5, new[] { new TrainerBattleState(), new TrainerBattleState() }))
