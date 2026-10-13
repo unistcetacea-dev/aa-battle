@@ -15,7 +15,7 @@ namespace AABattle
       string action;
       double rate;
       MoveCondition c;
-      string chaldea = ChaldeaModules.Normalize(text);
+      string chaldea = PhrasePipeline.ChaldeaEffect(text);
       if (chaldea != null)
         return chaldea;
       string abaddon = AbaddonModules.Normalize(text);

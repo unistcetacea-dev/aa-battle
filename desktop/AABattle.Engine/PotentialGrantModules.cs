@@ -1,7 +1,7 @@
 // 포텐셜 부여: 「자신에게 『X』를 부여한다」 — 배틀 중 포켓몬에게 포텐셜을 추가한다(역할 임명과 같은 방식).
 // 부여할 수 있는 포텐셜은 아래 표(칼데아 시트의 주인·특권 계열)와 편집기 템플릿(특권·범용·선) 이름이다.
 // 「이 포텐셜을 『X』로 한다/취급한다」(포텐셜 별칭)는 구조가 정해지지 않아 아직 읽지 않는다.
-// 연결: EffectModules.Classify · ChaldeaVariants.Normalize · PotentialExecutors(Register) · ModuleCatalog(RegisterChaldeaEffects)
+// 연결: EffectModules.Classify · PhrasePipeline.ChaldeaEffect(끝) · PotentialExecutors(Register) · ModuleCatalog(RegisterChaldeaEffects)
 using System;
 using System.Collections.Generic;
 using System.Linq;

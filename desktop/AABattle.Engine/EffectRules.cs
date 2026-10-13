@@ -24,9 +24,9 @@ namespace AABattle {
   static string NormalizeUncached(string text){
    // 방호·회피는 확률을 문장 안(공격마다 판정)으로 옮기므로 확률 접두어를 떼기 전에 처리한다
    string guarded=EffectModules.NormalizeGuard(PotentialParts.Clean(text??""));if(guarded!=null)return guarded;
-   string chaldeaWhole=ChaldeaModules.NormalizeWhole(PotentialParts.Clean(text??""));if(chaldeaWhole!=null)return chaldeaWhole;
+   string chaldeaWhole=PhrasePipeline.EffectWhole(PotentialParts.Clean(text??""));if(chaldeaWhole!=null)return chaldeaWhole;
    string deferWhole=DeferredDamage.NormalizeWhole(PotentialParts.Clean(text??""));if(deferWhole!=null)return deferWhole;
-   string probability,body;bool probabilistic=TryProbabilityPrefix(text,out probability,out body);string clean=ChaldeaModules.Pre(PotentialParts.Clean(probabilistic?body:text));
+   string probability,body;bool probabilistic=TryProbabilityPrefix(text,out probability,out body);string clean=PhrasePipeline.EffectPre(PotentialParts.Clean(probabilistic?body:text));
    clean=Regex.Replace(clean,@"임의의\s*능력치","임의의 능력");
    clean=Regex.Replace(clean,@"랜덤한\s*능력(?!치)","랜덤한 능력치");
    clean=Regex.Replace(clean,@"제일\s*(높은|낮은)\s*능력치?",m=>"가장 "+m.Groups[1].Value+" 능력");

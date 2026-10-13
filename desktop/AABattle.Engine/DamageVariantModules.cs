@@ -1,7 +1,7 @@
 // 칼데아 시트의 대미지 문장 변형을 표준 문장으로 바꾸고, 타입을 단 대미지를 실행한다.
 // 표준 문장: 「상대에게 최대 HP의 1/N 「X」 타입 대미지를 준다.」 — 타입을 단 대미지는 타입 상성을 받는다(사용자 결정).
 // 타입 없는 대미지는 기존 「최대 HP의 1/N」 모듈이 맡는다. F(실프 남은 모듈)의 같은 표준 문장과 하나로 합친다.
-// 연결: ChaldeaModules.Normalize(끝) · EffectModules.Classify · PotentialExecutors(Register) · ModuleCatalog(RegisterRoleEffects 옆)
+// 연결: PhrasePipeline.ChaldeaEffect(끝) · EffectModules.Classify · PotentialExecutors(Register) · ModuleCatalog(RegisterRoleEffects 옆)
 using System;
 using System.Collections.Generic;
 using System.Linq;
