@@ -17,7 +17,7 @@ namespace AABattle {
   // 「작은」 이하 = 최대 HP의 1/6 이하(사용자 결정)
   public const int SmallDamageDenominator = 6;
 
-  static bool TryParseRemaining4(string t, out TriggerSpec spec) {
+  static bool TryParseDamageTakenEvent(string t, out TriggerSpec spec) {
    spec = null;
    string s = Regex.Replace(t ?? "", @"\s+", " ").Trim();
    if (Regex.IsMatch(s, @"^「작은」 ?이하의 (?:대미지|데미지)를 받았을 때$")) spec = new TriggerSpec { Module = "작은 대미지" };
@@ -27,7 +27,7 @@ namespace AABattle {
    return spec != null;
   }
 
-  static string CanonicalRemaining4(TriggerSpec s) {
+  static string CanonicalDamageTakenEvent(TriggerSpec s) {
    switch (s.Module) {
     case "작은 대미지": return SmallDamageLabel;
     case "하락 무효": return DropNullifiedLabel;
@@ -37,7 +37,7 @@ namespace AABattle {
    return "";
   }
 
-  static bool MatchesRemaining4(TriggerSpec s, TriggerFact f) {
+  static bool MatchesDamageTakenEvent(TriggerSpec s, TriggerFact f) {
    switch (s.Module) {
     case "작은 대미지":
      return f.Kind == "체력" && f.Self && f.Max > 0 && f.After2 < f.Before && (long)(f.Before - f.After2) * SmallDamageDenominator <= f.Max;

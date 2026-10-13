@@ -12,7 +12,7 @@ namespace AABattle {
   // 모듈로 표현할 수 없는 전용 규칙만 남긴다
   public static readonly HashSet<string> Dedicated = new HashSet<string>();
   // 해석하지 않은 문장은 보류하고 검증된 나머지 문장만 연결한다.
-  public static readonly Dictionary<string, string> Pending = new Dictionary<string, string>(AbilityRewrites3.PendingReasons);
+  public static readonly Dictionary<string, string> Pending = new Dictionary<string, string>(AbilitySentenceTable.PendingReasons);
   // 도감 문장의 모듈 표현
   public static readonly Dictionary<string, string> Rewrites = new Dictionary<string, string> {
    { "인형사", BatonModules.BilateralRanks + "." },
@@ -104,7 +104,7 @@ namespace AABattle {
   }
   static string Text(AbilityDefinition d) {
    string r;
-   if (Rewrites.TryGetValue(d.name, out r) || AbilityRewrites3.Table.TryGetValue(d.name, out r) || AbilityRewrites4.Table.TryGetValue(d.name, out r)) return r;
+   if (Rewrites.TryGetValue(d.name, out r) || AbilitySentenceTable.Table.TryGetValue(d.name, out r)) return r;
    return AbilityPhrases.Fold(AbilityPhrases.Rewrite(Clean(d.effect)));
   }
   // 도감 표시와 효과 없음 집계용: 특성 문장 전체(효과 없음 문장 포함)

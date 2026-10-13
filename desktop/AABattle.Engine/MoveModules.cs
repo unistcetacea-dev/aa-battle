@@ -342,7 +342,7 @@ namespace AABattle {
 
   // 이 기술 행동이 모으기 T인가(true면 행동은 여기서 끝난다). 2T째는 모으기 상태를 풀고 false
   public static bool Charge(Fighter a, Fighter b, Move m, Rules r, List<string> log) {
-   AbilityRemaining4Events.LeaveDarkness(a, log);   // 어둠안: 자신이 행동하면 풀린다
+   AbilityEventRuntime.LeaveDarkness(a, log);   // 어둠안: 자신이 행동하면 풀린다
    if (a == null || !Charges(m)) return false;
    var c = a.Conditions;
    if (c.ChargeMove == m.name) { Release(a, b); return false; }

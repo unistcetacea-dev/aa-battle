@@ -53,7 +53,7 @@ namespace AABattle
     public static bool TryScalar(string text, out ScalarEffect effect)
     {
       effect = null;
-      if (AbilityRemaining4Modules.TryProportional(text, out effect))
+      if (AbilityMiscModules.TryProportional(text, out effect))
         return true;
       string target, action;
       double rate;

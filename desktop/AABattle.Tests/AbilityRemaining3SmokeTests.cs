@@ -16,12 +16,12 @@ namespace AABattle {
   }
   static Move M(string name) { return TestData.Db.moves.First(m => m.name == name); }
 
-  public static IEnumerable<string> TableNames { get { return AbilityRewrites3.Table.Keys.Where(k => AbilityCatalog.Find(k) != null); } }
+  public static IEnumerable<string> TableNames { get { return AbilitySentenceTable.Core.Keys.Where(k => AbilityCatalog.Find(k) != null); } }
 
   [TestCaseSource("TableNames")]
   public void RewrittenAbilityRunsATurnWithoutPendingOwnSentence(string ability) {
    var definition = AbilityCatalog.Find(ability);
-   Assert.That(definition.support, Is.EqualTo(AbilityRewrites3.PendingReasons.ContainsKey(ability) ? "부분 자동" : "자동"), ability);
+   Assert.That(definition.support, Is.EqualTo(AbilitySentenceTable.PendingReasons.ContainsKey(ability) ? "부분 자동" : "자동"), ability);
    foreach (bool first in new[] { true, false }) {
     var holder = F(ability); var other = F("");
     var fighters = first ? new[] { holder, other } : new[] { other, holder };

@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 
 namespace AABattle {
- // 남은 특성 모듈화 3차: 도감 문장을 표준 문장 모듈로 옮긴 것(특성 하나에만 맞는 문장).
- // 같은 뜻 변형이 여럿에 겹치면 AbilityPhrases의 일반 규칙으로 옮기고, 여기에는 하나뿐인 문장만 둔다.
+ // 특성별 표준 문장 표(핵심): 도감 문장을 표준 문장 모듈로 옮긴 것(특성 하나에만 맞는 문장).
+ // 같은 뜻 변형이 여럿에 겹치면 Phrases/의 일반 규칙으로 옮기고, 여기에는 하나뿐인 문장만 둔다.
  // 효과 없음 문장(다인전 전용·배틀 밖)은 AbilityNoEffectModules의 표준 문장으로 쓴다.
- public static class AbilityRewrites3 {
+ public static partial class AbilitySentenceTable {
   const string NoMulti = AbilityNoEffectModules.MultiBattle + ".";
   const string NoBattle = AbilityNoEffectModules.OutOfBattle + ".";
 
@@ -14,7 +14,7 @@ namespace AABattle {
    { "습기", "〔유폭〕 특성의 효과 실패는 실행하지 않는다(특성 이름을 직접 가리키는 문장)" },
   };
 
-  public static readonly Dictionary<string, string> Table = new Dictionary<string, string> {
+  public static readonly Dictionary<string, string> Core = new Dictionary<string, string> {
    // ===== 사용자 결정 1: 다인전 전용 · 대상 아군이 없는 효과 =====
    { "공생", NoMulti },
    { "리시버", NoMulti },

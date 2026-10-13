@@ -12,7 +12,7 @@ namespace AABattle {
  //  기술머신 추가행동     가장 마지막에 소지품 「기술머신」의 기술에 의한 추가행동을 얻을 수 있다.
  //  상대 종족치 복사      상대의 가장 높은 종족치를 자신의 같은 능력에 복사한다.
  //  소지품 효과 공유      그 소지품의 효과를 자신도 받는다.
- public static class AbilityRemaining4Modules {
+ public static class AbilityMiscModules {
   static readonly Regex FieldHeal = new Regex(@"^필드에 있는 「(?<t>[^」]+)」 타입 전원의 체력을 최대 HP의 1/(?<n>\d+) 회복한다$");
   static readonly Regex FieldHurt = new Regex(@"^필드에 있는 「(?<t>[^」]+)」 타입 이외의 전원에게 최대 HP의 1/(?<n>\d+) 대미지를 준다$");
   public const string RiseAgain = "자신의 능력을 올라간 만큼 올린다";

@@ -104,9 +104,9 @@ namespace AABattle
       string typed = TypeRules.Classify(s);
       if (typed.Length > 0)
         return typed;
-      string remaining4 = AbilityRemaining4Modules.Classify(s);
-      if (remaining4.Length > 0)
-        return remaining4;
+      string miscModule = AbilityMiscModules.Classify(s);
+      if (miscModule.Length > 0)
+        return miscModule;
       if (TryScalar(s, out scalar))
         return "수치 배율";
       if (TrySpecies(s, out species))

@@ -2,12 +2,23 @@ using System;
 using System.Collections.Generic;
 
 namespace AABattle {
- // 남은 특성 모듈화 4차: 사용자 답변을 반영한 도감 문장의 표준 문장 표현.
- // AbilityRewrites3와 같은 방식이다(특성 하나에만 맞는 문장).
- public static class AbilityRewrites4 {
-  const string NoMulti = AbilityNoEffectModules.MultiBattle + ".";
+ // 특성별 표준 문장 표(사용자 답변 반영): Core와 같은 방식이다(특성 하나에만 맞는 문장).
+ public static partial class AbilitySentenceTable {
+  static Dictionary<string, string> all;
 
-  public static readonly Dictionary<string, string> Table = new Dictionary<string, string> {
+  // 두 표를 합친 것(특성 이름이 겹치면 오류)
+  public static Dictionary<string, string> Table {
+   get {
+    if (all == null) {
+     var merged = new Dictionary<string, string>(Core);
+     foreach (var pair in Answered) merged.Add(pair.Key, pair.Value);
+     all = merged;
+    }
+    return all;
+   }
+  }
+
+  public static readonly Dictionary<string, string> Answered = new Dictionary<string, string> {
    // ===== 추가효과로 거는 예약 공격(기술 데이터의 자연발화·미래예지·파멸의소원을 그대로 쓴다) =====
    { "번지는불꽃", "자신의 기술에 「4할:자연발화」의 추가효과를 부여한다." },
    { "선독", "자신의 공격에 「4할:미래예지」의 추가효과를 부여한다." },

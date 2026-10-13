@@ -9,10 +9,10 @@ namespace AABattle {
   public const string NoRecoil = "자신의 기술의 반동 대미지를 받지 않는다";
   static readonly Regex MoveType = new Regex(@"^자신의 (?<c>(?:「[^」]+」)*)\s*기술의 타입을 「(?<t>[^」]+)」(?:으로|로) 한다$");
   static readonly Regex WeatherLock = new Regex(@"^날씨를 「(?<w>큰가뭄|강한 비|난기류)」(?:으로|로) 고정한다$");
-  static string RewriteRemaining(string s) {
+  static string RewriteTypeSentence(string s) {
    return PhrasePipeline.AbilityTypeSentence(s);
   }
-  static string ClassifyRemaining(string s) {
+  static string ClassifyTypeSentence(string s) {
    if (s == MatchMoveType) return "기술 타입으로 변화";
    if (s == NoRecoil) return "기술 반동 무효";
    if (MoveType.IsMatch(s) && MoveCondition.TypeNames.Contains(MoveType.Match(s).Groups["t"].Value)) return "기술 타입 변경";

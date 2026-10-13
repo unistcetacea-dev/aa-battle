@@ -155,7 +155,7 @@ namespace AABattle
     {
       MakenTurnLast.Register();
       MoveMiscModules.Register();
-      AbilityRemaining4Modules.Register();
+      AbilityMiscModules.Register();
       PotentialQueue.BuiltIn.Register();
       MoveModules.RegisterExecutors();
       AbilityChangeModules.Register();

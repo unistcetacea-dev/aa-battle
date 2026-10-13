@@ -136,7 +136,7 @@ namespace AABattle {
     new[] { "indirect.survive", "간접 대미지 빈사 방지", AbilityStateModules.SurviveIndirect },
     new[] { "drain.reverse", "드레인 반전", AbilityStateModules.ReverseDrain },
     new[] { "aura.reverse", "오라 반전", AbilityStateModules.AuraBreak },
-    new[] { "rank.riseagain", "올라간 만큼 올림", AbilityRemaining4Modules.RiseAgain },
+    new[] { "rank.riseagain", "올라간 만큼 올림", AbilityMiscModules.RiseAgain },
     new[] { "intimidate.immune", "위협 하락 무효", "상대의 〔위협〕에 의한 능력 하락을 무효화한다" },
     new[] { "machine.extra", "기술머신 추가행동", "가장 마지막에 소지품 「기술머신」의 기술에 의한 추가행동을 얻을 수 있다" },
     new[] { "stats.copyhighest", "상대 종족치 복사", "상대의 가장 높은 종족치를 자신의 같은 능력에 복사한다" },

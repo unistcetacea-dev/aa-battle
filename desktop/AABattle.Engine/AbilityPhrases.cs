@@ -61,7 +61,7 @@ namespace AABattle {
    string s = raw.TrimEnd('.', '。').Trim();
    string shared = AbilityCriticalFieldModules.Normalize(s) ?? AbilityChangeModules.Normalize(s) ?? AbilityItemModules.Normalize(s) ?? BatonModules.Normalize(s) ?? PursuitModules.Normalize(s);
    if (shared != null) { yield return shared; yield break; }
-   string remaining = RewriteRemaining(s);
+   string remaining = RewriteTypeSentence(s);
    if (remaining != null) { yield return remaining + "."; yield break; }
    Match m;
    // 흡수: 「X」 기술을 받으면 흡수해서 「S」이 오른다 / 체력을 1/N 회복한다
@@ -109,7 +109,7 @@ namespace AABattle {
    string shared = AbilityCriticalFieldModules.Normalize(r) ?? AbilityChangeModules.Normalize(r) ?? AbilityItemModules.Normalize(r) ?? BatonModules.Normalize(r) ?? PursuitModules.Normalize(r);
    if (shared != null) return shared.TrimEnd('.');
    string s = r.Trim().TrimEnd('.', '。').Trim();
-   string remaining = RewriteRemaining(s);
+   string remaining = RewriteTypeSentence(s);
    if (remaining != null) return remaining;
    return PhrasePipeline.AbilityEffect(s) ?? s;
   }
@@ -117,13 +117,13 @@ namespace AABattle {
   // ===== 새 계속 효과 모듈 =====
   public static string Normalize(string text) {
    string t = Clean(text);
-   if (ClassifyRemaining(t).Length > 0) return t + ".";
+   if (ClassifyTypeSentence(t).Length > 0) return t + ".";
    if (ContinuousRules.ContainsKey(t) || t == NoCritical || t == Sturdy || t == MagicGuard || t == HazardProof || t == Pierce || DropImmune.IsMatch(t) || AddType.IsMatch(t) || Priority.IsMatch(t) || WeatherDamageRule(t) || StatusPower.IsMatch(t)) return t + ".";
    return null;
   }
   public static string Classify(string sentence) {
    string s = Clean(sentence);
-   string remaining = ClassifyRemaining(s);
+   string remaining = ClassifyTypeSentence(s);
    if (remaining.Length > 0) return remaining;
    string module;
    if (ContinuousRules.TryGetValue(s, out module)) return module;

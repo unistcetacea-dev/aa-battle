@@ -57,7 +57,7 @@ namespace AABattle {
    if (m.Success && MoveCondition.TryParse(m.Groups["c"].Value, out c)) { spec = new TriggerSpec { Module = "급소 받음", Condition = c }; return true; }
    if (t == AnyFaintLabel) { spec = new TriggerSpec { Module = "필드 빈사" }; return true; }
    if (t == BerryUsedLabel) { spec = new TriggerSpec { Module = "나무열매 사용" }; return true; }
-   return TryParseRemaining4(t, out spec);
+   return TryParseDamageTakenEvent(t, out spec);
   }
 
   static string CanonicalAbilityState(TriggerSpec s) {
@@ -73,7 +73,7 @@ namespace AABattle {
     case "필드 빈사": return AnyFaintLabel;
     case "나무열매 사용": return BerryUsedLabel;
    }
-   return CanonicalRemaining4(s);
+   return CanonicalDamageTakenEvent(s);
   }
 
   // ===== 지금 성립하는가 =====
@@ -116,7 +116,7 @@ namespace AABattle {
     case "필드 빈사": return f.Kind == "상태 됨" && f.Method == "빈사";
     case "나무열매 사용": return f.Kind == "소지품 소실" && f.Self && f.Method == "소모" && ItemRuntime.IsBerry(f.Item);
    }
-   return MatchesRemaining4(s, f);
+   return MatchesDamageTakenEvent(s, f);
   }
  }
 }

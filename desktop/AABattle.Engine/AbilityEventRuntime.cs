@@ -56,7 +56,7 @@ namespace AABattle {
  }
 
  // 사건·상태 판정 지점
- public static class AbilityRemaining4Events {
+ public static class AbilityEventRuntime {
   public const string IntimidateLabel = "〔위협〕";
 
   // 피격 전 체력이 가득이었는가(멀티스케일처럼 피격 순간의 체력으로 본다)
@@ -77,7 +77,7 @@ namespace AABattle {
   // 〔위협〕에 의한 능력 하락을 무효화하는 문장이 있으면 하락을 막고 「〔위협〕을 받았을 때」 사건을 낸다
   public static bool IntimidateImmune(Fighter target, Fighter source, Rules rules, string reason, List<string> log) {
    if (reason != IntimidateLabel || target == null || target.HP <= 0) return false;
-   if (!PotentialModifiers.Sentences(target, source, rules ?? new Rules(), "위협").Any(AbilityRemaining4Modules.IsIntimidateImmunity)) return false;
+   if (!PotentialModifiers.Sentences(target, source, rules ?? new Rules(), "위협").Any(AbilityMiscModules.IsIntimidateImmunity)) return false;
    log.Add(target.Data.name + "의 〔" + AbilityRuntime.Name(target) + "〕: 〔위협〕에 의한 능력 하락을 무효화했다");
    TriggerModules.Raise(new TriggerFact { Kind = "위협 받음" }, target, source, target.Data.name + "이 〔위협〕을 받았다", log.Add);
    return true;

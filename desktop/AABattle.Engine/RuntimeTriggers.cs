@@ -39,7 +39,7 @@ namespace AABattle {
   // 명중(타격마다): 공격한 쪽의 「명중했을 때」·「급소에 맞았을 때」와 받은 쪽의 「받았을 때」. 변화기술은 명중 판정을 통과했을 때
   public static void Hit(Fighter attacker,Fighter target,Move move,int bodyDamage,bool substitute,bool critical,double typeEffect,Action<string> log){
    if(attacker==null||target==null||move==null)return;
-   var fact=new TriggerFact{Kind="명중",Move=move,User=attacker,Damaged=bodyDamage>0,Substitute=substitute,Critical=critical,TypeEffect=typeEffect,OtherAin=TriggerModules.IsAin(attacker),WasFull=AbilityRemaining4Events.WasFull(target,attacker,bodyDamage)};
+   var fact=new TriggerFact{Kind="명중",Move=move,User=attacker,Damaged=bodyDamage>0,Substitute=substitute,Critical=critical,TypeEffect=typeEffect,OtherAin=TriggerModules.IsAin(attacker),WasFull=AbilityEventRuntime.WasFull(target,attacker,bodyDamage)};
    TriggerModules.Raise(fact,attacker,target,attacker.Data.name+"의 "+move.name+"이 "+target.Data.name+"에게 명중했다."+(critical?" (급소)":""),log);
   }
   // 「기술을 내보냈을 때」(기술 처리 직후)

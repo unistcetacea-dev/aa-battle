@@ -23,7 +23,7 @@ namespace AABattle {
   }
 
   // ----- 모든 새 문장은 자동으로 분류되고 한 턴을 오류 없이 돈다 -----
-  public static IEnumerable<string> TableNames { get { return AbilityRewrites4.Table.Keys; } }
+  public static IEnumerable<string> TableNames { get { return AbilitySentenceTable.Answered.Keys; } }
   [TestCaseSource("TableNames")]
   public void EveryRewrittenAbilityIsAutomaticAndRunsATurn(string ability) {
    var definition = AbilityCatalog.Find(ability);
@@ -118,7 +118,7 @@ namespace AABattle {
   [TestCase(5, 1.6)]
   [TestCase(6, 1.6)]
   public void FallenAllyRateIsOnePointOnePlusTenthsCappedAtFive(int fallen, double expected) {
-   Assert.That(AbilityRemaining4Modules.FallenAllyRate(fallen), Is.EqualTo(expected).Within(1e-9));
+   Assert.That(AbilityMiscModules.FallenAllyRate(fallen), Is.EqualTo(expected).Within(1e-9));
    var holder = F("총대장"); holder.OnField = true;
    var party = new List<Fighter> { holder };
    for (int i = 0; i < fallen; i++) { var down = F(); down.HP = 0; party.Add(down); }
