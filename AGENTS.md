@@ -39,3 +39,4 @@ Windows C# WinForms 프로그램이다. 현재 상태는 `PROJECT_HANDOFF.md`, �
 - EXE가 사용 중이면 `./desktop/build.ps1 -OutputPath outputs/candidate`로 별도 빌드하고 실제 실행 경로를 안내한다.
 - 동작 변경은 관련 회귀 검사와 `PROJECT_HANDOFF.md`를 갱신한다. 검사는 `AABattle.Tests`에 기능별 `[Test]`로 추가하고, 실행 코드 안에 새 검사를 넣지 않는다. 버그 수정이나 규칙이 갈리는 지점만 검사하고, 단순 존재 확인·데이터 개수 고정·문장 전체 비교는 넣지 않는다. 같은 모양의 검사는 `[TestCase]`로 묶는다. UI 리플렉션 검사는 `[Category("UI")]`를 붙인다. 산출물·임시 파일·비밀은 Git에서 제외한다.
 - 사용자 요청 범위와 연결된 수정만 한다. 변경 이유, 테스트 결과, 실행 파일 위치를 짧게 보고한다.
+- 배포는 `desktop/publish.ps1` 후 `release/windows`를 커밋·push한다(받는 쪽 프로그램이 이 폴더에서 업데이트를 받는다).
