@@ -232,13 +232,56 @@ namespace AABattle
       return prefix + PotentialProtection.Canonical(c, probability, m.Groups["v"].Value);
     }
 
+    const string ExtraPosition = @"가장\s*먼저|가장\s*마지막에|제일\s*마지막에|T의\s*(?:최후|마지막)에|턴의\s*(?:최후|마지막)에|최후에";
+
+    // 「X」(또는 「기능확장:X」)에 의한 추가행동 → 기술 이름 조건의 추가행동. 일반 단어 「X」는 기술 이름일 때만 이름으로 본다
+    static string NormalizeExtraByName(string t)
+    {
+      var m = Regex.Match(t, @"^(?:「?(?<n>\d+)」?\s*(?:의\s*)?배수\s*(?:의\s*)?T\s*,?\s*)?(?:(?<pos>" + ExtraPosition + @")\s*,?\s*)?「(?<ext>기능\s*확장\s*[:：(（]\s*)?(?<name>[^」()（）:：]+?)\s*[)）]?」\s*(?:기술\s*)?(?:에\s*의한|로)\s*추가행동을\s*얻는다$");
+      if (!m.Success)
+        return null;
+      string name = m.Groups["name"].Value.Trim();
+      if (!m.Groups["ext"].Success && !MoveNames.Known(name))
+        return null;
+      var c = new MoveCondition();
+      c.Names.Add(name);
+      int every = m.Groups["n"].Success ? int.Parse(m.Groups["n"].Value) : 0;
+      return ExtraActionRuntime.Canonical(every, m.Groups["pos"].Value.Contains("먼저"), c, false);
+    }
+
+    // 추가공격 = 방금 내보낸 공격을 한 번 더(사용자 결정). 「X」를 내보낸다 = 그 기술의 추가행동
+    static string NormalizeExtraRepeat(string t)
+    {
+      var again = Regex.Match(t, @"^(?:공격\s*명중\s*후\s*,?\s*)?(?:(?<pos>" + ExtraPosition + @")\s*,?\s*)?추가공격을\s*(?:할\s*수\s*있다|내보낸다|한다)$");
+      if (again.Success)
+        return ExtraActionRuntime.Canonical(0, !LastPosition(again.Groups["pos"].Value), new MoveCondition(), true);
+      var send = Regex.Match(t, @"^(?:(?<pos>" + ExtraPosition + @")\s*,?\s*)?「(?<name>[^」]+)」(?:을|를)\s*내보낸다$");
+      if (send.Success && MoveNames.Known(send.Groups["name"].Value.Trim()))
+      {
+        var c = new MoveCondition();
+        c.Names.Add(send.Groups["name"].Value.Trim());
+        return ExtraActionRuntime.Canonical(0, !LastPosition(send.Groups["pos"].Value), c, false);
+      }
+
+      return null;
+    }
+
+    static bool LastPosition(string position)
+    {
+      return position.Contains("마지막") || position.Contains("최후");
+    }
+
     // 추가행동 변형 → 「「N」배수 T, 가장 먼저/마지막에 「조건」 기술에 의한 추가행동을 얻는다」. 지령에 의한 추가행동권은 다른 규칙이라 바꾸지 않는다
     static string NormalizeExtra(string text)
     {
       string t = Regex.Replace(text, @"추가\s*행동권?", "추가행동");
+      t = Regex.Replace(t, @"^(?<head>(?:「?\d+」?\s*(?:의\s*)?배수\s*(?:의\s*)?T\s*,?\s*)?)(?:아군|자신)이\s+", "${head}");
+      string named = NormalizeExtraByName(t) ?? NormalizeExtraRepeat(t);
+      if (named != null)
+        return named;
       if (!t.Contains("추가행동") || t.Contains("지령"))
         return null;
-      var m = Regex.Match(t, @"^(?:「?(?<n>\d+)」?\s*(?:의\s*)?배수\s*(?:의\s*)?T\s*,?\s*)?(?:(?<pos>가장\s*먼저|가장\s*마지막에|제일\s*마지막에|T의\s*최후에|최후에)\s*,?\s*)?(?:(?:기술\s*)?(?<c>(?:「[^」]+」\s*)+)(?:등의\s*)?(?:기술)?(?:에\s*의한|로)\s*)?추가행동을\s*얻는다$");
+      var m = Regex.Match(t, @"^(?:「?(?<n>\d+)」?\s*(?:의\s*)?배수\s*(?:의\s*)?T\s*,?\s*)?(?:(?<pos>가장\s*먼저|가장\s*마지막에|제일\s*마지막에|T의\s*(?:최후|마지막)에|턴의\s*(?:최후|마지막)에|최후에)\s*,?\s*)?(?:(?:기술\s*)?(?<c>(?:「[^」]+」\s*)+)(?:등의\s*)?(?:기술)?(?:에\s*의한|로)\s*)?추가행동을\s*얻는다$");
       if (!m.Success)
         return null;
       MoveCondition c = new MoveCondition();

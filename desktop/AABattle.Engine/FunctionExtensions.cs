@@ -15,6 +15,12 @@ namespace AABattle {
   // 수집 원문 → 표준 문장. 아니면 null
   public static string Normalize(string text) {
    string t = Clean(text);
+   // 「기능확장」이라고 적지 않아도 기술 이름만 나열한 「…을 내보낼 수 있다」는 기능확장 허용이다(「아군이 「우드해머」를 내보낼 수 있다」)
+   var plain = Regex.Match(t, @"^(?:(?<s>자신|아군\s*전원|아군|PT\s*전원)(?:이|가)\s*)?(?<names>「[^」]+」(?:\s*[,，、]?\s*「[^」]+」)*)(?:을|를)\s*(?:내보낼|사용할)\s*수\s*있다$");
+   if (plain.Success) {
+    var listed = Regex.Matches(plain.Groups["names"].Value, "「([^」]+)」").Cast<Match>().Select(x => x.Groups[1].Value.Trim()).ToList();
+    if (listed.Count > 0 && listed.All(MoveNames.Known)) return Canonical(plain.Groups["s"].Value.Contains("아군") || plain.Groups["s"].Value.Contains("PT") ? "아군 전원" : "자신", listed);
+   }
    if (!Regex.IsMatch(t, @"기능\s*확장")) return null;
    // 이미 표준 문장이면(이름에 괄호가 있어도: 「기능확장:아라가미탄(불꽃)」) 그대로 다시 만든다
    string standardSubject; string[] standardMoves;
