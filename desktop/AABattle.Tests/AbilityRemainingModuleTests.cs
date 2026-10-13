@@ -178,12 +178,13 @@ namespace AABattle {
    var last = Engine.Resolve(TestData.Db, next.Fighters, new[] { new BattleCommand { Move = Idle() }, new BattleCommand { SwitchIn = F() } }, next.Rules, next.Trainers, () => .5);
    Assert.That(last.Rules.Weather, Is.EqualTo("큰가뭄"));
   }
-  [Test] public void AmbiguousCriticalClauseDoesNotDisableKnownSecondClause() {
+  // 결정 확정: 「상대의 「C」가 「±0」이 된다」는 급소 랭크 모듈로 실행하고, 같은 특성의 다른 문장도 함께 동작한다.
+  [Test] public void CriticalRankClauseRunsTogetherWithKnownSecondClause() {
    var a = F("다이아가드"); int hp = a.HP;
    Mechanics.Hurt(a, F(), new Rules(), 30, "슬립", new List<string>());
    Assert.That(a.HP, Is.EqualTo(hp));
-   Assert.That(AbilityCatalog.Find("다이아가드").support, Is.Not.EqualTo("자동"));
-   Assert.That(AbilityCatalog.Find("다이아가드").blocker, Does.Contain("판단"));
+   Assert.That(AbilityCriticalFieldModules.HasCriticalRankZero(a, F(), new Rules()), Is.True);
+   Assert.That(AbilityCatalog.Find("다이아가드").support, Is.EqualTo("자동"));
   }
   [Test] public void BracketedAbilityChangeRunsAndRestoresOnDeparture() {
    var a = F(); var b = F("미라"); var hit = M("몸통박치기").Copy(); hit.power = 10;

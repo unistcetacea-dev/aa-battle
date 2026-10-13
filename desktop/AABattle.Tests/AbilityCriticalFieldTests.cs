@@ -145,5 +145,16 @@ namespace AABattle {
    a.Data.types = new[] { "풀" };
    Assert.That(Engine.Calculate(TestData.Db, b, a, M("불꽃"), new Rules()).Type, Is.EqualTo(1));
   }
+
+  // 남은 1개짜리 고유 효과 중 기존 수치 배율 모듈 문장으로 표현되는 것
+  [TestCase("내진", "땅", 0.5)]
+  [TestCase("헥사그램", "얼음", 0.5)]
+  [TestCase("헥사그램", "비행", 1)]
+  [TestCase("옥타그램", "비행", 0.67)]
+  [TestCase("정령", "페어리", 2)]
+  public void ReceivedTypeDamageRewritesUseScalarModule(string ability, string type, double expected) {
+   var attacker = F(); var holder = F(ability);
+   Assert.That(PotentialModifiers.Damage(attacker, holder, M(type), new Rules(), 1), Is.EqualTo(expected).Within(1e-9));
+  }
  }
 }
