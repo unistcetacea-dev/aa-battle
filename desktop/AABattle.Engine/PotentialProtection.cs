@@ -92,7 +92,9 @@ namespace AABattle {
    foreach (var line in Lines(b, a, rules, "무효").Concat(Lines(b, a, rules, "회피")).Concat(Lines(b, a, rules, "반사"))) {
     if (!seen.Add((line.Trainer ? "T:" : "P:") + line.Text)) continue;
     string kind; MoveCondition c; double? rate; bool once;
-    if (!TryGuard(line.Text, out kind, out c, out rate, out once) || !c.Matches(move, a, type)) continue;
+    if (!TryGuard(line.Text, out kind, out c, out rate, out once)) continue;
+    MoveCondition.MatchTarget = b;
+    try { if (!c.Matches(move, a, type)) continue; } finally { MoveCondition.MatchTarget = null; }
     if (once && b.Conditions.GuardUsed.Contains(line.Text)) continue;                  // 1번만: 이미 썼다
     if (kind == "회피" && sureHit) continue;                                         // 필중 기술은 회피하지 못한다
     if (kind != "회피" && (line.Trainer ? pierceTrainer : piercePokemon)) continue;   // 방호(무효화·반사) 관통

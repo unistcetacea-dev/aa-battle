@@ -249,6 +249,34 @@ namespace AABattle {
    var shed = F("탈피"); shed.Conditions.Bound = 3;
    Assert.That(SwitchEffectRuntime.CanSwitch(null, shed, SwitchReason.Normal, out block), Is.True);
   }
+  [TestCase("그림자밟기", "노말", false, false)]
+  [TestCase("그림자밟기", "비행", false, false)]
+  [TestCase("개미지옥", "노말", false, false)]
+  [TestCase("개미지옥", "노말", true, true)]
+  [TestCase("자력", "강철", false, false)]
+  [TestCase("자력", "노말", false, true)]
+  public void SwitchTrapModulesBlockNormalSwitchingOfTheirTargets(string ability, string userType, bool floating, bool allowed) {
+   var trap = F(ability); var user = F("", userType);
+   if (floating) Rule(user, "자신은 공중에 떠오른다.");
+   string block;
+   Assert.That(SwitchEffectRuntime.CanSwitch(trap, user, SwitchReason.Normal, out block), Is.EqualTo(allowed), block);
+   Assert.That(SwitchEffectRuntime.CanSwitch(trap, user, SwitchReason.Return, out block), Is.EqualTo(allowed), "『돌아와！』도 통상교대다");
+   Assert.That(SwitchEffectRuntime.CanSwitch(trap, user, SwitchReason.Forced, out block), Is.True, "강제교대는 막지 않는다");
+   var runner = F("도주", userType);
+   Assert.That(SwitchEffectRuntime.CanSwitch(trap, runner, SwitchReason.Normal, out block), Is.True, "도주는 반드시 교대할 수 있다");
+  }
+  [Test] public void SteelTrapAlsoGrantsSureHitAgainstSteel() {
+   var magnet = F("자력"); var shock = Custom("전기검사", "특수", 40, "전기"); shock.accuracy = 70;
+   Assert.That(double.IsPositiveInfinity(Mechanics.Accuracy(magnet, F("", "강철"), shock, new Rules())), Is.True);
+   Assert.That(double.IsPositiveInfinity(Mechanics.Accuracy(magnet, F(), shock, new Rules())), Is.False);
+  }
+  [Test] public void SameTypeAvoidanceNeedsTheTargetsOwnType() {
+   var holder = F("만트라", "불꽃"); var fire = Custom("불꽃검사", "특수", 40, "불꽃"); var water = Custom("물검사", "특수", 40, "물");
+   Assert.That(PotentialProtection.Check(TestData.Db, F(), holder, fire, new Rules(), () => .5, false), Is.Not.Null);
+   Assert.That(PotentialProtection.Check(TestData.Db, F(), holder, water, new Rules(), () => .5, false), Is.Null);
+   Assert.That(PotentialProtection.Check(TestData.Db, F(), holder, fire, new Rules(), () => .5, true), Is.Null, "필중 기술은 회피하지 못한다");
+   Assert.That(PotentialProtection.Check(TestData.Db, F(), holder, Custom("변화검사", "변화", 0, "불꽃"), new Rules(), () => .5, false), Is.Null, "공격기술만");
+  }
   [Test] public void OnceGuardBlocksOnceAndRestoresOnWeather() {
    var holder = F("아이스페이스"); var foe = F();
    var rules = new Rules();
@@ -366,6 +394,10 @@ namespace AABattle {
    var ghostMove = Custom("고스트검사", "특수", 40, "고스트");
    Assert.That(Mechanics.TypeEffect(TestData.Db, F("나이트위저드"), F(), ghostMove, rules), Is.EqualTo(1));
    Assert.That(Mechanics.TypeEffect(TestData.Db, F("호담"), steel, poison, rules), Is.GreaterThan(0));
+   // 음양사: 공격기술에 고스트 타입을 더해 유리한 상성으로 판정(기존 타입 추가 모듈)
+   Assert.That(Mechanics.TypeEffect(TestData.Db, F("음양사"), ghost, normal, rules), Is.EqualTo(2));
+   Assert.That(Mechanics.TypeEffect(TestData.Db, F("음양사"), F(), normal, rules), Is.EqualTo(1));
+   Assert.That(Mechanics.TypeEffect(TestData.Db, F("음양사"), ghost, Custom("변화검사", "변화", 0, "노말"), rules), Is.EqualTo(0), "변화기술에는 적용하지 않는다");
    var fire = Custom("불꽃검사", "특수", 40, "불꽃");
    Assert.That(Mechanics.TypeEffect(TestData.Db, F(), F("용의비늘"), fire, rules), Is.EqualTo(.5));
    Assert.That(Mechanics.TypeEffect(TestData.Db, F("용의비늘"), F(), fire, rules), Is.EqualTo(1), "자신의 기술에는 적용하지 않는다");

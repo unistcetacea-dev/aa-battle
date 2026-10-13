@@ -19,6 +19,7 @@ namespace AABattle {
   public const string SurviveIndirect = "자신은 공격 이외의 대미지로 빈사가 되지 않는다";
   public const string ReverseDrain = "자신에 대한 상대의 드레인 효과를 반전한다";
   public const string AuraBreak = "〔오라〕의 효과를 반전한다";
+  static readonly Regex SwitchTrap = new Regex(@"^(?<w>접지한 |「[^」]+」 타입인 )?상대는 「통상교대」를 할 수 없다$");
   static readonly Regex Chance = new Regex(@"^자신은 빈사가 되는 공격을 (?<p>드물게|저확률로|중확률로) HP 1로 버틴다$");
   static readonly Regex StatusDamage = new Regex(@"^자신은 (?<s>(?:「[^」]+」)+)의 대미지를 받지 않는다$");
   static readonly string[] DamageStatuses = { "독", "맹독", "화상", "동상" };
@@ -50,6 +51,8 @@ namespace AABattle {
    if (s == ReverseDrain) return "드레인 반전";
    if (s == AuraBreak) return "오라 반전";
    if (Chance.IsMatch(s)) return "확률 버팀";
+   var trap = SwitchTrap.Match(s);
+   if (trap.Success && (!trap.Groups["w"].Value.StartsWith("「") || Names(trap.Groups["w"].Value).All(MoveCondition.TypeNames.Contains))) return "통상교대 금지";
    var m = StatusDamage.Match(s);
    if (m.Success && Names(m.Groups["s"].Value).All(DamageStatuses.Contains)) return "상태이상 대미지 면역";
    return "";
@@ -89,6 +92,20 @@ namespace AABattle {
   public const string AlwaysSwitch = "반드시 아군과 교대할 수 있다";
   public static bool AlwaysSwitchable(Fighter f) {
    return f != null && Own(f, null, EffectScope.Current == null ? null : EffectScope.Current.Rules, "반드시 아군과").Any(x => x == AlwaysSwitch);
+  }
+  // 개미지옥(접지한 상대)·그림자밟기(상대 전원)·자력(강철 타입 상대): 상대가 통상교대(『돌아와！』 포함)를 할 수 없다
+  public static string SwitchTrapReason(Fighter holder, Fighter user) {
+   if (holder == null || user == null || holder.HP <= 0 || !holder.OnField) return "";
+   var rules = EffectScope.Current == null ? new Rules() : EffectScope.Current.Rules;
+   foreach (string line in Own(holder, user, rules, "통상교대")) {
+    var m = SwitchTrap.Match(line);
+    if (!m.Success) continue;
+    string who = m.Groups["w"].Value;
+    if (who.StartsWith("접지") && !Mechanics.Grounded(user, rules)) continue;
+    if (who.StartsWith("「") && !Names(who).Any(t => Mechanics.Has(user, t))) continue;
+    return "상대의 효과로 통상교대를 할 수 없다.";
+   }
+   return "";
   }
   public static bool ReversesDrain(Fighter drained, Fighter drainer, Rules rules) {
    return drained != null && Own(drained, drainer, rules, "드레인").Any(x => x == ReverseDrain);

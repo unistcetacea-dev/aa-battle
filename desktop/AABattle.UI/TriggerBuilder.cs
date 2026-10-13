@@ -25,7 +25,7 @@ namespace AABattle {
   static readonly string[] StatusModules = { "상태", "상태 됨", "상태 해제" };
   const string ReleaseKind = "상태가 해제되었을 때", FaintKind = "빈사가 되었을 때";
   // 편집기에서 모듈 입력으로 고르는 것(나머지는 기존 구조·확정 목록 입력을 쓴다)
-  static readonly string[] OwnInputModules = { "등장", "교대", "퇴장", "타이밍", "피격", "명중", "급소", "쓰러뜨림", "기술 사용", "체력 변화", "회복", "날씨 변화", "장소 변화", "랭크", "특성 발동", "체력", "날씨", "장소", "플레이버", "공격하지 않음", "능력치 비교", "소지품 소실" };
+  static readonly string[] OwnInputModules = { "등장", "교대", "퇴장", "타이밍", "피격", "명중", "급소", "쓰러뜨림", "기술 사용", "체력 변화", "회복", "날씨 변화", "장소 변화", "랭크", "특성 발동", "체력", "날씨", "장소", "플레이버", "공격하지 않음", "능력치 비교", "소지품 소실", "속도 비교", "첫 행동 전", "공중", "같은 타입", "최후 아님", "PT 특성", "급소 받음", "필드 빈사", "나무열매 사용" };
   static string[] UiModules() { return OwnInputModules; }
 
   static string[] TriggerKinds() {
@@ -43,8 +43,10 @@ namespace AABattle {
    switch (module) {
     case "등장": return subject == "자신" ? new[] { "모든 등장" }.Concat(TriggerModules.EntryMethods).Concat(new[] { "타입 아군과 교대해" }).ToArray() : new[] { "모든 등장" }.Concat(TriggerModules.EntryMethods).ToArray();
     case "소지품 소실": return new[] { "소모", "파괴", "소모 또는 파괴" };
+    case "속도 비교": return new[] { "높음", "낮음" };
+    case "공중": return new[] { "자신", "서로" };
     case "교대": return subject == "상대" ? new[] { "모든 교대", "임의교대" } : new[] { "임의교대", "타입 아군과 교대" };
-    case "타이밍": return new[] { TriggerStructures.TurnStartLabel, TriggerStructures.TurnLastLabel, TriggerStructures.TurnEndLabel, "배수 T 개시 시", "배수 T 종료 시", "장소에 나와 N T째 종료 시", "사건이 성립한 T 종료 시" };
+    case "타이밍": return new[] { TriggerStructures.TurnStartLabel, TriggerStructures.TurnLastLabel, TriggerStructures.TurnEndLabel, "배수 T 개시 시", "배수 T 종료 시", "장소에 나와 N T째 종료 시", "사건이 성립한 T 종료 시", "사건이 성립한 다음 T 종료 시" };
     case "피격": case "명중": return new[] { "공격", "기술" };
     case "기술 사용": return new[] { "내보낼 때(직전)", "내보냈을 때(직후)" };
     case "쓰러뜨림": return new[] { "상대", "타입 포켓몬", "아인종", "기술로" };
@@ -156,7 +158,7 @@ namespace AABattle {
     string variant = triggerEntryMethod.Text;
     bool typed = module && variant.Contains("타입") || opponentType;
     bool number = kind == "타이밍" && (variant.StartsWith("배수") || variant.Contains("N T째")) || variant.StartsWith("1/N");
-    bool condition = kind == "피격" || kind == "명중" || kind == "급소" || kind == "기술 사용" || kind == "쓰러뜨림" && variant == "기술로" || kind == "타이밍" && variant.StartsWith("사건") || kind == "랭크" || kind == "특성 발동" || kind == "플레이버";
+    bool condition = kind == "피격" || kind == "명중" || kind == "급소" || kind == "급소 받음" || kind == "PT 특성" || kind == "기술 사용" || kind == "쓰러뜨림" && variant == "기술로" || kind == "타이밍" && variant.StartsWith("사건") || kind == "랭크" || kind == "특성 발동" || kind == "플레이버";
     ShowTriggerRow(triggerSubject, module && SubjectModules.Contains(kind) || status || faint, "주체");
     ShowTriggerRow(triggerEntryMethod, module && TriggerVariants(kind, triggerSubject.Text).Length > 0, kind == "등장" ? "등장 방식" : kind == "타이밍" ? "타이밍" : kind == "기술 사용" ? "시점" : "구분");
     ShowTriggerRow(triggerCompareLeft, kind == "능력치 비교");
@@ -164,7 +166,7 @@ namespace AABattle {
     ShowTriggerRow(triggerCompareOp, kind == "능력치 비교");
     ShowTriggerRow(triggerType, typed);
     ShowTriggerRow(triggerNumber, number, variant.StartsWith("배수") ? "배수 N" : variant.StartsWith("1/N") ? "1/N의 N" : "N T째");
-    ShowTriggerRow(triggerCondition, condition, kind == "타이밍" ? "사건 트리거" : kind == "랭크" ? "능력(비우면 능력 전체)" : kind == "특성 발동" ? "특성(비우면 모든 특성)" : kind == "플레이버" ? (variant == "트레이너 성별" ? "남성 / 여성" : "이름") : "기술 조건");
+    ShowTriggerRow(triggerCondition, condition, kind == "타이밍" ? "사건 트리거" : kind == "랭크" ? "능력(비우면 능력 전체)" : kind == "PT 특성" ? "특성 이름(/로 구분)" : kind == "특성 발동" ? "특성(비우면 모든 특성)" : kind == "플레이버" ? (variant == "트레이너 성별" ? "남성 / 여성" : "이름") : "기술 조건");
     ShowTriggerRow(triggerGranted, granted, "부여된 이름");
     ShowTriggerRow(triggerStatusButton, status, "상태 이름");
     ShowTriggerRow(triggerAptitude, aptitude);
@@ -204,6 +206,14 @@ namespace AABattle {
      spec.Op = variant.StartsWith("1/N") ? "이하" : variant.StartsWith("가득하지") ? "가득 아님" : variant.StartsWith("「1」") ? "1" : variant == "감소" ? "감소" : "가득"; spec.Bottom = Math.Max(1, n);
      return TriggerModules.Canonical(spec);
     case "소지품 소실": spec.Method = variant; return TriggerModules.Canonical(spec);
+    case "속도 비교": spec.Op = variant; return TriggerModules.Canonical(spec);
+    case "공중": spec.Subject = variant == "서로" ? "자신과 상대" : "자신"; return TriggerModules.Canonical(spec);
+    case "첫 행동 전": case "같은 타입": case "최후 아님": case "필드 빈사": case "나무열매 사용": return TriggerModules.Canonical(spec);
+    case "PT 특성": {
+     var names = Regex.Split(triggerCondition.Text.Trim().Trim('〔', '〕', '「', '」'), @"[\s/,]+").Where(x => x.Length > 0).ToArray();
+     if (names.Length == 0) return "특성 이름을 입력하세요(예: 마이너스/플러스).";
+     spec.Names = names; return TriggerModules.Canonical(spec);
+    }
     case "회복": case "공격하지 않음": return TriggerModules.Canonical(spec);
     case "특성 발동": spec.Names = triggerCondition.Text.Trim().Length == 0 ? new string[0] : new[] { triggerCondition.Text.Trim().Trim('「', '」') }; return TriggerModules.Canonical(spec);
     case "플레이버": {
@@ -240,6 +250,7 @@ namespace AABattle {
       var inner = TriggerModules.Parse(TriggerStructures.Normalize(triggerCondition.Text));
       if (!inner.IsEvent || inner.Module == "타이밍") return "사건 트리거 문장을 입력하세요(예: 상대의 공격을 받았을 때).";
       spec.Method = TriggerStructures.TurnEndLabel; spec.Inner = TriggerModules.Canonical(inner);
+      spec.NextTurn = variant.Contains("다음");
      } else if (variant.Contains("N T째")) { spec.Method = TriggerStructures.TurnEndLabel; spec.FieldTurn = n; }
      else if (variant.StartsWith("배수")) { spec.Method = variant.Contains("개시") ? TriggerStructures.TurnStartLabel : TriggerStructures.TurnEndLabel; spec.Every = n; }
      else spec.Method = variant;
@@ -249,7 +260,7 @@ namespace AABattle {
      if (condition.Category == "공격") { spec.Attack = true; condition.Category = ""; }
      spec.Condition = condition;
      break;
-    case "급소": spec.Condition = condition; break;
+    case "급소": case "급소 받음": spec.Condition = condition; break;
     case "기술 사용": spec.After = variant.Contains("직후"); spec.Condition = condition; break;
     case "쓰러뜨림":
      if (variant == "아인종") spec.Ain = true;
@@ -288,7 +299,7 @@ namespace AABattle {
     case "등장": variant = spec.Types.Length > 0 ? "타입 아군과 교대해" : spec.Method.Length > 0 ? spec.Method : "모든 등장"; break;
     case "교대": variant = spec.Types.Length > 0 ? "타입 아군과 교대" : spec.Opponent && spec.Method == "" ? "모든 교대" : "임의교대"; break;
     case "타이밍":
-     if (spec.Inner.Length > 0) { variant = "사건이 성립한 T 종료 시"; condition = spec.Inner; }
+     if (spec.Inner.Length > 0) { variant = spec.NextTurn ? "사건이 성립한 다음 T 종료 시" : "사건이 성립한 T 종료 시"; condition = spec.Inner; }
      else if (spec.FieldTurn > 0) { variant = "장소에 나와 N T째 종료 시"; triggerNumber.Value = spec.FieldTurn; }
      else if (spec.Every > 0) { variant = spec.Method == TriggerStructures.TurnStartLabel ? "배수 T 개시 시" : "배수 T 종료 시"; triggerNumber.Value = spec.Every; }
      else variant = spec.Method;
@@ -299,6 +310,9 @@ namespace AABattle {
     case "체력": variant = spec.Op == "가득" ? "가득" : spec.Op == "가득 아님" ? "가득하지 않음" : spec.Op == "이상" ? "1/N 이상" : "1/N 이하"; triggerNumber.Value = Math.Max(1, spec.Bottom); break;
     case "체력 변화": variant = spec.Op == "이하" ? "1/N 이하가 됨" : spec.Op == "가득 아님" ? "가득하지 않게 됨" : spec.Op == "1" ? "「1」이 됨" : spec.Op == "감소" ? "감소" : "가득해짐"; triggerNumber.Value = Math.Max(1, spec.Bottom); break;
     case "소지품 소실": variant = spec.Method; break;
+    case "속도 비교": variant = spec.Op; break;
+    case "공중": variant = spec.Subject == "자신과 상대" ? "서로" : "자신"; break;
+    case "PT 특성": condition = string.Join("/", spec.Names); break;
     case "날씨": variant = spec.Place.Length == 0 ? "날씨 있음" : spec.Place; break;
     case "날씨 변화": variant = spec.Place.Length == 0 ? "모든 변화" : spec.Place; break;
     case "장소": variant = spec.Place; break;

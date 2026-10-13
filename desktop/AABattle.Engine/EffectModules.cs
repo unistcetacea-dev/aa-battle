@@ -22,6 +22,7 @@ namespace AABattle {
   public bool PriorityZero;          // 「우선도 ±0」 (기술의 원래 우선도가 0)
   public List<string> Tags = new List<string>();
   public List<string> Names = new List<string>();
+  [ThreadStatic] public static Fighter MatchTarget;   // 「자신과 같은 타입」 조건을 판정할 때 기술을 받는 쪽(방호 판정이 지정한다)
   public bool Placeholder;           // 빈 괄호 「」·「○」: 타입 자리 표시(실행하지 않음)
   public bool Empty { get { return Types.Count == 0 && Category == "" && Stab == "" && Effectiveness == "" && Range == "" && PowerMax < 0 && PowerMin < 0 && !PriorityPositive && !PriorityZero && Tags.Count == 0 && Names.Count == 0 && !Placeholder; } }
 
@@ -94,6 +95,7 @@ namespace AABattle {
    if (core == "우선도+" || core == "우선도가+" || core == "선공") { PriorityPositive = true; return true; }
    if (core == "우선도±0" || core == "우선도0" || core == "우선도+-0") { PriorityZero = true; return true; }
    if (!bracketed) return false;
+   if (core == "자신과같은타입") core = "자신과 같은 타입";   // 방호 판정이 기술을 받는 쪽의 타입으로 판정한다
    Tags.Add(core);
    return true;
   }
@@ -120,7 +122,7 @@ namespace AABattle {
    if (PriorityPositive && move.priority <= 0) return false;
    if (PriorityZero && move.priority != 0) return false;
    // 「물기」「엄니」처럼 계통·이름 괄호가 여럿이면 하나라도 맞으면 된다. 「접촉」은 최종 접촉 판정
-   if (Tags.Count > 0 && !Tags.Any(tag => tag == "접촉" ? Mechanics.Contact(move) : tag == "비접촉" ? !Mechanics.Contact(move) : tag == "기능확장" ? move.extension : (move.tags ?? new string[0]).Contains(tag) || (move.effect ?? "").Contains(tag) || move.name == tag)) return false;
+   if (Tags.Count > 0 && !Tags.Any(tag => tag == "접촉" ? Mechanics.Contact(move) : tag == "비접촉" ? !Mechanics.Contact(move) : tag == "자신과 같은 타입" ? MatchTarget != null && (move.types ?? new string[0]).Any(t => Mechanics.Has(MatchTarget, t)) : tag == "기능확장" ? move.extension : (move.tags ?? new string[0]).Contains(tag) || (move.effect ?? "").Contains(tag) || move.name == tag)) return false;
    if (Names.Count > 0 && !Names.Contains(move.name)) return false;
    return true;
   }
