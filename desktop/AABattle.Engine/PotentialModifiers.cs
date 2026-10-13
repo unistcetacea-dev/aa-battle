@@ -91,7 +91,7 @@ namespace AABattle {
     if (s.Stage != "능력치") continue;
     bool appliesToHolder = AppliesTo(s, e.Owner, holder);
     if (!appliesToHolder) continue;
-    if (s.Stats.Contains(index) || (s.HighestStat || s.LowestStat) && index >= 1 && index <= 5 && Extreme(holder, opponent, rules, s.HighestStat) == index) factor *= s.Rate;
+    if (s.Stats.Contains(index) || (s.HighestStat || s.LowestStat) && index >= 1 && index <= 5 && Extreme(holder, opponent, rules, s.HighestStat) == index) factor *= s.Dynamic != null ? s.Dynamic(e.Owner, rules) : s.Rate;
    }
    return factor;
   }

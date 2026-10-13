@@ -38,6 +38,10 @@ namespace AABattle {
     new object[] { "급소 받음", null, null, "접촉", null, "상대의 「접촉」 기술이 급소에 맞았을 때" },
     new object[] { "필드 빈사", null, null, "", null, "필드의 누군가가 「빈사」 상태가 되었을 때" },
     new object[] { "나무열매 사용", null, null, "", null, "자신이 「나무열매」를 사용했을 때" },
+    new object[] { "작은 대미지", null, null, "", null, "「작은」 이하의 대미지를 받았을 때" },
+    new object[] { "하락 무효", null, null, "", null, "상대에 의한 능력 하락을 무효화했을 때" },
+    new object[] { "위협 받음", null, null, "", null, "상대의 〔위협〕을 받았을 때" },
+    new object[] { "가득 피격", null, null, "", null, "체력이 가득인 상태로 공격을 받았을 때" },
     new object[] { "타이밍", null, "사건이 성립한 다음 T 종료 시", "자신이 「나무열매」를 사용했을 때", null, "「자신이 「나무열매」를 사용했을 때」가 성립한 다음 T 종료 시" }
    };
    using (var form = new DataEditorForm())

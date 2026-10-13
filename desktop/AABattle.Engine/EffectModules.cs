@@ -136,6 +136,7 @@ namespace AABattle {
   public bool HighestStat, LowestStat;
   public MoveCondition Condition = new MoveCondition();
   public double Rate = 1;
+  public Func<Fighter, Rules, double> Dynamic;   // 상황에 따라 달라지는 배율(총대장: 빈사 아군 수에 비례)
   public string Text = "";
  }
 
@@ -534,6 +535,7 @@ namespace AABattle {
 
   public static bool TryScalar(string text, out ScalarEffect effect) {
    effect = null;
+   if (AbilityRemaining4Modules.TryProportional(text, out effect)) return true;
    string target, action; double rate;
    if (!EffectStructures.TryScalar(text, out target, out action, out rate)) return false;
    target = Regex.Replace(target.Trim(), @"\s+", " ");
@@ -663,6 +665,8 @@ namespace AABattle {
    if (FunctionExtensions.TryGrant(s, out grantSubject, out grantMoves)) return "기능확장 부여";
    string typed = TypeRules.Classify(s);
    if (typed.Length > 0) return typed;
+   string remaining4 = AbilityRemaining4Modules.Classify(s);
+   if (remaining4.Length > 0) return remaining4;
    if (TryScalar(s, out scalar)) return "수치 배율";
    if (TrySpecies(s, out species)) return "종족치 변경";
    if (TryFraction(s, out fraction)) return "최대 HP의 1/N";

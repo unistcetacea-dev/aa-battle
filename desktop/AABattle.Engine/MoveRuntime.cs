@@ -107,6 +107,9 @@ namespace AABattle {
    }
    x = Regex.Match(s, @"^적진에 「(?<h>[^」]+)」(?:을|를) 설치한다$");
    if (x.Success) { string h = x.Groups["h"].Value == "압정" ? "압정뿌리기" : x.Groups["h"].Value; Add(into, plan, s, "적진에 「" + h + "」을 설치한다."); return; }
+   // 얼음의벽 기술: 「4T 동안 자진에 「얼음의벽」을 전개한다」 = 진영 상태(리플렉터와 달리 전용 코드가 없다)
+   x = Regex.Match(s, @"^(?<n>\d+)T 동안 자진에 「얼음의벽」을 전개한다$");
+   if (x.Success) { into.Add("자신을 " + x.Groups["n"].Value + "T간 「얼음의벽」 상태로 한다."); return; }
    // 상태 부여(자진 = 자신, 적진 = 상대)
    string own = s.Replace("자진을", "자신을").Replace("적진을", "상대를");
    var state = StateEffects.Parse(own);

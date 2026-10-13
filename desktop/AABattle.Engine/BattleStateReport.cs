@@ -41,7 +41,7 @@ namespace AABattle {
   }
   static void TrainerBlock(StringBuilder text,TrainerRecord trainer,TrainerBattleState state,TurnSelection selected){text.Append("이번 선언: ").AppendLine((selected.Form.Length==0&&selected.Order.Length==0)?"없음":("4식 "+(selected.Form.Length>0?selected.Form:"—")+" / 지령 "+(selected.Order.Length>0?selected.Order:"—")));if(trainer==null)return;text.Append("트레이너: ").AppendLine(trainer.name);text.Append("상시 자질 효과: ").AppendLine(TrainerAccessRules.Summary(trainer));text.Append("사용 완료: ").AppendLine(state.UsedForms.Concat(state.UsedOrders).Any()?string.Join(" / ",state.UsedForms.Concat(state.UsedOrders)):"없음");}
   static string Hazards(SideFieldState h){var list=new List<string>();if(h.StealthRock)list.Add("스텔스록");if(h.Spikes>0)list.Add("압정 "+h.Spikes+"겹");if(h.ToxicSpikes>0)list.Add("독압정 "+h.ToxicSpikes+"겹");if(h.StickyWeb)list.Add("끈적끈적네트");return list.Count==0?"없음":string.Join(" / ",list);}
-  static string FieldEffects(SideFieldState h){var list=new List<string>();if(h.Reflect>0)list.Add("리플렉터 "+h.Reflect+"T");if(h.LightScreen>0)list.Add("빛의장막 "+h.LightScreen+"T");if(h.Tailwind>0)list.Add("순풍 "+h.Tailwind+"T");return list.Count==0?"없음":string.Join(" / ",list);}
+  static string FieldEffects(SideFieldState h){var list=new List<string>();if(h.Reflect>0)list.Add("리플렉터 "+h.Reflect+"T");if(h.LightScreen>0)list.Add("빛의장막 "+h.LightScreen+"T");if(h.IceWall>0)list.Add("얼음의벽 "+h.IceWall+"T");if(h.Tailwind>0)list.Add("순풍 "+h.Tailwind+"T");return list.Count==0?"없음":string.Join(" / ",list);}
   static string Signed(int value){return value>0?"+"+value:value.ToString();}static string N(double value){return value.ToString("0.##",System.Globalization.CultureInfo.InvariantCulture);}
  }
 }

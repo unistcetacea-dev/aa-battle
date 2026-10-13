@@ -75,7 +75,7 @@ namespace AABattle {
     case "같은 타입": return a != null && b != null && (a.Data.types ?? new string[0]).Any(t => Mechanics.Has(b, t));
     case "날씨": { string w = Mechanics.Weather(a, b ?? a, r); return f.Names[0] == w || f.Names[0] == "쾌청" && Mechanics.Sunny(w) || f.Names[0] == "비" && Mechanics.Rain(w); }
     case "필드": return r.Terrain != "없음";
-    case "벽": { int side = Mechanics.PartySide(a, r); if (side < 0) side = 0; return r.Sides[side].Reflect > 0 || r.Sides[side].LightScreen > 0; }
+    case "벽": { int side = Mechanics.PartySide(a, r); if (side < 0) side = 0; return r.Sides[side].HasScreens(); }
     case "소지품": return f.Subject == "어느 쪽" ? !string.IsNullOrEmpty(a.Data.item) || b != null && !string.IsNullOrEmpty(b.Data.item) : who != null && !string.IsNullOrEmpty(who.Data.item);
     case "나무열매": return (a.Data.item ?? "").EndsWith("열매");
     case "나무열매 먹음": return (a.LostItem ?? "").EndsWith("열매");

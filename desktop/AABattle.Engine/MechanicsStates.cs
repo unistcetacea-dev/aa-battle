@@ -62,7 +62,7 @@ namespace AABattle {
     case "날따름":return c.FollowMe;
     case "순서미루기":return c.Quash;
     case "봉인":return c.Sealed.Length>0;
-    case "하늘 위":case "땅속":case "물속":case "불꽃속":case "어둠속":return c.Hidden==name;
+    case "하늘 위":case "땅속":case "물속":case "불꽃속":case "어둠속":case "어둠안":return c.Hidden==name;
     case "앙코르":return c.EncoreTurns>0;
     case "악인":return c.Dark;
     case "침수":return c.Soaked;

@@ -120,7 +120,7 @@ namespace AABattle {
     bool any = false;
     for (int side = 0; side < 2; side++) {
      var s = rules.Sides[side];
-     if (s.Reflect > 0 || s.LightScreen > 0) { s.Reflect = 0; s.LightScreen = 0; any = true; c.Say((side + 1) + "팀 진영의 벽이 해제되었다 (" + c.Source.Label + ")"); }
+     if (s.HasScreens()) { s.ClearScreens(); any = true; c.Say((side + 1) + "팀 진영의 벽이 해제되었다 (" + c.Source.Label + ")"); }
     }
     return any ? EffectOutcome.Success : EffectOutcome.Failed;
    });

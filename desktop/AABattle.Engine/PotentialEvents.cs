@@ -83,7 +83,7 @@ namespace AABattle {
  public static class PotentialExecutors {
   static readonly List<PotentialExecutor> all = new List<PotentialExecutor>();
   public static IEnumerable<PotentialExecutor> All { get { return all; } }
-  static PotentialExecutors() { PotentialQueue.BuiltIn.Register(); MoveModules.RegisterExecutors(); AbilityChangeModules.Register(); AbilityItemModules.Register(); AbilityEventModules.Register(); AbilityNoEffectModules.Register(); }
+  static PotentialExecutors() { AbilityRemaining4Modules.Register(); PotentialQueue.BuiltIn.Register(); MoveModules.RegisterExecutors(); AbilityChangeModules.Register(); AbilityItemModules.Register(); AbilityEventModules.Register(); AbilityNoEffectModules.Register(); }
   public static PotentialExecutor Register(string name, Func<EffectCall, bool> canRun, Func<EffectCall, EffectOutcome> run) {
    var executor = new PotentialExecutor { Name = name, CanRun = canRun, Run = run };
    all.Add(executor);

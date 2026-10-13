@@ -149,6 +149,7 @@ namespace AABattle {
     case "순풍": return state.Tailwind > 0 ? 1 : 0;
     case "리플렉터": return state.Reflect > 0 ? 1 : 0;
     case "빛의장막": return state.LightScreen > 0 ? 1 : 0;
+    case "얼음의벽": return state.IceWall > 0 ? 1 : 0;
    }
    return 0;
   }

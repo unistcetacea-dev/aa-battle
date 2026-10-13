@@ -25,7 +25,7 @@ namespace AABattle {
   static readonly string[] StatusModules = { "상태", "상태 됨", "상태 해제" };
   const string ReleaseKind = "상태가 해제되었을 때", FaintKind = "빈사가 되었을 때";
   // 편집기에서 모듈 입력으로 고르는 것(나머지는 기존 구조·확정 목록 입력을 쓴다)
-  static readonly string[] OwnInputModules = { "등장", "교대", "퇴장", "타이밍", "피격", "명중", "급소", "쓰러뜨림", "기술 사용", "체력 변화", "회복", "날씨 변화", "장소 변화", "랭크", "특성 발동", "체력", "날씨", "장소", "플레이버", "공격하지 않음", "능력치 비교", "소지품 소실", "속도 비교", "첫 행동 전", "공중", "같은 타입", "최후 아님", "PT 특성", "급소 받음", "필드 빈사", "나무열매 사용" };
+  static readonly string[] OwnInputModules = { "등장", "교대", "퇴장", "타이밍", "피격", "명중", "급소", "쓰러뜨림", "기술 사용", "체력 변화", "회복", "날씨 변화", "장소 변화", "랭크", "특성 발동", "체력", "날씨", "장소", "플레이버", "공격하지 않음", "능력치 비교", "소지품 소실", "속도 비교", "첫 행동 전", "공중", "같은 타입", "최후 아님", "PT 특성", "급소 받음", "필드 빈사", "나무열매 사용", "작은 대미지", "하락 무효", "위협 받음", "가득 피격" };
   static string[] UiModules() { return OwnInputModules; }
 
   static string[] TriggerKinds() {
@@ -208,7 +208,7 @@ namespace AABattle {
     case "소지품 소실": spec.Method = variant; return TriggerModules.Canonical(spec);
     case "속도 비교": spec.Op = variant; return TriggerModules.Canonical(spec);
     case "공중": spec.Subject = variant == "서로" ? "자신과 상대" : "자신"; return TriggerModules.Canonical(spec);
-    case "첫 행동 전": case "같은 타입": case "최후 아님": case "필드 빈사": case "나무열매 사용": return TriggerModules.Canonical(spec);
+    case "첫 행동 전": case "같은 타입": case "최후 아님": case "필드 빈사": case "나무열매 사용": case "작은 대미지": case "하락 무효": case "위협 받음": case "가득 피격": return TriggerModules.Canonical(spec);
     case "PT 특성": {
      var names = Regex.Split(triggerCondition.Text.Trim().Trim('〔', '〕', '「', '」'), @"[\s/,]+").Where(x => x.Length > 0).ToArray();
      if (names.Length == 0) return "특성 이름을 입력하세요(예: 마이너스/플러스).";

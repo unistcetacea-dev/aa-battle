@@ -50,7 +50,8 @@ namespace AABattle {
   public readonly List<KeyValuePair<int, string>> ForcedSwitches = new List<KeyValuePair<int, string>>();  // 강제교대 요청(진영, 출처). 엔진의 교대 단계가 처리
   readonly EffectScope previous;
   EffectScope(Fighter[] fighters, Rules rules, Func<double> rng, TrainerBattleState[] states) { Fighters = fighters; Rules = rules; Rng = rng; States = states; previous = current; }
-  public static EffectScope Begin(Fighter[] fighters, Rules rules, Func<double> rng, TrainerBattleState[] states = null) { current = new EffectScope(fighters, rules, rng, states); StateWatch.Prime(fighters, rules); return current; }
+  public Database Db;   // 이 배틀의 데이터(추가효과로 거는 예약 공격 등 기술 정보가 필요한 효과용)
+  public static EffectScope Begin(Fighter[] fighters, Rules rules, Func<double> rng, TrainerBattleState[] states = null, Database db = null) { current = new EffectScope(fighters, rules, rng, states) { Db = db }; StateWatch.Prime(fighters, rules); return current; }
   public void Dispose() { if (current == this) current = previous; }
   public static void Restore(EffectScope saved) { current = saved; }
   public Fighter Opponent(Fighter fighter) {

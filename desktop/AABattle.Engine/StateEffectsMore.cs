@@ -10,6 +10,7 @@ namespace AABattle {
  //        금제(소지품 무효)·분진·패스트가드·날따름·순서미루기(싱글은 효과 없음)·비축하기·대타출동·물놀이·흙놀이
  public static partial class StateEffects {
   static void AddMore(List<StateEffectRule> rules) {
+   AddRemaining4Rules(rules);
    rules.Add(Rule("작아지기", c => Flag(c, "작아지기", c.Target.Conditions.Minimized, () => c.Target.Conditions.Minimized = true), true));
    rules.Add(Rule("꿰뚫어보기", c => { c.Target.Conditions.Foresight = MoveRuntime.CurrentMove == null ? "꿰뚫어보기" : MoveRuntime.CurrentMove.name; return true; }, true));
    rules.Add(Rule("하품", c => {
@@ -109,6 +110,10 @@ namespace AABattle {
     c.Say(t.Data.name + ": 「" + move + "」 봉인");
     return true;
    }));
+  }
+  static void AddRemaining4Rules(List<StateEffectRule> rules) {
+   rules.Add(Rule("얼음의벽", c => IceWallRules.Deploy(c), true));
+   rules.Add(Rule("어둠안", c => AbilityRemaining4Events.EnterDarkness(c), true));
   }
   static bool Fail(StateEffectContext c, string name) { c.Say(name + " 실패: 이미 전개되어 있다."); return false; }
  }

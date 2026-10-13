@@ -98,7 +98,7 @@ namespace AABattle {
   }
   static string Text(AbilityDefinition d) {
    string r;
-   if (Rewrites.TryGetValue(d.name, out r) || AbilityRewrites3.Table.TryGetValue(d.name, out r)) return r;
+   if (Rewrites.TryGetValue(d.name, out r) || AbilityRewrites3.Table.TryGetValue(d.name, out r) || AbilityRewrites4.Table.TryGetValue(d.name, out r)) return r;
    return AbilityPhrases.Fold(AbilityPhrases.Rewrite(Clean(d.effect)));
   }
   // 도감 표시와 효과 없음 집계용: 특성 문장 전체(효과 없음 문장 포함)

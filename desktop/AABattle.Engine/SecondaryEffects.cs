@@ -22,7 +22,7 @@ namespace AABattle {
    stats = m.Groups["s"].Value; sign = m.Groups["d"].Value; amount = int.Parse(m.Groups["n"].Value);
    return MoveRuntime.Rank("자신", stats, sign, amount) != null && EffectModules.Classify(MoveRuntime.Rank("자신", stats, sign, amount)).Length > 0;
   }
-  static bool Known(string body) { string a, b; int n; return TryRank(body, out a, out b, out n) || body.Split('/').All(x => KnownState(x.Trim())); }
+  static bool Known(string body) { string a, b; int n; return TryRank(body, out a, out b, out n) || DelayedSecondary.IsDelayedMove(body) || body.Split('/').All(x => KnownState(x.Trim())); }
 
   public static string Normalize(string text) {
    string t = Clean(text);
@@ -58,6 +58,7 @@ namespace AABattle {
    if (tenths < 10 && rng() >= tenths / 10.0) return false;
    log.Add(a.Data.name + "의 " + label + " 「" + tenths + "할:" + body + "」");
    if (rank) return MoveRuntime.Run(a, b, null, MoveRuntime.Rank(toSelf ? "자신" : "상대", stats, sign, amount), rules ?? new Rules(), rng, log) == EffectOutcome.Success;
+   if (DelayedSecondary.IsDelayedMove(body)) return DelayedSecondary.Schedule(a, b, body, rules ?? new Rules(), log);
    var choices = body.Split('/').Select(x => x.Trim()).Where(x => x.Length > 0).ToArray();
    string state = choices[Math.Min(choices.Length - 1, (int)(rng() * choices.Length))];
    if (!KnownState(state)) { log.Add(label + ": 「" + state + "」 상태는 아직 자동 적용되지 않는다."); return false; }

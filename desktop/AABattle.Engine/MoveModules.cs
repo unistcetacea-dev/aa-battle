@@ -52,6 +52,7 @@ namespace AABattle {
    { "물속", new Dictionary<string, double> { { "파도타기", 1 }, { "바다회오리", 1 } } },
    { "불꽃속", new Dictionary<string, double>() },
    { "어둠속", new Dictionary<string, double>() },
+   { "어둠안", new Dictionary<string, double>() },
    { "숨음", new Dictionary<string, double>() }
   };
   public static IEnumerable<string> HidePlaces { get { return Reach.Keys; } }
@@ -274,8 +275,8 @@ namespace AABattle {
   public static void BreakScreens(Fighter a, Fighter b, Move m, Rules r, int side, List<string> log) {
    if (m == null || !Plain(m).Contains("적진의 「벽」을 해제한 후 기술을 내보낸다")) return;
    var target = r.Sides[1 - Math.Max(0, Math.Min(1, side))];
-   if (target.Reflect == 0 && target.LightScreen == 0) return;
-   target.Reflect = target.LightScreen = 0;
+   if (!target.HasScreens()) return;
+   target.ClearScreens();
    log.Add(m.name + ": 상대 진영의 벽을 깨뜨렸다");
   }
   // 고정 대미지(타입 상성은 무효만 따른다). 16개 난수 자리, 고정 대미지 기술이 아니면 null
@@ -337,6 +338,7 @@ namespace AABattle {
 
   // 이 기술 행동이 모으기 T인가(true면 행동은 여기서 끝난다). 2T째는 모으기 상태를 풀고 false
   public static bool Charge(Fighter a, Fighter b, Move m, Rules r, List<string> log) {
+   AbilityRemaining4Events.LeaveDarkness(a, log);   // 어둠안: 자신이 행동하면 풀린다
    if (a == null || !Charges(m)) return false;
    var c = a.Conditions;
    if (c.ChargeMove == m.name) { Release(a, b); return false; }
@@ -442,8 +444,8 @@ namespace AABattle {
      var r = c.Rules ?? new Rules();
      bool any = r.Terrain != "없음" || r.Gravity > 0 || r.TrickRoom > 0;
      foreach (var side in r.Sides) {
-      any |= side.HasHazards() || side.Reflect > 0 || side.LightScreen > 0;
-      side.ClearHazards(); side.Reflect = 0; side.LightScreen = 0;
+      any |= side.HasHazards() || side.HasScreens();
+      side.ClearHazards(); side.ClearScreens();
      }
      foreach (var side in r.Sides) { any |= side.Safeguard > 0 || side.Mist > 0; side.Safeguard = side.Mist = 0; }
      r.Terrain = "없음"; r.TerrainTurns = 0; r.Gravity = 0; r.TrickRoom = 0;
@@ -488,8 +490,8 @@ namespace AABattle {
      var r = c.Rules ?? new Rules();
      int own = Mechanics.PartySide(c.Owner, r); if (own < 0) own = 0;
      int side = Screens.Match(Clean(c.Line)).Groups["s"].Value == "자진" ? own : 1 - own;
-     if (r.Sides[side].Reflect == 0 && r.Sides[side].LightScreen == 0) return EffectOutcome.Failed;
-     r.Sides[side].Reflect = r.Sides[side].LightScreen = 0;
+     if (!r.Sides[side].HasScreens()) return EffectOutcome.Failed;
+     r.Sides[side].ClearScreens();
      c.Say((side + 1) + "팀 진영의 벽이 사라졌다 (" + c.Source.Name + ")");
      return EffectOutcome.Success;
     });
