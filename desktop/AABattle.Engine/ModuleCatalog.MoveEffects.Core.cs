@@ -48,6 +48,9 @@ namespace AABattle
       CoreAdd(modules, "effect.baton.first", "교대 아군 첫 기술 강화", "교대 아군 첫 기술 강화", "교대", "교대해 나온 아군이 최초로 내보내는 {조건} 기술의 위력을 강화({배율}배)한다.", S("조건", ModuleSlotKind.MoveCondition, "「불꽃」"), S("배율", ModuleSlotKind.Multiplier, "1.5"));
       CoreAdd(modules, "effect.pursuit.immune", "추격 효과 면역", "추격 효과 면역", "교대", PursuitModules.Immune + ".");
       CoreAdd(modules, "effect.pursuit.followup", "추격 추가공격", "추격 추가공격", "교대", PursuitModules.Followup + ".");
+      CoreAdd(modules, "effect.hp.split", "체력 합산 후 배분", MoveMiscModules.KindPainSplit, family, MoveMiscModules.PainSplit + ".");
+      CoreAdd(modules, "effect.heal.weather", "날씨별 회복량", MoveMiscModules.KindWeatherHeal, family, "자신의 체력을 날씨에 따라 최대 HP의 {악천후}·{보통}·{쾌청} 회복한다.", S("악천후", ModuleSlotKind.Text, "1/4"), S("보통", ModuleSlotKind.Text, "1/2"), S("쾌청", ModuleSlotKind.Text, "2/3"));
+      CoreAdd(modules, "effect.rank.weather", "날씨별 능력 상승폭", MoveMiscModules.KindWeatherRank, family, "자신의 「{능력}」이 {기본}단계 오르고, 날씨가 「{날씨}」일 때는 {강화}단계 오른다.", S("능력", ModuleSlotKind.Stats, "공격/특공", "공격", "방어", "특공", "특방", "속도", "공격/특공", "방어/특방"), CoreNumber("기본", ModuleSlotKind.Rank, "1", 3), S("날씨", ModuleSlotKind.Weather, "쾌청", Mechanics.Weathers), CoreNumber("강화", ModuleSlotKind.Rank, "2", 3));
       CoreAdd(modules, "effect.pursuit.grant", "추격 효과 부여", "추격 효과 부여", "교대", "자신의 {조건} 기술에 「추격」 효과를 부여한다.", S("조건", ModuleSlotKind.MoveCondition, ""));
     }
   }

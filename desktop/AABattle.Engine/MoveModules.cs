@@ -251,9 +251,10 @@ namespace AABattle {
   // ===== 급소·방어 관통·필중 =====
   public static int CritBonus(Move m) { var x = Regex.Match(Plain(m), @"급소에 맞기 쉽다\s*\(\s*C\s*\+\s*(\d)\s*\)"); return x.Success ? int.Parse(x.Groups[1].Value) : 0; }
   public static bool AlwaysCrit(Move m) { return m != null && (Plain(m).Contains("반드시 급소에 맞는다") || Tagged(m, "확정급소")); }
-  public static bool PiercesProtect(Move m) { return m != null && (Plain(m).Contains("「방어」 기술을 관통한다") || Tagged(m, "방어관통")); }
+  public static bool PiercesProtect(Move m) { return m != null && !MoveMiscModules.HasWeatherPierce(m) && (Plain(m).Contains("「방어」 기술을 관통한다") || Tagged(m, "방어관통")); }
   public static bool SureHit(Fighter a, Fighter b, Move m, Rules r) {
    if (a == null || m == null) return false;
+   if (MoveMiscModules.IsBide(m)) return true;
    if (AbilityMoveModules.GrantsSureHit(a, b, m, r)) return true;
    string w = ActiveWeather(a, b, r);
    if (WeatherParts(m).Any(x => x.Key == w && x.Value.Contains("「필중」"))) return true;
@@ -295,6 +296,7 @@ namespace AABattle {
      int taken = x.Groups["c"].Value == "물리" ? a.Conditions.TakenPhysical : x.Groups["c"].Value == "특수" ? a.Conditions.TakenSpecial : a.Conditions.TakenPhysical + a.Conditions.TakenSpecial;
      value = (int)Math.Floor(taken * double.Parse(x.Groups["n"].Value));
     }
+    else if (MoveMiscModules.IsBide(m) && part.Contains("고정 대미지를 준다")) value = Math.Max(0, MoveMiscModules.BideDamage(a, m));
     else if (part == "자신의 레벨의 0.5~1.5배 사이의 고정 대미지를 준다" || part == "자신의 레벨의 0.5～1.5배 사이의 고정 대미지를 준다")
      return Enumerable.Range(0, 16).Select(i => Math.Max(1, (int)Math.Floor(a.Data.level * (50 + i * 100 / 15.0) / 100))).ToArray();
     if (value >= 0) return Enumerable.Repeat(value, 16).ToArray();

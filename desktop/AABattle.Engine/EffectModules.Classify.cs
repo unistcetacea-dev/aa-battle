@@ -42,6 +42,8 @@ namespace AABattle
       string batonKind = BatonModules.Classify(s);
       if (batonKind.Length == 0)
         batonKind = PursuitModules.Classify(s);
+      if (batonKind.Length == 0)
+        batonKind = MoveMiscModules.Classify(s);
       if (batonKind.Length > 0)
         return batonKind;
       if (moveKind.Length > 0)

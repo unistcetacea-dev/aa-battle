@@ -51,6 +51,8 @@ namespace AABattle {
    if (s.Length == 0 || s.StartsWith("(")) return;
    string itemRest;
    if (MoveItemModules.Read(m, s, into, out itemRest)) { if (itemRest != null) Read(m, itemRest, into, plan); return; }
+
+   if (MoveMiscModules.ReadMove(m, s, into)) return;   // 아픔나누기·소란·날씨별 회복/랭크
    if (s == "「강제교대」 기술") { into.Add("상대를 강제교대시킨다."); return; }
    if (s == "「방어」 기술" && ProtectModules.IsGuard(m)) { into.Add("자신을 「방어」 상태로 한다."); return; }
    // 「…상태로 하고, …」

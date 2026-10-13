@@ -307,12 +307,14 @@ namespace AABattle
           a.Conditions.RepeatMove = "";
           Mechanics.ClearRollout(a, result.Log);
           Mechanics.FinishRampage(a, rng, result.Log);
+          MoveMiscModules.ActionFailed(a, result.Log);
           ResolveTriggeredSwitches(db, f, commands, states, r, rng, result, actionStart, SwitchTiming.MidTurn, chooseSwitch);
           continue;
         }
 
         Mechanics.BeginRollout(a, m);
         Mechanics.BeginRampage(a, m, result.Log);
+        MoveMiscModules.BeginUproar(a, b, m, rng, result.Log);
         if (a.Conditions.Forgotten > 0)
           result.Log.Add(a.Data.name + ": 망각으로 발버둥을 내보낸다.");
         RuntimeTriggers.BeforeMove(a, m, result.Log.Add);
@@ -324,6 +326,15 @@ namespace AABattle
         usedMove = m;
         FieldEffectRuntime.BeforeMove(r, f, m, a.Data.name + "이 " + m.name + "을 내보냄", rng, result.Log.Add);
         if (MoveModules.Charge(a, b, m, r, result.Log))
+        {
+          usedBy = null;
+          usedMove = null;
+          Mechanics.RecordMove(a, m);
+          ResolveTriggeredSwitches(db, f, commands, states, r, rng, result, actionStart, SwitchTiming.MidTurn, chooseSwitch);
+          continue;
+        }
+
+        if (MoveMiscModules.Bide(a, b, m, result.Log))
         {
           usedBy = null;
           usedMove = null;
@@ -571,6 +582,7 @@ namespace AABattle
               b.Conditions.TakenPhysical += bodyDamage;
             else if (hitMove.category == "특수")
               b.Conditions.TakenSpecial += bodyDamage;
+            MoveMiscModules.Store(b, bodyDamage);
             result.Log.Add(a.Data.name + "의 " + m.name + "! " + b.Data.name + "에게 " + damage + " 대미지." + ((hitRules.Critical && !AbilityRuntime.BlocksCritical(a, b)) ? " 급소!" : "") + (d.Type > 1 ? " 효과가 굉장했다!" : d.Type < 1 ? " 효과가 별로다." : ""));
             RuntimeTriggers.Damaged(b, bodyDamage, a.Data.name + "의 " + m.name, result.Log.Add);
             if (bodyDamage > 0)
