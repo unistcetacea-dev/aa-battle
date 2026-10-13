@@ -9,6 +9,10 @@ namespace AABattle {
  public static class RuleText {
   static bool SplitClause(string value,out string condition,out string remainder){
    condition=remainder="";value=(value??"").Trim();if(Regex.IsMatch(value,@"^[0-9０-９]+\s*T\s*동안")||Regex.IsMatch(value,@"^T\s*종료\s*시\s*까지"))return false;
+   var fieldTurn=Regex.Match(value,@"^(?:필드|장소)에\s*나와\s*(?:「(?<quoted>[0-9０-９]+)」\s*)?(?<plain>[0-9０-９]+)?\s*T\s*째\s*[,，、]\s*(?<rest>.+)$");
+   if(fieldTurn.Success){string n=fieldTurn.Groups["quoted"].Success?fieldTurn.Groups["quoted"].Value:fieldTurn.Groups["plain"].Value;condition="장소에 나와 「"+n+"」T째일 때";remainder=fieldTurn.Groups["rest"].Value.Trim();return n.Length>0&&remainder.Length>0;}
+   var everyTurn=Regex.Match(value,@"^「(?<n>[0-9０-９]+)」\s*배수의\s*T\s*[,，、]\s*(?<rest>.+)$");
+   if(everyTurn.Success){condition="「"+everyTurn.Groups["n"].Value+"」배수의 T일 때";remainder=everyTurn.Groups["rest"].Value.Trim();return remainder.Length>0;}
    // 「이때」·「이 효과로」는 조건이 아니라 앞 효과에 이어지는 효과다(T-05)
    if(Regex.IsMatch(value,@"^(?:이|그)\s*때\b|^이\s*효과로"))return false;
    var enteredTurn=Regex.Match(value,@"^(.+?교대해\s*필드에\s*나온)\s*T\s*종료\s*시\s*까지\s+(.+)$");if(enteredTurn.Success){condition=enteredTurn.Groups[1].Value.Trim()+" 때";remainder="T 종료시까지 "+enteredTurn.Groups[2].Value.Trim();return true;}

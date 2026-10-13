@@ -23,6 +23,11 @@ namespace AABattle
         return text;
       // 칼데아 시트의 「모으기기술」 표기를 기존 모으기 생략 실행문으로 연결한다.
       text = Regex.Replace(text, @"^자신의\s*「모으기\s*기술」의\s*모으기를\s*생략하고\s*내보낼\s*수\s*있다$", "자신의 「모으기」 기술의 모으기를 생략한다");
+      text = Regex.Replace(text, @"^내보내는\s*(?<kind>공격|기술)의\s*위력을\s*(?<effect>강화|약화)\((?<rate>[0-9]+(?:\.[0-9]+)?)배\)(?<end>한다|시킨다)$", "자신의 「${kind}」 기술의 위력을 ${effect}(${rate}배)${end}");
+      // 칼데아 턴 조건의 위치 명시 추가행동을 기존 추가행동 executor 문장으로 바꾼다.
+      text = Regex.Replace(text, @"^(?:아군이\s*)?(?<when>T의\s*최후에|가장\s*먼저)\s*「(?!(?:변화기술)」)(?:기능확장\()?(?<move>[^)」]+)\)?」에\s*의한\s*추가행동권을\s*얻는다$", m =>
+        "가장 " + (Regex.IsMatch(m.Groups["when"].Value, @"먼저") ? "먼저" : "마지막에") + " 「기술:" + m.Groups["move"].Value.Trim() + "」 기술에 의한 추가행동을 얻는다");
+      text = Regex.Replace(text, @"^자신의\s*기술의\s*우선도를\s*「\+(?<n>[1-7])」로\s*할\s*수\s*있다$", "자신의 기술 우선도를 ${n} 올릴 수 있다");
       // 「노멀」은 「노말」의 표기 흔들림
       text = text.Replace("노멀", "노말");
       // 자신(아군)의 → 자신의 (싱글에서 아군은 자신)
@@ -180,9 +185,12 @@ namespace AABattle
     // 확률 접두어까지 한 문장으로 읽어야 하는 변형(방호·회피처럼 확률이 문장 안으로 들어가는 것)
     public static string NormalizeWhole(string clean)
     {
-      var m = Regex.Match(clean ?? "", @"^(?<p>드물게|드믈게|저확률로|중확률로)\s*기합으로 상대의 공격을 (?:버틴다|참는다)$");
+      var m = Regex.Match(clean ?? "", @"^(?<p>드물게|드믈게|저확률로|중확률로)\s*기합으로 상대의 공격을 (?:버틴다|참는다)(?:[.．。]\s*남은 체력이 많을수록 발동하기 어렵다)?$");
       if (m.Success)
-        return "자신은 빈사가 되는 공격을 " + (m.Groups["p"].Value == "드믈게" ? "드물게" : m.Groups["p"].Value) + " HP 1로 버틴다.";
+      {
+        bool hpScaled = clean.Contains("남은 체력이 많을수록 발동하기 어렵다");
+        return "자신은 빈사가 되는 공격을 " + (m.Groups["p"].Value == "드믈게" ? "드물게" : m.Groups["p"].Value) + " HP 1로 버틴다" + (hpScaled ? " (남은 HP 비례)" : "") + ".";
+      }
       return null;
     }
   }

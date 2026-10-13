@@ -20,7 +20,7 @@ namespace AABattle {
   public const string ReverseDrain = "자신에 대한 상대의 드레인 효과를 반전한다";
   public const string AuraBreak = "〔오라〕의 효과를 반전한다";
   static readonly Regex SwitchTrap = new Regex(@"^(?<w>접지한 |「[^」]+」 타입인 )?상대는 「통상교대」를 할 수 없다$");
-  static readonly Regex Chance = new Regex(@"^자신은 빈사가 되는 공격을 (?<p>드물게|저확률로|중확률로) HP 1로 버틴다$");
+  static readonly Regex Chance = new Regex(@"^자신은 빈사가 되는 공격을 (?<p>드물게|저확률로|중확률로) HP 1로 버틴다(?: \(남은 HP 비례\))?$");
   static readonly Regex StatusDamage = new Regex(@"^자신은 (?<s>(?:「[^」]+」)+)의 대미지를 받지 않는다$");
   static readonly string[] DamageStatuses = { "독", "맹독", "화상", "동상" };
 
@@ -74,7 +74,9 @@ namespace AABattle {
   public static bool EndureChance(Fighter target, Fighter attacker, Rules rules, Func<double> rng) {
    foreach (string line in Own(target, attacker, rules, "버틴다")) {
     var m = Chance.Match(line);
-    if (m.Success && (rng ?? (() => 1))() < Rate(m.Groups["p"].Value)) return true;
+    if (m.Success && (rng ?? (() => 1))() < (line.Contains("남은 HP 비례")
+     ? HpScaledChance.Probability(Rate(m.Groups["p"].Value), target.HP, Mechanics.MaxHP(target, attacker, rules))
+     : Rate(m.Groups["p"].Value))) return true;
    }
    return false;
   }

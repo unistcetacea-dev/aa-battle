@@ -32,6 +32,7 @@ namespace AABattle.Tests
     [TestCase("자신의 기술이 「필중」한다", "자신의 기술은 필중이다.")]
     [TestCase("상대의 공격 이외의 대미지를 무시한다", "자신은 공격 이외의 대미지를 받지 않는다.")]
     [TestCase("드물게 기합으로 상대의 공격을 버틴다", "자신은 빈사가 되는 공격을 드물게 HP 1로 버틴다.")]
+    [TestCase("드물게 기합으로 상대의 공격을 버틴다. 남은 체력이 많을수록 발동하기 어렵다", "자신은 빈사가 되는 공격을 드물게 HP 1로 버틴다 (남은 HP 비례).")]
     public void EffectVariantsUseTheStandardSentence(string raw, string expected)
     {
       Assert.That(EffectNormalizer.Normalize(raw), Is.EqualTo(expected));

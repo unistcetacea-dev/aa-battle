@@ -30,6 +30,8 @@ namespace AABattle
       var f = result.Fighters;
       var chosenActors = f.ToArray();
       var r = result.Rules;
+      try
+      {
       EffectScope.Begin(f, r, rng, states, db);
       int[] deployed =
       {
@@ -68,6 +70,7 @@ namespace AABattle
         }
 
       Mechanics.SetParties(r, f, Enumerable.Range(0, 2).Select(i => (IEnumerable<Fighter>)((commands[i].Party ?? new Fighter[0]).Length > 0 ? commands[i].Party : r.Parties[i]).Where(x => x != null).Select(x => x.Copy()).ToArray()).ToArray());
+      ObserverChanceRolls.Run(db, f, r, states, rng, result.Log.Add);
       foreach (var fighter in f)
         Mechanics.RefreshEncore(db, fighter, result.Log);
       AbilityRuntime.RefreshSuppression(f, result.Log.Add);
@@ -172,6 +175,7 @@ namespace AABattle
       }
 
       RuntimeTriggers.Timing(f, states, TriggerStructures.TurnStartLabel, result.Log.Add);
+      TurnStateEffects.Run(f, r, result.Log.Add);
       AnsweredTriggers.Selected(f, commands, result.Log.Add);
       int entryStart = result.Log.Count;
       for (int i = 0; i < 2; i++)
@@ -225,6 +229,7 @@ namespace AABattle
 
       var originalCommands = commands.ToArray();
       var slots = pursuit.Order(ExtraActionRuntime.Build(movers, f, r));
+      ExtraActionRuntime.Pull(slots, 0, result.Log); // 턴 시작 전에 얻은 즉시 추가행동은 첫 행동보다 먼저 삽입한다.
       Fighter usedBy = null;
       Move usedMove = null;
       Action flushUsed = () =>
@@ -731,6 +736,11 @@ namespace AABattle
       BattleRecords.UpdateHere(f, r, states, result.Log.Add);
       r.Turn++;
       return result;
+      }
+      finally
+      {
+        TurnStateEffects.Restore(f);
+      }
     }
   }
 }

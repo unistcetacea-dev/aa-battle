@@ -211,6 +211,23 @@ namespace AABattle {
    Assert.That(AbilityStateModules.EndureChance(holder, F(), new Rules(), () => roll), Is.EqualTo(endures));
    Assert.That(AbilityStateModules.EndureChance(F(), F(), new Rules(), () => 0), Is.False);
   }
+  [TestCase(100, 100, .01)] [TestCase(1, 100, .10)] [TestCase(50, 100, .05545454545454546)]
+  public void HpScaledEndureChanceInterpolatesFromFullHpToOne(int hp, int maxHp, double expected) {
+   Assert.That(HpScaledChance.Probability(.10, hp, maxHp), Is.EqualTo(expected).Within(.000001));
+  }
+  [Test] public void HpScaledEndureChanceUsesCurrentMaximumHpAtTheDamageGate() {
+   var rules = new Rules();
+   var opponent = F();
+   foreach (int mode in new[] { 0, 1, 2 }) {
+    var holder = F();
+    Rule(holder, "자신은 빈사가 되는 공격을 드물게 HP 1로 버틴다 (남은 HP 비례).");
+    int maxHp = Mechanics.MaxHP(holder, opponent, rules);
+    holder.HP = mode == 0 ? maxHp : mode == 1 ? Math.Max(1, maxHp / 2) : 1;
+    double chance = HpScaledChance.Probability(.10, holder.HP, maxHp);
+    Assert.That(AbilityStateModules.EndureChance(holder, opponent, rules, () => Math.Max(0, chance - .0001)), Is.True);
+    Assert.That(AbilityStateModules.EndureChance(holder, opponent, rules, () => Math.Min(.9999, chance + .0001)), Is.False);
+   }
+  }
   [Test] public void FullHpSturdyAndChanceBothWorkInARealHit() {
    var holder = F("기합"); var strong = M("몸통박치기").Copy(); strong.power = 400;
    var t = Engine.Resolve(TestData.Db, new[] { F(), holder }, new[] { strong, Idle() }, new Rules(), () => .5);
