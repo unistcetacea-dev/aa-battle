@@ -49,6 +49,7 @@ namespace AABattle {
   static void Read(Move m, string s, List<string> into, MovePlan plan) {
    s = s.Trim().TrimEnd(',').Trim();
    if (s.Length == 0 || s.StartsWith("(")) return;
+   if (s == "「강제교대」 기술") { into.Add("상대를 강제교대시킨다."); return; }
    if (s == "「방어」 기술" && ProtectModules.IsGuard(m)) { into.Add("자신을 「방어」 상태로 한다."); return; }
    // 「…상태로 하고, …」
    var split = Regex.Match(s, @"^(?<a>.+?상태로) 하고\s*,\s*(?<b>.+)$");
@@ -134,6 +135,7 @@ namespace AABattle {
   }
   // 다른 곳(계산·MoveModules·TypeRules)이 처리하는 문장
   static bool Ignored(Move m, string s) {
+   if (PursuitModules.HandlesMoveSentence(s)) return true;
    if (Regex.IsMatch(s, @"^「[^」]+」 기술$|^\d+(?:~\d+)?회 「[^」]+」 기술$|^(?:특수|추가)효과 없음$")) return true;
    if (Regex.IsMatch(s, @"급소에 맞기 쉽다|반드시 급소에 맞는다|유리한 타입 상성|능력치로 대미지를 계산한다|「방어」 기술을 관통한다")) return true;
    if (FailModules.IsModule(s)) return true;

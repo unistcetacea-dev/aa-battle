@@ -41,6 +41,7 @@ namespace AABattle {
   public static bool IsPivotGrant(Potential potential){return potential!=null&&IsPivotGrant(potential.description);}
 
   public static bool IsSwitchEffect(string description){
+   if(BatonModules.Classify(description).Length>0)return false;
    string value=Clean(description);
    if(!value.Contains("교대")||(!value.Contains("아군")&&!value.Contains("임의교대")))return false;
    return !value.Contains("교대할수없다")&&!value.Contains("교대를제한")&&!value.Contains("강제교대");

@@ -15,6 +15,11 @@ namespace AABattle {
   public static readonly Dictionary<string, string> Pending = new Dictionary<string, string>(AbilityRewrites3.PendingReasons);
   // 도감 문장의 모듈 표현
   public static readonly Dictionary<string, string> Rewrites = new Dictionary<string, string> {
+   { "필수조역", "아군과 임의교대할 때, 자신의 「능력변화」를 인계한다." },
+   { "전열", "장소를 떠날 때, 교대해 나온 아군이 최초로 내보내는 「불꽃」 기술의 위력을 강화(1.5배)한다." },
+   { "에코로케이션", "자신의 「소리」 기술에 「추격」 효과를 부여한다." },
+   { "도주", "반드시 아군과 교대할 수 있다. 자신은 「추격」 효과를 받지 않는다." },
+   { "신출귀몰", "자신은 「추격」 효과를 받지 않는다. 자신은 설치물의 영향을 받지 않는다." },
    { "나쁜손버릇", "상대의 공격을 받았을 때, 상대의 소지품을 빼앗는다." },
    { "노상강도", "자신의 「추격」 기술이 명중했을 때, 상대의 소지품을 빼앗는다." },
    { "매지션", "자신의 공격이 명중했을 때, 상대의 소지품을 빼앗는다." },

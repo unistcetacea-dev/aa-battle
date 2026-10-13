@@ -263,6 +263,8 @@ namespace AABattle {
    if (m.Success && StateEffects.Find(m.Groups["s"].Value) != null) return "자신을 「" + m.Groups["s"].Value + "」 상태로 한다";
    // 「상대 기술의」처럼 조사가 빠진 주어
    string moveModule = MoveModules.Normalize(text);
+   string batonModule = BatonModules.Normalize(text) ?? PursuitModules.Normalize(text);
+   if (batonModule != null) return batonModule;
    if (moveModule != null) return moveModule;
    string criticalModule = AbilityCriticalFieldModules.Normalize(text);
    if (criticalModule != null) return criticalModule;
@@ -640,6 +642,8 @@ namespace AABattle {
    ScalarEffect scalar; SpeciesEffect species; FractionEffect fraction; RankEffect rank; string target;
    if (SecondaryEffects.IsModule(s)) return "추가효과 부여";
    string moveKind = MoveModules.Classify(s);
+   string batonKind = BatonModules.Classify(s); if (batonKind.Length == 0) batonKind = PursuitModules.Classify(s);
+   if (batonKind.Length > 0) return batonKind;
    if (moveKind.Length > 0) return moveKind;
    string criticalKind = AbilityCriticalFieldModules.Classify(s);
    if (criticalKind.Length > 0) return criticalKind;
