@@ -151,6 +151,32 @@ namespace AABattle {
    }
   }
 
+  // 저장된 회피·내성·격 포텐셜을 다시 열면 상대 타입과 템플릿 이름 선택지가 그대로 불러와진다
+  // (상대 타입이 비어 있는 옛 행은 이름에서 타입을 알아낸다)
+  [TestCase("회피", "격투", "대투회피")]
+  [TestCase("내성", "비행", "대비내성")]
+  [TestCase("격", "고스트", "극령박격")]
+  public void SavedCounterPotentialsReloadWithTheirTemplateChoices(string slot, string type, string name) {
+   using (var form = OpenPokemonEditor()) {
+    var withType = form.OpenPotentialWindowForTest(new PotentialDraft { Slot = slot, TargetType = type, Name = name });
+    Assert.That(withType.NameIsFixedChoice, Is.True);
+    Assert.That(withType.TypeRowVisible, Is.True);
+    Assert.That(withType.NameChoices, Does.Contain(name), "타입에 맞는 템플릿 이름 선택지");
+    Assert.That(withType.Collect().Name, Is.EqualTo(name));
+    Assert.That(withType.Collect().TargetType, Is.EqualTo(type));
+    withType.Cancel();
+    withType.Dispose();
+
+    var withoutType = form.OpenPotentialWindowForTest(new PotentialDraft { Slot = slot, TargetType = "", Name = name });
+    Assert.That(withoutType.Collect().TargetType, Is.EqualTo(type), "상대 타입이 비어 있으면 이름에서 알아낸다");
+    Assert.That(withoutType.NameChoices, Does.Contain(name));
+    Assert.That(withoutType.Collect().Name, Is.EqualTo(name));
+    withoutType.Cancel();
+    withoutType.Dispose();
+    form.CloseForTest();
+   }
+  }
+
   [Test] public void NewPotentialIsOnlyAddedWhenConfirmed() {
    using (var form = OpenPokemonEditor()) {
     var grid = form.PotentialGridForTest;

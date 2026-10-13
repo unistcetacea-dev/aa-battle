@@ -161,6 +161,9 @@ namespace AABattle {
     unlocks.Text = draft.Unlocks;
     TriggerBox.Text = draft.Trigger;
     EffectBox.Text = draft.Effect;
+    // 상대 타입이 비어 있는 옛 회피·내성·격 행은 이름(대투회피 등)에서 타입을 알아내야 템플릿 이름이 불러와진다
+    if (EditorTemplate.IsCounterSlot(draft.Slot) && draft.TargetType.Length == 0)
+      draft.TargetType = EditorTemplate.InferCounterType(draft.Name);
     RefreshTypeChoices(draft.TargetType);
     RebuildName(draft.Name);
     UpdateNotice();

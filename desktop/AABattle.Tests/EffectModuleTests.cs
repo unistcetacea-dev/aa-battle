@@ -116,5 +116,12 @@ namespace AABattle {
    }
    Assert.That(broken, Is.Empty, string.Join("\n", broken.Take(20)));
   }
+
+ // 「기술의 우선도를 +N한다」 변형은 표준 문장(기술 우선도를 N 올린다)이 된다
+ [TestCase("중확률로 자신의 기술의 우선도를 ＋1한다.", "중확률로 자신의 기술 우선도를 1 올린다")]
+ [TestCase("자신의 기술의 우선도를 +2한다", "자신의 기술 우선도를 2 올린다")]
+ public void PriorityPlusVariantBecomesTheStandardSentence(string source, string expected) {
+  Assert.That(EffectNormalizer.Normalize(source), Is.EqualTo(expected));
+ }
  }
 }

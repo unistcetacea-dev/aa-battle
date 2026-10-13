@@ -50,6 +50,10 @@ namespace AABattle
       if (abilityModule != null)
         return abilityModule;
       text = Regex.Replace(text, @"^(자신|상대)\s+(?=기술의|「)", "$1의 ");
+      // 「기술의 우선도를 +N한다」 → 표준 문장 「기술 우선도를 N 올린다」 (대의 선 등)
+      m = Regex.Match(text, @"^(?<t>자신|상대|아군)의\s*기술의?\s*우선도를\s*[+＋]\s*(?<n>[1-7])\s*(?:한다|올린다)$");
+      if (m.Success)
+        return EffectNormalizer.CanonicalPriority(m.Groups["t"].Value, int.Parse(m.Groups["n"].Value)).TrimEnd('.');
       // 「X」의 위력/대미지(괄호 하나가 기술 조건)
       m = Regex.Match(text, "^" + Subject + @"의\s*(?<c>「[^」]+」|공격|물리기술|특수기술)의\s*(?<k>위력|대미지|데미지)(?:을|를|이)\s*(?<v>.+)$");
       if (m.Success && TryVerb(m.Groups["v"].Value, out action, out rate) && MoveCondition.TryParse(m.Groups["c"].Value.StartsWith("「") ? m.Groups["c"].Value : "「" + m.Groups["c"].Value + "」", out c))
