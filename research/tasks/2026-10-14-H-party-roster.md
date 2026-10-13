@@ -1,6 +1,6 @@
 # 지시서 H: 파티 구조 — 다수 소속 + 출전 선택
 
-브랜치 `task/H-party-roster` · `-Visual` 필요 · 선행: A~G 병합 뒤. 먼저 `2026-10-14-parallel-rules.md`, `2026-10-14-user-decisions.md`(「구조·운영」 절), `PROJECT_HANDOFF.md`의 데이터 모델·팀 보관함·편집기 절, `DataModels.cs`, `ProjectStore.cs`, `TeamRules.cs`, `StartUI.cs`, `DataEditor.cs`를 읽는다.
+브랜치 `task/H-party-roster` · 출력 `outputs/candidate-H` · `-Visual` 필요 · L·M·N과 병렬(`BattleEngine.Turn.cs`·교대 처리는 M 소유 — 고치지 않는다). 먼저 `2026-10-14-parallel-rules.md`, `2026-10-14-user-decisions.md`(「구조·운영」 절), `PROJECT_HANDOFF.md`의 데이터 모델·팀 보관함·편집기 절, `DataModels.cs`, `ProjectStore.cs`, `TeamRules.cs`, `StartUI.cs`, `DataEditor.cs`를 읽는다.
 
 ## 목표 (사용자 결정)
 - 파티(팀) 데이터에 **트레이너 여러 명 + 포켓몬 여러 마리**(6마리 제한 없음)를 소속시킨다. 같은 트레이너·포켓몬이 여러 파티에 속할 수 있다(참조 또는 복사 — 기존 저장 형식을 보고 단순한 쪽, 보고에 적기).
