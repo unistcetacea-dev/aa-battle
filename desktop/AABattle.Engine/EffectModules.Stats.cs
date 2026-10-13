@@ -20,6 +20,9 @@ namespace AABattle
 
     static string NormalizeSpecies(string text)
     {
+      string additive = SpeciesValueModules.Normalize(text);
+      if (additive != null)
+        return additive;
       if (!text.Contains("종족치"))
         return null;
       const string Who = @"(?:(?<s>자신|상대)의\s*)?";
@@ -84,6 +87,8 @@ namespace AABattle
     {
       effect = null;
       string t = PotentialParts.Clean(text ?? "").Trim().TrimEnd('.', '。').Trim();
+      if (SpeciesValueModules.TryParse(t, out effect))
+        return true;
       var m = Regex.Match(t, @"^(?<s>자신|상대)의\s*(?:(?<all>전종족치)|「(?<st>[^」]+)」)\s*종족치를\s*(?<rest>.+)$");
       if (!m.Success)
       {

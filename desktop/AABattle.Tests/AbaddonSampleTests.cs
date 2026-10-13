@@ -27,6 +27,9 @@ namespace AABattle {
    Assert.That(team.members.Count, Is.EqualTo(6));
    Assert.That(team.trainer.name, Is.EqualTo("마히토"));
    Assert.That(TeamRules.Check(team), Is.Empty, string.Join(" / ", TeamRules.Check(team)));
+   var muui = team.members.SelectMany(m => m.potentials).Where(p => p.name == "무위전변").ToArray();
+   Assert.That(muui, Is.Not.Empty);
+   Assert.That(muui.All(p => p.slot == "PT ①"), Is.True, "무위전변은 PT ① 슬롯");
    foreach (var member in team.members) {
     string warning;
     var pokemon = EditorBridge.ToPokemon(member, TestData.Db, out warning, team.trainer);
@@ -79,7 +82,27 @@ namespace AABattle {
     foreach (var state in states) state.RefreshUnlocks();
     var turn = Engine.Resolve(db, fighters, commands, new Rules(), states, () => .5);
     Assert.That(turn.Log, Is.Not.Empty, "선봉 " + lead);
-    if (turn.Fighters[0].Data.name == "로보코") Assert.That(turn.Fighters[0].Data.@base[0], Is.EqualTo(150), "배틀 시작 시 금관 사이즈 체력 종족치 적용");
+    if (turn.Fighters[0].Data.name == "로보코") {
+     Assert.That(turn.Fighters[0].Data.@base[0], Is.EqualTo(150), "배틀 시작 시 금관 사이즈 체력 종족치 적용");
+     for (int nextTurn = 2; nextTurn <= 3; nextTurn++) {
+      var nextCommands = new[] {
+       new BattleCommand { Move = db.moves.First(x => x.name == turn.Fighters[0].Moves[0]), Party = sides[0].ToArray() },
+       new BattleCommand { Move = db.moves.First(x => x.name == turn.Fighters[1].Moves[0]), Party = sides[1].ToArray() }
+      };
+      turn = Engine.Resolve(db, turn.Fighters, nextCommands, turn.Rules, turn.Trainers, () => .5);
+      Assert.That(turn.Fighters[0].Data.@base[0], Is.EqualTo(150), nextTurn + "T에도 금관 사이즈가 중복 적용되지 않음");
+     }
+     var switched = Engine.Resolve(db, turn.Fighters, new[] {
+      new BattleCommand { SwitchIn = sides[0][0], Party = sides[0].ToArray() },
+      new BattleCommand { Move = db.moves.First(x => x.name == turn.Fighters[1].Moves[0]), Party = sides[1].ToArray() }
+     }, turn.Rules, turn.Trainers, () => .5);
+     Assert.That(switched.SwitchedOut[0].Data.@base[0], Is.EqualTo(100), "퇴장하면 종족치 원본으로 복원");
+     turn = Engine.Resolve(db, switched.Fighters, new[] {
+      new BattleCommand { SwitchIn = sides[0][5], Party = sides[0].ToArray() },
+      new BattleCommand { Move = db.moves.First(x => x.name == switched.Fighters[1].Moves[0]), Party = sides[1].ToArray() }
+     }, switched.Rules, switched.Trainers, () => .5);
+     Assert.That(turn.Fighters[0].Data.@base[0], Is.EqualTo(150), "재등장 시 금관 사이즈를 한 번 적용");
+    }
    }
   }
  }

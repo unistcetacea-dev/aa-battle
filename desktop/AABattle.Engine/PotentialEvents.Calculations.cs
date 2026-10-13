@@ -177,6 +177,9 @@ namespace AABattle
             case "수치":
               next = s.Value;
               break;
+            case "가산":
+                next = SpeciesValueModules.Add(current, s.Value);
+              break;
             case "최고 복사":
               next = PotentialStatRules.CopyBase(target.Data, EffectModules.StatIndex(PotentialStatRules.ChooseExtremeBase(target.Data, true, c.Rng ?? (() => .5))));
               break;

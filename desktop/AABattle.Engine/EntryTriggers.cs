@@ -33,6 +33,7 @@ namespace AABattle {
    fighter.Conditions.FieldTurn=reason==EntryReason.Lead||reason==EntryReason.Replacement?0:1;
    // 효과 실행 범위 밖(죽어내밀기 화면)에서 나오면 다음 T 처음에 그 방식으로 처리한다(인터벌은 다음 T, 타이밍 규칙 5-1)
    if(!PotentialQueue.Active&&rules!=null&&reason==EntryReason.Replacement){fighter.Conditions.PendingEntry=reason;fighter.Conditions.EntryTriggered=false;return;}
+   SpeciesValueModules.ApplyPassive(fighter, log);
    // 등장은 실제로 나왔을 때 한 번만(턴마다 선발 등장을 다시 처리하지 않도록 효과 실행 범위 안에서 표시)
    if(PotentialQueue.Active)fighter.Conditions.EntryTriggered=true;
    fighter.Conditions.PendingEntry=EntryReason.Lead;

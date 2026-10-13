@@ -140,6 +140,7 @@ namespace AABattle
       foreach (string verb in new[] { "와 같게 한다", "까지 올린다" })
         CoreAdd(modules, "effect.species.copy." + verb, "다른 종족치 " + verb, "종족치 변경", "종족치", "{대상} 종족치를 자신의 「{원본}」 종족치" + verb + ".", target, S("원본", ModuleSlotKind.Stats, "방어", "체력", "공격", "방어", "특공", "특방", "속도"));
       CoreAdd(modules, "effect.species.value", "종족치 수치 지정", "종족치 변경", "종족치", "{대상} 종족치를 「{수치}」로 한다.", target, CoreNumber("수치", ModuleSlotKind.StatValue, "110"));
+      CoreAdd(modules, "effect.species.value.add", "종족치 수치 가산", "종족치 변경", "종족치", "{대상} 종족치를 {수치} 올린다.", target, CoreNumber("수치", ModuleSlotKind.StatValue, "50"));
       CoreAdd(modules, "effect.species.raise", "종족치 랭크 상승", "종족치 변경", "종족치", "{대상} 종족치를 「{수치}」로 하여 {랭크}랭크 올린다.", target, CoreSpeciesValue(), CoreNumber("랭크", ModuleSlotKind.Rank, "1", 2));
       CoreAdd(modules, "effect.species.raise.auto", "종족치 자동 랭크 상승", "종족치 변경", "종족치", "{대상} 종족치를 {랭크}랭크 올린다.", target, CoreNumber("랭크", ModuleSlotKind.Rank, "1", 2));
       foreach (string verb in new[] { "로 한다", "까지 올린다", "까지 내린다" })

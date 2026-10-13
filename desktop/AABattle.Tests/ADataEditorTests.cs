@@ -19,6 +19,8 @@ namespace AABattle {
    Assert.That(fist.Select(x => x.name), Is.EquivalentTo(new[] { "분노의주먹(오레마스)", "분노의주먹" }));
    Assert.That(fist.Single(x => x.name == "분노의주먹(오레마스)").types, Does.Contain("격투"));
    Assert.That(fist.Single(x => x.name == "분노의주먹").types, Does.Contain("고스트"));
+   Assert.That(MoveNames.Known("분노의주먹(오레마스)"), Is.True);
+   Assert.That(MoveNames.Known("분노의주먹"), Is.True);
   }
 
   [Test] public void RemovedConfirmedTriggerExamplesAreNotSuggested() {
@@ -32,6 +34,19 @@ namespace AABattle {
    var trainer = new TrainerRecord();
    trainer.training.rank = "EX";
    Assert.That(TrainerAccessRules.TrainerAtLeast(trainer, "육성", "AA"), Is.True);
+  }
+
+  [Test] public void SpeciesValueIncreaseIsARegisteredEffectModule() {
+   const string sentence = "자신의 「체력」 종족치를 50 올린다.";
+   Assert.That(EffectNormalizer.Normalize(sentence), Is.EqualTo("자신의 「체력」 종족치를 50 올린다"));
+   Assert.That(EffectModules.Classify(sentence), Is.EqualTo("종족치 변경"));
+   SpeciesEffect effect;
+   Assert.That(EffectModules.TrySpecies(sentence, out effect), Is.True);
+   Assert.That(effect.Operation, Is.EqualTo("가산"));
+   Assert.That(effect.Value, Is.EqualTo(50));
+   ModuleDefinition module;
+   Dictionary<string, string> values;
+   Assert.That(ModuleCatalog.TryRead(ModuleKind.Effect, sentence, out module, out values), Is.True);
   }
 
   [Test] public void AbaddonItemsArePresentInCatalog() {
