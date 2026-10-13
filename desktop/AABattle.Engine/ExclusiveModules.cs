@@ -13,6 +13,7 @@ namespace AABattle {
   static readonly Regex PursuitScale = new Regex(@"^자신이 「추격」 효과로 주는 대미지를 강화\((?<n>[0-9.]+)배\)한다$");
   static readonly Regex ReleaseAll = new Regex(@"^(?<t>자신|상대)의 모든 상태변화를 해제한다$");
   static readonly Regex CurrentHpCost = new Regex(@"^자신의 현재 HP의 1/2을 소비한다$");
+  static readonly Regex BerserkRepeat = new Regex(@"^(?:이때 )?가장 먼저 같은 기술에 의한 추가공격을 한다$");
 
   public static string PursuitSentence(string rate) { return "자신이 「추격」 효과로 주는 대미지를 강화(" + rate + "배)한다."; }
 
@@ -36,12 +37,14 @@ namespace AABattle {
   public static string Classify(string sentence) {
    string s = Clean(sentence);
    if (CurrentHpCost.IsMatch(s)) return "현재 HP 소비";
+   if (BerserkRepeat.IsMatch(s)) return "버서크 추가공격";
    if (PursuitScale.IsMatch(s)) return "추격 발동 배율";
    if (ReleaseAll.IsMatch(s)) return "상태변화 전체 해제";
    return "";
   }
 
   public static bool IsCurrentHpCost(string sentence) { return CurrentHpCost.IsMatch(Clean(sentence)); }
+  public static bool IsBerserkRepeat(string sentence) { return BerserkRepeat.IsMatch(Clean(sentence)); }
 
   public static bool IsPursuitScale(string sentence) { return PursuitScale.IsMatch(Clean(sentence)); }
   public static bool TryPursuitScale(string sentence, out double rate) {

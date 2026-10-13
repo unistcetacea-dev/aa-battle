@@ -67,6 +67,7 @@ namespace AABattle {
 
   [TestCase("자신이 「추격」 효과로 주는 대미지를 강화(2배)한다.", "추격 발동 배율")]
   [TestCase("상대의 모든 상태변화를 해제한다.", "상태변화 전체 해제")]
+  [TestCase("이때 가장 먼저 같은 기술에 의한 추가공격을 한다.", "버서크 추가공격")]
   public void NewModulesClassify(string sentence, string kind) {
    Assert.That(EffectModules.Classify(sentence), Is.EqualTo(kind));
    Assert.That(ModuleCatalog.All.Any(x => x.Kind == ModuleKind.Effect && x.Expected == kind), Is.True, "ModuleCatalog 등록");
@@ -74,6 +75,22 @@ namespace AABattle {
 
   [Test] public void FunctionExtensionNameMayContainParentheses() {
    Assert.That(EffectNormalizer.Normalize("자신이 「기능확장:아라가미탄(불꽃)」를 내보낼 수 있다."), Is.EqualTo("자신이 「기능확장:아라가미탄(불꽃)」를 내보낼 수 있다."));
+  }
+
+  [Test] public void MakenLastTurnTriggerRequiresARegularSwitchEntry() {
+   string sentence = ExclusiveTriggerModules.NormalSwitchLastSentence;
+   var spec = TriggerModules.Parse(sentence);
+   var owner = F();
+   owner.Conditions.TurnFacts = new List<TriggerFact> {
+    new TriggerFact { Kind = "등장", Self = true, Method = "통상교대" }
+   };
+   Assert.That(TriggerModules.Classify(sentence), Is.EqualTo("타이밍"));
+   Assert.That(ModuleCatalog.All.Any(x => x.Kind == ModuleKind.TriggerEvent && x.Template == sentence), Is.True);
+   Assert.That(TriggerModules.Matches(spec,
+    new TriggerFact { Kind = "타이밍", Method = TriggerStructures.TurnLastLabel }, owner), Is.True);
+   owner.Conditions.TurnFacts[0].Method = "선발";
+   Assert.That(TriggerModules.Matches(spec,
+    new TriggerFact { Kind = "타이밍", Method = TriggerStructures.TurnLastLabel }, owner), Is.False);
   }
 
   // ===== 사건으로 얻는 필중 · 관통 =====
@@ -158,11 +175,11 @@ namespace AABattle {
    Assert.That(t.Fighters[0].HP, Is.EqualTo(hp - hp / 2).Within(1));
   }
 
-  [Test] public void BerserkCostUsesCurrentHpAndRoundsDown() {
+  [Test] public void BerserkLeavesHalfOfCurrentHpRoundedDown() {
    var user = F(100, Exclusive("버서크")); var target = F(50);
    user.HP = 81;
    var t = Run(user, target, Use(Hit(), "검사전용"), Use(Idle()));
-   Assert.That(t.Fighters[0].HP, Is.EqualTo(41), string.Join("\n", t.Log));
+   Assert.That(t.Fighters[0].HP, Is.EqualTo(40), string.Join("\n", t.Log));
   }
 
   [Test] public void BerserkCannotBeUsedAtOneHp() {

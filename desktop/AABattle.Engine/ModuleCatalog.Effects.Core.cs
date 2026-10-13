@@ -101,6 +101,7 @@ namespace AABattle
       RegisterCoreMoveEffects(modules);
       RegisterMoveItemEffects(modules);
       RegisterRoleEffects(modules);
+      RegisterExclusiveEffects(modules);
     }
 
     static void RegisterCoreStats(List<ModuleDefinition> modules)

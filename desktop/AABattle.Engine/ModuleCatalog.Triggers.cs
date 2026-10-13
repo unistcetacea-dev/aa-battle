@@ -115,6 +115,7 @@ namespace AABattle {
    RegisterTriggerEvents(modules);
    RegisterTriggerStates(modules);
    RegisterTriggerConditions(modules);
+   RegisterExclusiveTriggers(modules);
   }
 
   static void RegisterTriggerEvents(List<ModuleDefinition> modules) {

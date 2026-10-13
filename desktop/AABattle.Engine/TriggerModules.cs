@@ -92,6 +92,7 @@ namespace AABattle {
   public static string Canonical(TriggerSpec s) {
    if (RoleModules.IsRoleSpec(s)) return RoleModules.Canonical(s);
    if (s.Module == "소지품 소실") return CanonicalItemLoss(s);
+   if (ExclusiveTriggerModules.IsNormalSwitchLast(s)) return ExclusiveTriggerModules.NormalSwitchLastSentence;
    switch (s.Module) {
     case "등장":
      if (s.Types.Length > 0) return "「" + string.Join("/", s.Types) + "」 타입 아군과 교대해 장소에 나올 때";
@@ -122,6 +123,7 @@ namespace AABattle {
    string t = Clean(text);
    if (t.Length == 0) return false;
    if (RoleModules.TryParse(t, out spec)) return true;
+   if (ExclusiveTriggerModules.TryParse(t, out spec)) return true;
    if (TryParseItemLoss(t, out spec)) return true;
    if (TryParseAbilityState(t, out spec)) return true;
    if (TryParseState(t, out spec)) return true;
@@ -271,6 +273,7 @@ namespace AABattle {
   public static bool Matches(TriggerSpec s, TriggerFact f, Fighter owner) {
    if (s == null || f == null || s.Module.Length == 0) return false;
    if (RoleModules.IsRoleSpec(s)) return RoleModules.Matches(s, f);
+   if (ExclusiveTriggerModules.IsNormalSwitchLast(s)) return ExclusiveTriggerModules.MatchesNormalSwitchLast(f, owner);
    if (s.Module == "소지품 소실") return MatchesItemLoss(s, f);
    var move = f.Move;
    switch (s.Module) {
