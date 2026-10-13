@@ -165,25 +165,10 @@ namespace AABattle {
   }
 
   // ===== 전용 포텐셜 선택지 =====
-  [Test] public void ExclusiveSlotIsOfferedForPokemonAndHiddenFromTheTrainerExceptLegacyRows() {
+  [Test] public void ExclusiveSlotIsOfferedForPokemonAndHiddenFromTheTrainer() {
    using (var form = OpenPokemonEditor()) {
     Assert.That(form.SlotChoicesFor(false, ""), Does.Contain(TeamRules.ExclusiveSlot));
     Assert.That(form.SlotChoicesFor(true, ""), Does.Not.Contain(TeamRules.ExclusiveSlot));
-    Assert.That(form.SlotChoicesFor(true, TeamRules.ExclusiveSlot), Does.Contain(TeamRules.ExclusiveSlot), "옛 전용 행은 그대로 보인다");
-    // 옛 트레이너 전용은 불러와도 지워지거나 옮겨지지 않고, 편집 창이 옮기라고 안내한다
-    var trainer = form.ProjectForTest.trainers[0];
-    trainer.potentials.Add(new PotentialRecord { slot = TeamRules.ExclusiveSlot, name = "옛 전용" });
-    form.SelectTabForTest(0);
-    typeof(DataEditorForm).GetMethod("LoadCurrent", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(form, null);
-    Application.DoEvents();
-    var legacy = RowOf(form, TeamRules.ExclusiveSlot);
-    Assert.That(Cell(legacy, "name"), Is.EqualTo("옛 전용"));
-    var window = form.OpenPotentialWindowForTest(form.DraftFromRow(legacy));
-    Assert.That(window.NoticeText, Does.Contain("포켓몬 편집으로 옮기세요"));
-    Assert.That(window.SlotChoices, Is.SupersetOf(new[] { "고유", "지령", TeamRules.ExclusiveSlot }), "트레이너 창은 옛 전용 행의 종류를 유지한다");
-    window.Cancel();
-    window.Dispose();
-    Assert.That(trainer.potentials.Any(x => x.slot == TeamRules.ExclusiveSlot && x.name == "옛 전용"), Is.True);
     form.CloseForTest();
    }
   }

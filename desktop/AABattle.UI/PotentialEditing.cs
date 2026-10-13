@@ -69,7 +69,7 @@ namespace AABattle {
    };
   }
 
-  // 「포텐셜 종류」 선택지: 포켓몬은 전용까지, 트레이너는 고유·지령(옛 전용은 그 행에서만 남는다)
+  // 「포텐셜 종류」 선택지: 포켓몬은 전용까지, 트레이너는 고유·지령
   internal string[] SlotChoicesFor(bool trainerRecord, string current) {
    var choices = (trainerRecord ? EditorTemplate.TrainerEditSlotNames : EditorTemplate.PokemonEditSlotNames).ToList();
    if (!string.IsNullOrWhiteSpace(current) && !choices.Contains(current)) choices.Add(current);

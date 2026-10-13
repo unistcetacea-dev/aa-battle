@@ -52,7 +52,15 @@ namespace AABattle {
     MigrateCopies(project, team);
    }
    if (resolve) Resolve(project);
+   // 트레이너 쪽 옛 「전용」 행은 버린다(전용은 포켓몬 편집에서만 단다)
+   foreach (var trainer in project.trainers) RemoveLegacyExclusive(trainer);
+   foreach (var team in project.teams) RemoveLegacyExclusive(team.trainer);
    return project;
+  }
+
+  static void RemoveLegacyExclusive(TrainerRecord trainer) {
+   if (trainer == null || trainer.potentials == null) return;
+   trainer.potentials.RemoveAll(p => p != null && p.slot == TeamRules.ExclusiveSlot);
   }
 
   // 팀의 trainer·members를 id로 프로젝트 목록의 객체에 연결한다. 없는 id는 버린다

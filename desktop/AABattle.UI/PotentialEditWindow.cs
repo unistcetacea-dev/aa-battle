@@ -204,10 +204,7 @@ namespace AABattle {
 
   void UpdateNotice() {
    string slot = slotEditor.Value;
-   if (slot == TeamRules.ExclusiveSlot)
-    notice.Text = trainerRecord
-     ? "전용 포텐셜은 포켓몬 편집에서 그 포켓몬에 답니다. 포켓몬 편집으로 옮기세요."
-     : "전용: 트레이너 포텐셜입니다. 개수 제한은 파티 전체에서 셉니다.";
+   if (slot == TeamRules.ExclusiveSlot) notice.Text = "전용: 트레이너 포텐셜입니다. 개수 제한은 파티 전체에서 셉니다.";
    else notice.Text = "";
   }
 

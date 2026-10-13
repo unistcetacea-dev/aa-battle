@@ -9,7 +9,6 @@ namespace AABattle {
   // 통솔 A가 있어야 임명할 수 있는 추가임명·통솔 조건 역할. 『엠퍼러』는 통솔 S.
   public static readonly string[] LeadershipRoles={"양대간판","어벤저","인챈터","스카우터","체이서","톱 배터","선구의 에이스"};
   // 전용 포텐셜: 포켓몬 편집에서 그 포켓몬에 달지만 트레이너 포텐셜이다(개수 제한은 파티 전체 합산).
-  // 옛 데이터의 트레이너 쪽 「전용」도 같은 제한으로 센다.
   public const string ExclusiveSlot="전용";
   static string Rank(AptitudeRecord value){return value==null?"":(value.rank??"").Trim();}
   static bool Known(string rank){return TrainerAccessRules.RankAtLeast(rank,"E");}
@@ -33,7 +32,7 @@ namespace AABattle {
     }
    }
    if(Known(ability)){
-    int unique=Active(t.potentials,s=>s=="고유").Count(),exclusive=Active(t.potentials,s=>s==ExclusiveSlot).Count()+members.Sum(m=>Active(m.potentials,s=>s==ExclusiveSlot).Count());
+    int unique=Active(t.potentials,s=>s=="고유").Count(),exclusive=members.Sum(m=>Active(m.potentials,s=>s==ExclusiveSlot).Count());
     if(unique>UniqueLimit(ability))problems.Add("고유 포텐셜 "+unique+"개 — 능력 "+ability+"는 "+UniqueLimit(ability)+"개까지");
     if(exclusive>ExclusiveLimit(ability))problems.Add("전용 포텐셜 "+exclusive+"개 — 능력 "+ability+"는 "+ExclusiveLimit(ability)+"개까지");
    }
@@ -44,7 +43,7 @@ namespace AABattle {
    var trainer=new TrainerRecord{name="T"};trainer.leadership.rank="B";trainer.ability.rank="C";trainer.training.rank="C";
    var a=new PokemonRecord{name="A"};a.potentials.Add(new PotentialRecord{slot="유대",name="영혼의 유대"});a.potentials.Add(new PotentialRecord{slot="역할",name="어벤저"});a.potentials.Add(new PotentialRecord{slot="종족 ③",name="시험"});
    var b=new PokemonRecord{name="B"};b.potentials.Add(new PotentialRecord{slot="유대",name="사랑의 유대"});b.potentials.Add(new PotentialRecord{slot="특권",name="익스펜션（물）"});
-   for(int i=0;i<4;i++)trainer.potentials.Add(new PotentialRecord{slot="전용",name="전용"+i});
+   for(int i=0;i<4;i++)a.potentials.Add(new PotentialRecord{slot="전용",name="전용"+i});
    var team=new TeamRecord{trainer=trainer};team.members.Add(a);team.members.Add(b);var found=Check(team);
    if(found.Count!=5||!found.Any(x=>x.Contains("유대"))||!found.Any(x=>x.Contains("어벤저"))||!found.Any(x=>x.Contains("익스펜션"))||!found.Any(x=>x.Contains("전용"))||!found.Any(x=>x.Contains("종족 ③")))throw new Exception("Team aptitude rules failed: "+string.Join(" / ",found));
    trainer.leadership.rank="A";trainer.ability.rank="B";trainer.training.rank="B";if(Check(team).Count!=0)throw new Exception("Team aptitude rules false positive: "+string.Join(" / ",Check(team)));

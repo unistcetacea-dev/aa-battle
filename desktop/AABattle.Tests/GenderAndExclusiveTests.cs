@@ -84,7 +84,7 @@ namespace AABattle {
    Assert.That(new PotentialInstance { Pokemon = new Potential { id = TeamRules.ExclusiveSlot } }.IsTrainer, Is.False, "실행기 분담은 기록 출처만 본다");
   }
 
-  [Test] public void ExclusiveLimitCountsTheWholePartyAndTheTrainersOldRecords() {
+  [Test] public void ExclusiveLimitCountsPokemonExclusivesOfTheWholeParty() {
    var trainer = new TrainerRecord { name = "T" };
    trainer.ability.rank = "B"; // 전용 5개까지
    var team = new TeamRecord { trainer = trainer };
@@ -98,9 +98,23 @@ namespace AABattle {
    team.members[2].potentials.RemoveAt(1);
    Assert.That(TeamRules.Check(team).Any(x => x.Contains("전용")), Is.False, "5개는 B까지");
    trainer.potentials.Add(new PotentialRecord { slot = TeamRules.ExclusiveSlot, name = "옛 전용" });
-   Assert.That(TeamRules.Check(team).Any(x => x.Contains("전용 포텐셜 6개")), Is.True, "트레이너 쪽 옛 전용도 합산");
+   Assert.That(TeamRules.Check(team).Any(x => x.Contains("전용")), Is.False, "트레이너 쪽 전용은 세지 않는다");
    team.members[1].potentials[0].enabled = false;
    Assert.That(TeamRules.Check(team).Any(x => x.Contains("전용")), Is.False, "발동 금지는 세지 않는다");
+  }
+
+  [Test] public void LegacyTrainerExclusiveRowsAreDroppedOnLoad() {
+   var project = new EditorProject();
+   var trainer = new TrainerRecord { name = "T" };
+   trainer.potentials.Add(new PotentialRecord { slot = TeamRules.ExclusiveSlot, name = "옛 전용" });
+   trainer.potentials.Add(new PotentialRecord { slot = "고유", name = "남는 고유" });
+   project.trainers.Add(trainer);
+   var mon = new PokemonRecord { name = "M" };
+   mon.potentials.Add(new PotentialRecord { slot = TeamRules.ExclusiveSlot, name = "포켓몬 전용" });
+   project.pokemon.Add(mon);
+   var loaded = ProjectStore.Parse(ProjectStore.Serialize(project));
+   Assert.That(loaded.trainers[0].potentials.Select(x => x.name), Is.EqualTo(new[] { "남는 고유" }));
+   Assert.That(loaded.pokemon[0].potentials.Select(x => x.name), Is.EqualTo(new[] { "포켓몬 전용" }), "포켓몬 쪽 전용은 남는다");
   }
 
   [Test] public void AnalysisDoesNotRevealExclusivePotentials() {

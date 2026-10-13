@@ -37,7 +37,7 @@ namespace AABattle {
    public static int[] PreviewStats(PokemonRecord p){int l=Math.Max(1,p.level);int[] b={p.stats.hp,p.stats.attack,p.stats.defense,p.stats.spAttack,p.stats.spDefense,p.stats.speed};return b.Select((x,i)=>i==0?(int)Math.Floor((x*2+31)*l/100.0)+l+10:(int)Math.Floor((x*2+31)*l/100.0)+5).ToArray();}
  }
  static class EditorTemplate {
-  public static readonly string[] TrainerSlotNames={"고유","전용","지령"};
+  public static readonly string[] TrainerSlotNames={"고유","지령"};
   public static readonly string[] PokemonSlotNames={"역할","분류","주인","이명","종족 ①","종족 ②","종족 ③","종족 ④","속별","유대","선","회피","내성","격","범용","부수","특권","PT ①","PT ②"};
   // 편집 화면의 「포텐셜 종류」 선택지. 전용은 포켓몬 편집에서 단다(트레이너 쪽 기존 전용은 불러와 그대로 동작한다)
   public static readonly string[] TrainerEditSlotNames={"고유","지령"};

@@ -37,7 +37,7 @@ namespace AABattle {
    Assert.That(mon.potentials.Count == EditorTemplate.PokemonSlotNames.Length && mon.potentials[3].slot == "이명" && mon.potentials.Last().slot == "PT ②", "pokemon potential slots");
   }
   [Test] public void PotentialChoices() {
-   Assert.That(EditorTemplate.TrainerSlotNames, Is.EqualTo(new[] { "고유", "전용", "지령" }), "trainer potential types");
+   Assert.That(EditorTemplate.TrainerSlotNames, Is.EqualTo(new[] { "고유", "지령" }), "trainer potential types");
    Assert.That(EditorTemplate.Role("에이스") != null && EditorTemplate.Role("에이스").effect.Contains("1.33배"), "fixed role potential");
    Assert.That(EditorTemplate.Role("탐사대원").adjunct == "프라이멀 헌트" && EditorTemplate.Role("탐사대장").adjunct == "프라이멀 헌트" && EditorTemplate.Role("조사대원").adjunct == "리서치 헌트", "Abaddon role adjuncts");
    Assert.That(EditorTemplate.FixedOption("범용", "군략").effect.Contains("1.2배"), "fixed common potential");
