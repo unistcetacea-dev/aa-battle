@@ -59,7 +59,11 @@ $samples = Join-Path (Split-Path $PSScriptRoot -Parent) 'samples'
 if (Test-Path $samples) {
     $sampleStage = Join-Path $stage 'samples'
     New-Item -ItemType Directory -Path $sampleStage -Force | Out-Null
-    Copy-Item (Join-Path $samples '*.aabdata.json') $sampleStage -Force
+    # 저장소에 등록된 샘플만 넣는다(작업 중 저장한 개인 파일은 제외)
+    $tracked = & git -C $projectRoot ls-files 'samples/*.aabdata.json'
+    foreach ($file in $tracked) {
+        Copy-Item (Join-Path $projectRoot $file) $sampleStage -Force
+    }
 }
 $utf8Bom = New-Object System.Text.UTF8Encoding($true)
 $readme = [System.IO.File]::ReadAllText((Join-Path $PSScriptRoot 'dist-readme.txt'), (New-Object System.Text.UTF8Encoding($false)))
