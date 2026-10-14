@@ -12,7 +12,8 @@ namespace AABattle {
   public static readonly string[] UnlockNames={AimOrders,SureHitOrder,Pt1,Pt2};
   static readonly string[] RankBands={"E","D","C","B","A","AA","AAA","S"};
   // 사용자 결정: 육성 EX는 현재 AA와 동일하게 취급한다.
-  static string Band(string rank){string value=new string((rank??"").ToUpperInvariant().Where(x=>x>='A'&&x<='Z').ToArray());return value=="EX"?"AA":value;}
+  // 자질 등급의 알파벳 부분만(「D-」「A+」→ D, A). 자질 등급을 비교하는 곳은 이 함수를 거친다
+  public static string Band(string rank){string value=new string((rank??"").ToUpperInvariant().Where(x=>x>='A'&&x<='Z').ToArray());return value=="EX"?"AA":value;}
   static int RankIndex(string rank){return Array.IndexOf(RankBands,Band(rank));}
   static AptitudeRecord Aptitude(TrainerRecord trainer,string name){if(trainer==null)return null;return name=="지시"?trainer.command:name=="육성"?trainer.training:name=="통솔"?trainer.leadership:trainer.ability;}
   public static bool RankAtLeast(string actual,string required){int a=RankIndex(actual),r=RankIndex(required);return a>=0&&r>=0&&a>=r;}

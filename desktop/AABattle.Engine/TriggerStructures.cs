@@ -93,7 +93,7 @@ namespace AABattle {
   public static bool TryOpponentType(string text,out string type){var match=Regex.Match(PotentialParts.Clean(text),@"^적진에\s*「(?<type>[^」]+)」\s*(?:타입\s*)?포켓몬이\s*있을\s*때$");type=match.Success?match.Groups["type"].Value.Trim():"";return match.Success&&type.Length>0;}
   public static string TrainerAptitude(string aptitude,string rank){return "트레이너가 「"+PotentialParts.Clean(aptitude)+":"+PotentialParts.Clean(rank).TrimEnd('-','+')+"」 이상일 때";}
   public static bool TryTrainerAptitude(string text,out string aptitude,out string rank){var match=Regex.Match(PotentialParts.Clean(text),@"^트레이너가\s*「(?<aptitude>지시|육성|통솔|능력)\s*:\s*(?<rank>[A-Za-z]+)[-+]?」\s*이상일\s*때$");aptitude=match.Success?match.Groups["aptitude"].Value:"";rank=match.Success?match.Groups["rank"].Value.ToUpperInvariant():"";return match.Success;}
-  public static bool RankBand(string actual,string required){var left=Regex.Match((actual??"").ToUpperInvariant(),@"[A-Z]+").Value;var right=Regex.Match((required??"").ToUpperInvariant(),@"[A-Z]+").Value;return left.Length>0&&left==right;}
+  public static bool RankBand(string actual,string required){var left=TrainerAccessRules.Band(actual);var right=TrainerAccessRules.Band(required);return left.Length>0&&left==right;}
   public static IEnumerable<string> Clauses(Potential potential){
    var clauses=(potential.triggers??new string[0]).SelectMany(x=>(x??"").Split(new[]{'\r','\n'},StringSplitOptions.RemoveEmptyEntries)).ToList();string condition,effect;PotentialLibrary.Split(potential.description??"",out condition,out effect);clauses.AddRange(condition.Split(new[]{'\r','\n'},StringSplitOptions.RemoveEmptyEntries));return clauses.SelectMany(x=>Normalize(x).Split(new[]{'\r','\n'},StringSplitOptions.RemoveEmptyEntries)).ToList();
   }

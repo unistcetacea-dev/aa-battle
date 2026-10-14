@@ -101,7 +101,8 @@ namespace AABattle {
    // 봉인(오레마스): 상대 기술 1개를 골라 봉인한다(고르는 창이 없으면 마지막으로 낸 기술, 없으면 첫 기술)
    rules.Add(Rule("봉인", c => {
     var t = c.Target;
-    var moves = (t.Data.moves ?? new string[0]).Where(x => !string.IsNullOrEmpty(x)).ToArray();
+    // 지금 가진 기술 목록(Fighter.Moves, 4개 초과 가능)이 기준이다. Data.moves는 편성 시점의 원본이다
+    var moves = (t.Moves ?? new string[0]).Where(x => !string.IsNullOrEmpty(x)).ToArray();
     c.Say(t.Data.name + "의 기술: " + string.Join(" · ", moves));
     string fallback = !string.IsNullOrEmpty(t.Conditions.LastMove) ? t.Conditions.LastMove : moves.FirstOrDefault() ?? "";
     string move = c.Rules.ChooseSealMove == null ? fallback : c.Rules.ChooseSealMove(t, moves) ?? fallback;

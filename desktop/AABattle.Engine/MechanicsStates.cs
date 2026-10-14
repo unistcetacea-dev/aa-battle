@@ -127,6 +127,11 @@ namespace AABattle {
   // 같은 파티 멤버인가. 둘 다 id가 있으면 id로, 아니면 이름으로 비교한다(같은 종족 두 마리를 구분)
   public static bool SameMember(Pokemon a,Pokemon b){if(a==null||b==null)return false;if(!string.IsNullOrEmpty(a.id)&&!string.IsNullOrEmpty(b.id))return a.id==b.id;return a.name==b.name;}
   public static bool SameMember(Fighter a,Fighter b){return a!=null&&b!=null&&SameMember(a.Data,b.Data);}
+  // 대기석에서 교대로 낼 수 있는 포켓몬인가(쓰러진 포켓몬은 대기석에 남아 있어도 낼 수 없다)
+  public static bool CanSwitchIn(Fighter reserve)
+  {
+   return reserve != null && reserve.HP > 0;
+  }
   public static string MemberKey(Pokemon p){return p==null?"":!string.IsNullOrEmpty(p.id)?"#"+p.id:p.name;}
   public static void SetParties(Rules r,Fighter[] fighters,IEnumerable<Fighter>[] members=null){for(int side=0;side<2;side++){var all=members==null?r.Parties[side]:members[side];r.Parties[side]=new[]{fighters[side]}.Concat((all??Enumerable.Empty<Fighter>()).Where(x=>x!=null&&!SameMember(x,fighters[side]))).ToArray();foreach(var member in r.Parties[side])member.FieldSide=side;fighters[side].FieldOpponent=fighters[1-side];}}
   public static void ClearAttract(Fighter target,List<string> log){if(target.Conditions.AttractSide<0)return;target.Conditions.AttractSide=-1;if(log!=null)log.Add(target.Data.name+"의 헤롱헤롱이 풀렸다");}

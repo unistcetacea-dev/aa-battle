@@ -93,7 +93,7 @@ namespace AABattle
     static string Rank(string rank, int delta)
     {
       string[] bands = { "E", "D", "C", "B", "A", "AA", "AAA", "S" };
-      string value = new string((rank ?? "").ToUpperInvariant().Where(c => c >= 'A' && c <= 'Z').ToArray());
+      string value = TrainerAccessRules.Band(rank);
       int index = Array.IndexOf(bands, value);
       return index < 0 ? rank : bands[Math.Max(0, Math.Min(bands.Length - 1, index + delta))];
     }

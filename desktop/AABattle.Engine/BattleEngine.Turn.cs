@@ -96,6 +96,9 @@ namespace AABattle
       {
         var c = commands[i] ?? new BattleCommand();
         string form = c.Form ?? "", order = c.Order ?? "";
+        // 대기석에는 쓰러진 포켓몬도 남아 있으므로 교대 대상은 엔진도 거른다
+        if (c.SwitchIn != null && !Mechanics.CanSwitchIn(c.SwitchIn))
+          throw new Exception("쓰러진 포켓몬으로는 교대할 수 없습니다: " + c.SwitchIn.Data.name);
         if (c.SwitchIn != null)
           TrainerAccessRules.ApplyTrainerPassives(c.SwitchIn, states[i].Trainer, states[i], result.Log.Add);
         string switchBlock;

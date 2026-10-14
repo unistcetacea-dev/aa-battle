@@ -72,3 +72,6 @@
 
 ## 2026-10-14 배틀 시작 IndexOutOfRange 수정 (task/fix-battle-start-index)
 - 원인: `MainForm.RefreshView`가 기술 버튼 4개(`MoveCard.Buttons`)에 기술 인덱스 `j`를 그대로 써서, 기술이 5개 이상인 포켓몬이 있으면 `LoadTeams` 직후 예외가 났다. 지금 보이는 쪽(`MoveCard.Page`)의 4개만 갱신한다. 오류 창(배틀 준비·최상위)은 예외 전체와 스택을 실행 파일 옆 `error.txt`에 남긴다(`ErrorLog`). 검사: `BattleStartFlowTests`(두 샘플의 모든 트레이너·포켓몬으로 `LoadTeams`→`RefreshView`).
+
+## 2026-10-15 옛 구조 가정 점검(지시서 S) — 시작 화면
+- 시작 화면 팀 창의 「포켓몬」 줄은 기본 출전 수와 후보 수를 함께 보여 준다(칼데아 후보 28체 중 출전 6체). 후보 수만 나와 출전 수로 오해하던 표시를 고쳤다.
