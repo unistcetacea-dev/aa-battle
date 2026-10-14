@@ -69,8 +69,9 @@ namespace AABattle {
 
   public static IEnumerable<Potential> TriggeredSwitches(Fighter owner,IEnumerable<string> lines){
    if(owner==null||owner.Data==null||owner.HP<=0||!owner.OnField)return Enumerable.Empty<Potential>();
-   return (owner.Data.potentials??new Potential[0]).Where(x=>IsSwitchEffect(x)&&Mentioned(lines,x.name));
+   return (owner.Data.potentials??new Potential[0]).Where(x=>IsSwitchEffect(x)&&!BenchEvents.IsEntrySwitch(x)&&Mentioned(lines,x.name));
   }
+  // 사용자 결정: 「필드에 나올 수 있다」 진입형 교대는 대기석에서만 작동하고, 필드의 보유자 본인은 물러나지 않는다
 
   static bool TrainerMentioned(IEnumerable<string> lines,string name){if(string.IsNullOrWhiteSpace(name))return false;string token="TRAINER 『"+name+"』";return (lines??Enumerable.Empty<string>()).Any(x=>(x??"").Contains(token)&&x.Contains("트리거"));}
   public static IEnumerable<PotentialRecord> TriggeredTrainerSwitches(TrainerRecord trainer,IEnumerable<string> lines){

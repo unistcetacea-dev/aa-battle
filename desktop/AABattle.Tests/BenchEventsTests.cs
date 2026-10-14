@@ -227,6 +227,32 @@ namespace AABattle
       Assert.That(last, Is.EqualTo(partner.Data.name));
     }
 
+    // 사용자 결정: 진입형 교대는 대기석 전용이라 필드의 보유자 본인은 스스로 물러나지 않는다
+    [Test]
+    public void EntryTypeSwitchOnTheFieldHolderNeverRetreatsOrAsks()
+    {
+      var holder = F(ReverseTurn());
+      var partner = F();
+      partner.OnField = false;
+      int prompts = 0;
+      var rules = new Rules { OptionalEffectPrompt = (o, p, x) => { prompts++; return true; } };
+      var fighters = new[] { holder, F() };
+      var trainers = new[] { new TrainerBattleState(), new TrainerBattleState() };
+      var log = new System.Text.StringBuilder();
+      for (int i = 0; i < 4; i++)
+      {
+        var command = new BattleCommand { Move = Idle(), Party = new[] { holder, partner } };
+        var result = Engine.Resolve(TestData.Db, fighters, new[] { command, Stay(F()) }, rules, trainers, () => .5, request => request.Candidates.First());
+        fighters = result.Fighters;
+        rules = result.Rules;
+        trainers = result.Trainers;
+        log.AppendLine(string.Join("\n", result.Log));
+        Assert.That(fighters[0].Data.name, Is.EqualTo(holder.Data.name), log.ToString());
+      }
+
+      Assert.That(prompts, Is.EqualTo(0), log.ToString());
+    }
+
     [Test]
     public void BenchRobotCanBeDeclaredAndItsHealingIsRepaid()
     {
