@@ -52,6 +52,18 @@ namespace AABattle {
    Assert.AreEqual(found, UpdateZip.FindEntryName(new[] { entry }, file) != null);
   }
 
+  // 업데이트는 zip의 samples/<이름>.aabdata.json만 샘플로 받는다
+  [TestCase("samples\\finis-chaldea.aabdata.json", "finis-chaldea.aabdata.json")]
+  [TestCase("samples/abaddon-sylph.aabdata.json", "abaddon-sylph.aabdata.json")]
+  [TestCase("samples/notes.txt", null)]
+  [TestCase("samples/../evil.aabdata.json", null)]
+  [TestCase("a/samples/x.aabdata.json", null)]
+  [TestCase("x.aabdata.json", null)]
+  public void SampleEntriesAreOnlyTopLevelSampleFiles(string entry, string expected) {
+   var found = UpdateZip.SampleEntries(new[] { entry });
+   Assert.AreEqual(expected, found.Count == 0 ? null : found[0].Value);
+  }
+
   [Test] public void ZipTargetStaysInsideFolder() {
    string folder = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "aa update");
    Assert.AreEqual(System.IO.Path.Combine(folder, "AABattle.exe"), UpdateZip.TargetPath(folder, "AABattle.exe"));

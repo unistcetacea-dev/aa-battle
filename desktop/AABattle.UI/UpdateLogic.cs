@@ -111,6 +111,20 @@ namespace AABattle {
    return null;
   }
 
+  // zip의 샘플 파티: samples/<이름>.aabdata.json (폴더 한 겹만, 이름에 경로 문자가 없을 때만)
+  public static List<KeyValuePair<string, string>> SampleEntries(IEnumerable<string> entryNames) {
+   var result = new List<KeyValuePair<string, string>>();
+   foreach (string raw in entryNames) {
+    string[] parts = raw.Replace('\\', '/').Split('/');
+    if (parts.Length != 2 || !string.Equals(parts[0], "samples", StringComparison.OrdinalIgnoreCase)) continue;
+    string name = parts[1];
+    if (!name.EndsWith(".aabdata.json", StringComparison.OrdinalIgnoreCase)) continue;
+    if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || name.Contains("..")) continue;
+    result.Add(new KeyValuePair<string, string>(raw, name));
+   }
+   return result;
+  }
+
   // 풀 위치는 항상 폴더 바로 아래의 고정 이름이며, 폴더 밖으로 나가면 예외
   public static string TargetPath(string folder, string file) {
    string full = Path.GetFullPath(Path.Combine(folder, file));

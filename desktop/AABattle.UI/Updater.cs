@@ -93,6 +93,15 @@ namespace AABattle {
      // 다운로드 차단 표시(Mark of the Web)를 지운다
      DeleteFileW(path + ":Zone.Identifier");
     }
+    // 샘플 파티는 실행 중에도 바꿀 수 있으므로 바로 프로그램 옆 samples 폴더에 덮어쓴다.
+    // zip에 있는 이름만 바꾸고, 사용자가 따로 저장한 다른 파일은 건드리지 않는다.
+    string samples = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "samples");
+    foreach (var sample in UpdateZip.SampleEntries(archive.Entries.Select(e => e.FullName))) {
+     Directory.CreateDirectory(samples);
+     string target = UpdateZip.TargetPath(samples, sample.Value);
+     archive.GetEntry(sample.Key).ExtractToFile(target, true);
+     DeleteFileW(target + ":Zone.Identifier");
+    }
    }
    File.Delete(zipPath);
    if (progress != null) progress(1.0);
