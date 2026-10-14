@@ -6,7 +6,7 @@ using NUnit.Framework;
 
 namespace AABattle {
  // 편집기 효과 화면(모듈 목록 기반)이 만드는 문장은 엔진 모듈이 그대로 알아본다
- [TestFixture, Category("UI")] public class EffectBuilderUiTests {
+ [TestFixture, Category("UI"), Apartment(System.Threading.ApartmentState.STA)] public class EffectBuilderUiTests {
   static T Field<T>(object form, string name) { return (T)typeof(DataEditorForm).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic).GetValue(form); }
   static ModuleBuilderPanel Builder(object form) { return Field<ModuleBuilderPanel>(form, "effectBuilder"); }
 
@@ -108,6 +108,37 @@ namespace AABattle {
     Build(form, "effect.hp.회복", "주체", "자신");
     var configured = typeof(DataEditorForm).GetMethod("ConfiguredEffect", BindingFlags.Instance | BindingFlags.NonPublic);
     Assert.That((string)configured.Invoke(form, null), Does.StartWith("아군의 체력을"));
+   }
+  }
+
+  [Test] public void AbilitySearchSelectionFillsAndRestoresAbilitySlot() {
+   using (var form = new DataEditorForm()) {
+    form.Show();
+    System.Windows.Forms.Application.DoEvents();
+    var builder = Builder(form);
+    Assert.That(builder.Select("effect.ability.change.한다"), Is.True);
+    Assert.That(builder.Editor("특성"), Is.TypeOf<AbilitySlotEditor>());
+
+    string selected = "";
+    using (var dialog = new AbilitySearchForm(null, false, "쾌청"))
+    using (var timer = new System.Windows.Forms.Timer { Interval = 30 }) {
+     Assert.That(dialog.Candidates, Does.Contain("가뭄"), "효과 문장 검색");
+     timer.Tick += (s, e) => {
+      timer.Stop();
+      dialog.Pick("가뭄");
+     };
+     timer.Start();
+     Assert.That(dialog.ShowDialog(form), Is.EqualTo(System.Windows.Forms.DialogResult.OK));
+     selected = dialog.SelectedNames.Single();
+    }
+
+    Assert.That(builder.SetValue("특성", selected), Is.True);
+    string sentence = builder.Result;
+    Assert.That(sentence, Is.EqualTo("자신의 특성을 「가뭄」으로 한다."));
+    ModuleDefinition module;
+    Dictionary<string, string> values;
+    Assert.That(ModuleCatalog.TryRead(ModuleKind.Effect, sentence, out module, out values), Is.True);
+    Assert.That(values["특성"], Is.EqualTo("가뭄"));
    }
   }
 

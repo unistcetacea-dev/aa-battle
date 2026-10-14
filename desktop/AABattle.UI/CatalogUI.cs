@@ -107,9 +107,9 @@ namespace AABattle {
   Move SelectedDexMove(){return moveDex.CurrentRow==null?null:moveDex.CurrentRow.Tag as Move;}
   void ShowDexMove(){var m=SelectedDexMove();dexMoveDetail.Text=m==null?"검색 결과가 없습니다.":"【"+m.name+"】  "+string.Join(" / ",m.types??new string[0])+" · "+m.category+"\r\n위력 "+m.power+"   명중 "+m.accuracy+"   우선도 "+m.priority+"   대상 "+m.target+"\r\n판정 "+m.attack+" / "+m.defense+"   태그 "+string.Join(", ",m.tags??new string[0])+"\r\n효과: "+m.effect;}
   void AddDexMove(){var m=SelectedDexMove();if(m==null)return;if(!(Current is PokemonRecord)){GameDialog.Show(this,"포켓몬을 선택한 뒤 기술을 추가하세요.");return;}var names=pMoves.Lines.Where(x=>x.Trim().Length>0).Select(x=>x.Trim()).ToList();if(names.Contains(m.name))return;if(names.Count>=4){GameDialog.Show(this,"기술은 4개까지 넣을 수 있습니다.");return;}names.Add(m.name);pMoves.Text=string.Join("\r\n",names);}
-  void RefreshAbilityDex(){string q=abilitySearch.Text.Trim();abilityDex.Rows.Clear();foreach(var ability in AbilityCatalog.All.Where(x=>(x.name+" "+string.Join(" ",x.triggers??new string[0])+" "+string.Join(" ",x.effects??new string[0])+" "+x.effect+" "+x.support+" "+x.blocker).IndexOf(q,StringComparison.OrdinalIgnoreCase)>=0)){int i=abilityDex.Rows.Add(ability.name,string.Join(" / ",ability.triggers??new string[0]),string.Join(" ",ability.effects??new string[0]),ability.support);abilityDex.Rows[i].Tag=ability;}if(abilityDex.RowCount>0)abilityDex.CurrentCell=abilityDex.Rows[0].Cells[0];abilityCount.Text="특성 도감 · "+abilityDex.RowCount+"개 · 트리거 / 효과 / 구현 상태 검색";ShowDexAbility();}
+  void RefreshAbilityDex(){string q=abilitySearch.Text.Trim();abilityDex.Rows.Clear();foreach(var ability in AbilityDexSearch.Filter(AbilityCatalog.All,q)){int i=abilityDex.Rows.Add(ability.name,string.Join(" / ",ability.triggers??new string[0]),string.Join(" ",ability.effects??new string[0]),ability.support);abilityDex.Rows[i].Tag=ability;}if(abilityDex.RowCount>0)abilityDex.CurrentCell=abilityDex.Rows[0].Cells[0];abilityCount.Text="특성 도감 · "+abilityDex.RowCount+"개 · 트리거 / 효과 / 구현 상태 검색";ShowDexAbility();}
   AbilityDefinition SelectedDexAbility(){return abilityDex.CurrentRow==null?null:abilityDex.CurrentRow.Tag as AbilityDefinition;}
-  void ShowDexAbility(){var ability=SelectedDexAbility();abilityDetail.Text=ability==null?"검색 결과가 없습니다.":"【"+ability.name+"】  "+ability.support+"\r\n트리거: "+(ability.triggers==null||ability.triggers.Length==0?"상시/원문 직접 효과":string.Join(" / ",ability.triggers))+"\r\n효과: "+(ability.effects==null||ability.effects.Length==0?ability.effect:string.Join(" ",ability.effects))+"\r\n"+(ability.blocker.Length==0?"전투 런타임 연결됨.":ability.support=="자동"?"전투 런타임 연결됨. "+ability.blocker:"수동 사유: "+ability.blocker)+"\r\n원문: "+ability.effect;}
+  void ShowDexAbility(){var ability=SelectedDexAbility();abilityDetail.Text=AbilityDexSearch.Preview(ability)+(ability==null?"":"\r\n"+(ability.blocker.Length==0?"전투 런타임 연결됨.":ability.support=="자동"?"전투 런타임 연결됨. "+ability.blocker:"수동 사유: "+ability.blocker));}
   void AddDexAbility(){var ability=SelectedDexAbility();if(ability==null)return;if(!(Current is PokemonRecord)){GameDialog.Show(this,"포켓몬을 선택한 뒤 특성을 설정하세요.");return;}pAbility.Text=ability.name;SaveCurrent();ShowEditorPage(1);}
   // 모듈 화면의 「구조 트리거/효과 입력」: 편집 창의 트리거·효과 칸에 문장을 넣는다(표는 확인할 때 바뀐다)
   void ApplyPart(bool trigger){
@@ -216,7 +216,12 @@ namespace AABattle {
    Expect(append.EffectBox.Text!=firstEffect&&append.EffectBox.Text.Contains("\r\n"),"Multiple structured effects append failed");
    append.Cancel();append.Dispose();
    triggerBuilder.Select("trigger.nullified",new Dictionary<string,string>{{"기술조건","「불꽃」「접촉」"}});
-   effectBuilder.Select("effect.secondary.state");effectBuilder.SetValue("발동확률","없음");
+   effectBuilder.Select("effect.ability.change.한다");
+   Expect(effectBuilder.Editor("특성") is AbilitySlotEditor,"Ability slots must use the shared ability search editor");
+   effectBuilder.SetValue("특성","가뭄");
+   Expect(ConfiguredEffect()=="자신의 특성을 「가뭄」으로 한다.","Ability search slot sentence failed");
+   Dictionary<string,string> abilityValues;
+   Expect(effectBuilder.Module.TryRead(ConfiguredEffect(),out abilityValues)&&abilityValues["특성"]=="가뭄","Ability search slot did not round-trip");
   }
  }
 }

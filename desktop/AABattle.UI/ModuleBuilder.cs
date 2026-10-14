@@ -136,6 +136,7 @@ namespace AABattle {
   SlotEditor CreateEditor(ModuleSlot slot) {
    if (slot.Numeric) return new NumberSlotEditor(slot);
    if (slot.Kind == ModuleSlotKind.MoveCondition) return new MoveConditionSlotEditor(slot, db);
+   if (slot.Kind == ModuleSlotKind.Ability) return new AbilitySlotEditor(slot);
    if (slot.Kind == ModuleSlotKind.Trigger) return new TextSlotEditor(slot);
    string[] choices = slot.GetChoices(db);
    if (slot.Multiple && choices.Count(x => x.Length > 0) > 1)

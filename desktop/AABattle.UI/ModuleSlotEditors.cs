@@ -188,4 +188,41 @@ namespace AABattle {
    }
   }
  }
+
+ // 특성 슬롯은 특성 도감의 이름·효과 검색과 문장 미리보기를 제공한다.
+ sealed class AbilitySlotEditor : SlotEditor {
+  readonly FlatButton button = new FlatButton { Dock = DockStyle.Fill, Font = Theme.UI(8) };
+  readonly bool multiple;
+  string current = "";
+
+  public AbilitySlotEditor(ModuleSlot slot) {
+   Slot = slot;
+   multiple = slot.Multiple;
+   Control = button;
+   button.Click += (s, e) => Pick();
+   Show();
+  }
+
+  void Show() { button.Text = (current.Length == 0 ? "특성 찾기" : current) + " ▼"; }
+
+  void Pick() {
+   var selected = current.Split('/').Where(x => x.Length > 0).ToArray();
+   using (var dialog = new AbilitySearchForm(selected, multiple)) {
+    if (dialog.ShowDialog(button.FindForm()) != DialogResult.OK) return;
+    current = string.Join("/", dialog.SelectedNames);
+    Show();
+    Raise();
+   }
+  }
+
+  public override string Value {
+   get { return current; }
+   set {
+    string next = value ?? "";
+    if (current == next) return;
+    current = next;
+    Show();
+   }
+  }
+ }
 }
