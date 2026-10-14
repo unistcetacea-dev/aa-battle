@@ -348,3 +348,4 @@ Codex 작업 지침과 검증 절차는 `AGENTS.md`, `HARNESS.md`, `desktop/veri
 - 탐사대원·야생 포켓몬의 「임의의 능력」: `RoleEntryRuntime`의 이름별 무작위 상승을 없애고 역할 문장이 표준 경로(`RunRank` 임의, `Rules.ChooseStat`)로 한 번만 처리한다. 선택기가 없거나 취소하면 판정 대기(상승 없음).
 - 선발 등장(MainForm.LoadTeams)은 EffectScope 안에서 EntryTriggers.Enter를 돌려 「장소에 나올 때」 포텐셜(탐사대원 선택 창 포함)을 배틀 준비 직후 처리하고 EntryTriggered를 세워 첫 Resolve에서 다시 일어나지 않게 한다.
 - 죽어내밀기(ReplaceFainted)도 LoadTeams처럼 EffectScope 안에서 EntryTriggers.Enter(..., immediate: true)로 선택 직후 바로 처리한다(미룸 없음, EntryTriggered로 다음 Resolve 중복 방지). 엔진 내부 호출은 기존대로 인터벌 등장을 다음 T 처음으로 미룬다.
+- 이동 실패 조건 「필드에 나온 후 최초」(속이기)는 FieldTurn이 아니라 MovedSinceEntry(나온 뒤 기술을 낸 적 없음)로 판정한다. 교대로 나온 T는 FieldTurn=1로 시작해 다음 T에 2가 되어 속이기가 항상 실패했다.

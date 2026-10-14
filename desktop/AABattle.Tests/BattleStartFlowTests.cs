@@ -77,6 +77,60 @@ namespace AABattle {
    }
   }
 
+  // 「필드에 나온 후 최초」 조건(속이기): 선발 첫 턴 성공, 두 번째 턴 실패
+  [Test, Category("UI"), Apartment(System.Threading.ApartmentState.STA)]
+  public void FakeOutWorksOnlyOnFirstTurnAfterLoadTeams() {
+   Theme.Instant = true;
+   var db = TestData.Db;
+   Func<string, Fighter> make = name => new Fighter(new Pokemon {
+    id = "fo-" + name, name = name, level = 100, types = new[] { "노말" },
+    @base = new[] { 300, 100, 100, 100, 100, 100 }, iv = new[] { 31, 31, 31, 31, 31, 31 }, moves = new[] { "속이기", "몸통박치기" }, potentials = new Potential[0]
+   });
+   var users = make("사용자"); var foe = make("상대");
+   var fighters = new[] { new List<Fighter> { users }, new List<Fighter> { foe } };
+   var team = new TeamRecord { name = "t", trainer = new TrainerRecord(), members = new List<PokemonRecord>() };
+   using (var battle = new MainForm(db) { TestMode = true }) {
+    battle.LoadTeams(new[] { team, team }, fighters, new[] { 0, 0 });
+    var fake = db.moves.First(m => m.name == "속이기");
+    var idle = db.moves.First(m => m.name == "몸통박치기").Copy();
+    idle.power = 1;
+    var current = battle.Fighters;
+    var turn1 = Engine.Resolve(db, current, new[] { fake, idle }, battle.Rules, () => .5);
+    Assert.That(turn1.Fighters[1].HP, Is.LessThan(current[1].HP), string.Join(" | ", turn1.Log));
+    var hp = turn1.Fighters[1].HP;
+    var turn2 = Engine.Resolve(db, turn1.Fighters, new[] { fake, idle }, turn1.Rules, () => .5);
+    Assert.That(turn2.Fighters[1].HP, Is.EqualTo(hp), string.Join(" | ", turn2.Log));
+    battle.Close();
+   }
+  }
+
+  // 교대로 나온 포켓몬은 나온 T의 다음 T에 속이기가 성공한다
+  [Test, Category("UI"), Apartment(System.Threading.ApartmentState.STA)]
+  public void FakeOutWorksTurnAfterSwitchIn() {
+   Theme.Instant = true;
+   var db = TestData.Db;
+   Func<string, Fighter> make = name => new Fighter(new Pokemon {
+    id = "fo2-" + name, name = name, level = 100, types = new[] { "노말" },
+    @base = new[] { 300, 100, 100, 100, 100, 100 }, iv = new[] { 31, 31, 31, 31, 31, 31 }, moves = new[] { "속이기", "몸통박치기" }, potentials = new Potential[0]
+   });
+   var lead = make("선발"); var bench = make("교대"); var foe = make("상대");
+   var fighters = new[] { new List<Fighter> { lead, bench }, new List<Fighter> { foe } };
+   var team = new TeamRecord { name = "t", trainer = new TrainerRecord(), members = new List<PokemonRecord>() };
+   using (var battle = new MainForm(db) { TestMode = true }) {
+    battle.LoadTeams(new[] { team, team }, fighters, new[] { 0, 0 });
+    var fake = db.moves.First(m => m.name == "속이기");
+    var idle = db.moves.First(m => m.name == "몸통박치기").Copy();
+    idle.power = 1;
+    var party = new[] { lead, bench };
+    var turn1 = Engine.Resolve(db, battle.Fighters, new[] { new BattleCommand { Move = idle, SwitchIn = bench, Party = party }, new BattleCommand { Move = idle } }, battle.Rules, new[] { new TrainerBattleState(), new TrainerBattleState() }, () => .5);
+    Assert.That(turn1.Fighters[0].Data.name, Is.EqualTo("교대"), string.Join(" | ", turn1.Log));
+    int hp = turn1.Fighters[1].HP;
+    var turn2 = Engine.Resolve(db, turn1.Fighters, new[] { fake, idle }, turn1.Rules, () => .5);
+    Assert.That(turn2.Fighters[1].HP, Is.LessThan(hp), string.Join(" | ", turn2.Log));
+    battle.Close();
+   }
+  }
+
   [TestCase("finis-chaldea.aabdata.json")]
   [TestCase("abaddon-sylph.aabdata.json")]
   [Category("UI"), Apartment(System.Threading.ApartmentState.STA)]

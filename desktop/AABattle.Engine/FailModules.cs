@@ -95,7 +95,8 @@ namespace AABattle {
     case "나무열매": return (a.Data.item ?? "").EndsWith("열매");
     case "나무열매 먹음": return (a.LostItem ?? "").EndsWith("열매");
     case "능력변화": return b != null && (b.Stages.Skip(1).Any(x => x != 0) || b.AccuracyStage != 0 || b.EvasionStage != 0);
-    case "등장 T": return a.Conditions.FieldTurn <= 1 ? f.Turn == 1 : a.Conditions.FieldTurn == f.Turn;
+    // 「최초」(1): 장소에 나온 뒤 아직 기술을 내보내지 않았을 때(교대로 나온 T의 다음 T에도 성립). 「NT째」는 FieldTurn으로 센다
+    case "등장 T": return f.Turn == 1 ? !a.Conditions.MovedSinceEntry : a.Conditions.FieldTurn == f.Turn;
     case "먼저 피격": return (a.Conditions.TurnFacts ?? new List<TriggerFact>()).Any(x => x.Kind == "명중" && x.Received && x.Move != null && x.Move.category != "변화" && (f.Names.Length == 0 || x.Move.category == f.Names[0]));
     case "상대 공격 선택": return b != null && (b.Conditions.Selected == "물리" || b.Conditions.Selected == "특수") && (f.Names.Length == 0 || b.Conditions.ActionOrder == 0);
     case "먼저": return b != null && b.Conditions.ActionOrder == 0;
