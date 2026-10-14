@@ -11,6 +11,8 @@ namespace AABattle
     {
       public static void RegisterExclusive()
       {
+        ExclusiveBorrowModules.Register();
+        ForcedCounterModules.Register();
         // 사건으로 얻는 기술 판정(필중·방어 관통·방호 특성 관통): 기술 사건이면 이번 행동만, 아니면 필드를 떠날 때까지
         PotentialExecutors.Register("기술 판정 부여", c => AbilityMoveModules.IsEventGrant(c.Line), c =>
         {

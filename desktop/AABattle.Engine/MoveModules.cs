@@ -94,6 +94,8 @@ namespace AABattle {
   }
   public static string Classify(string sentence) {
    string s = Clean(sentence);
+   string chargeSkipKind = ChargeSkipModules.Classify(s);
+   if (chargeSkipKind.Length > 0) return chargeSkipKind;
    if (DrainBoost.IsMatch(s)) return "드레인 강화";
    if (BindTurns.IsMatch(s)) return "조이기 지속";
    if (BindDamage.IsMatch(s)) return "조이기 대미지";
@@ -348,7 +350,7 @@ namespace AABattle {
    if (c.ChargeMove == m.name) { Release(a, b); return false; }
    string w = ActiveWeather(a, b, r);
    if (WeatherParts(m).Any(x => x.Key == w && x.Value.Contains("모으기") && x.Value.Contains("생략"))) { log.Add(a.Data.name + ": 「" + w + "」로 모으기를 생략했다"); return false; }
-   if (Lines(a, b, "모으기").Any(x => x == SkipCharge)) {
+   if (Lines(a, b, "모으기").Any(x => ChargeSkipModules.Matches(x, m))) {
     log.Add(a.Data.name + ": 모으기를 생략했다");
     ConsumeItem(a, SkipCharge, log);
     return false;

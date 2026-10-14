@@ -85,13 +85,14 @@ namespace AABattle
     }
 
     // 이름을 지정한 모으기 생략
-    // 출처: 칼데아 3차
+    // 출처: 칼데아 POTENTIALS.tsv — 베지터 상급전사·헨리 강어수의 헤엄
     internal static string ChargeSkipByName(string s)
     {
-      Match m;
-      m = Regex.Match(s, @"^자신의 「[^」]+」(?:을|를)\s*(?:「모으기」(?:를|을)\s*|모으기(?:를|을)\s*)생략하고 내보낼 수 있다$");
+      if (ChargeSkipModules.IsSkip(s))
+        return s + ".";
+      Match m = Regex.Match(s, @"^자신의 「(?<n>[^」]+)」(?:을|를)\s*(?:「모으기」(?:를|을)\s*|모으기(?:를|을)\s*)생략하고 내보낼 수 있다$");
       if (m.Success)
-        return "자신의 「모으기」 기술의 모으기를 생략한다.";
+        return "자신의 「기술:" + m.Groups["n"].Value + "」 기술의 모으기를 생략한다.";
       return null;
     }
 

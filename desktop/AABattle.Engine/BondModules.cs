@@ -22,13 +22,16 @@ namespace AABattle
     public const string KindRegain = "트레이너 포텐셜 재사용 권한";
     public const string KindReplay = "트레이너 포텐셜 재발동";
     public const string KindHot = "모든 종족치 ++";
+    public const string KindRegainChance = "트레이너 포텐셜 재사용 확률 상승";
     public const string HotSentence = "자신의 모든 종족치에 「++」를 부여한다.";
     public const string RegainSentence = "포텐셜을 다시 받을 수 있다";
     public const string ReplaySentence = "자신을 대상으로 포텐셜을 다시 발동한다";
+    public const string RegainChanceSentence = "포텐셜을 다시 받을 확률을 한 단계 올린다.";
     const string Prefix = @"(?<p>(?:저확률|중확률|드물게)(?:로)?\s+)?";
     static readonly Regex Rise = new Regex(@"^필드에\s*(?:있는\s*한|있을\s*때)\s*,?\s*트레이너의\s*「?지시」?(?:를|을)\s*「?(?<n>\d+)」?\s*랭크\s*올린다$");
     static readonly Regex Regain = new Regex("^" + Prefix + @"(?:자신이\s*)?포텐셜을\s*다시\s*받을\s*수\s*있다$");
     static readonly Regex Replay = new Regex("^" + Prefix + @"자신을\s*대상으로\s*포텐셜을\s*다시\s*발동한다$");
+    static readonly Regex RegainChance = new Regex(@"^포텐셜을\s*다시\s*받을\s*확률을\s*한\s*단계\s*올린다$");
     static readonly Regex Hot = new Regex(@"^자신의\s*모든\s*종족치에\s*「\+\+」를\s*부여한다$");
 
     static string Clean(string text)
@@ -50,6 +53,8 @@ namespace AABattle
       m = Replay.Match(s);
       if (m.Success)
         return Probability(m) + ReplaySentence + ".";
+      if (RegainChance.IsMatch(s))
+        return RegainChanceSentence;
       return null;
     }
 
@@ -67,7 +72,7 @@ namespace AABattle
     public static string Classify(string text)
     {
       string s = Clean(text);
-      return Hot.IsMatch(s) ? KindHot : Rise.IsMatch(s) ? KindRise : Regain.IsMatch(s) ? KindRegain : Replay.IsMatch(s) ? KindReplay : "";
+      return Hot.IsMatch(s) ? KindHot : Rise.IsMatch(s) ? KindRise : Regain.IsMatch(s) ? KindRegain : Replay.IsMatch(s) ? KindReplay : RegainChance.IsMatch(s) ? KindRegainChance : "";
     }
 
     static bool IsRegain(string line)
@@ -230,11 +235,18 @@ namespace AABattle
       PotentialExecutors.Register(ExecutorPrefix + "재사용 권한", c => Classify(c.Line) == KindRegain, Regain_);
       PotentialExecutors.Register(ExecutorPrefix + "재발동", c => Classify(c.Line) == KindReplay, Replay_);
       PotentialExecutors.Register(ExecutorPrefix + "모든 종족치 ++", c => Classify(c.Line) == KindHot, Hot_);
+      PotentialExecutors.Register(ExecutorPrefix + "재사용 확률 상승", c => Classify(c.Line) == KindRegainChance, RegainChance_);
     }
 
     static bool Rolled(EffectCall call, Func<string, bool> pick)
     {
       double? rate = OwnRate(call.Source, pick);
+      if (Classify(call.Line) == KindRegain)
+      {
+        var state = PotentialQueue.StateOf(EffectScope.Current, call.Source);
+        bool boosted = RegainBoosted(call, state);
+        rate = UpgradeRegainChance(rate, boosted);
+      }
       if (!rate.HasValue)
         return true;
       var rng = call.Rng ?? (() => .5);
@@ -278,6 +290,47 @@ namespace AABattle
         state.Usage.Battle[picked.Key] = used;
       call.Say(call.Owner.Data.name + ": " + call.Source.Label + " — TRAINER 『" + picked.Name + "』를 다시 쓸 수 있다 (사용 횟수 1회 회복)");
       return EffectOutcome.Success;
+    }
+
+    static EffectOutcome RegainChance_(EffectCall call)
+    {
+      var state = PotentialQueue.StateOf(EffectScope.Current, call.Source);
+      if (state == null || state.Trainer == null)
+        return EffectOutcome.Pending;
+      state.Usage.Battle["@bond-regain-chance:" + FighterKey(call.Owner)] = 1;
+      call.Say(call.Source.Label + " — 포텐셜 재사용 확률을 한 단계 올린다.");
+      return EffectOutcome.Success;
+    }
+
+    static bool RegainBoosted(EffectCall call, TrainerBattleState state)
+    {
+      if (state != null && state.Usage.Battle.ContainsKey("@bond-regain-chance:" + FighterKey(call.Owner)))
+        return true;
+      var owner = call.Owner;
+      if (owner == null || owner.Data == null)
+        return false;
+      return (owner.Data.potentials ?? new Potential[0]).Any(p =>
+        PotentialModifiers.Continuous(p, owner, PotentialQueue.OpponentOf(owner), call.Rules)
+        && HasRegainChanceEffect(p));
+    }
+
+    static bool HasRegainChanceEffect(Potential potential)
+    {
+      string condition, effect;
+      PotentialLibrary.Split(potential.description ?? "", out condition, out effect);
+      return EffectNormalizer.NormalizeLines(effect.Length > 0 ? effect : potential.description ?? "")
+        .Replace("\r", "").Split('\n').Any(line => Classify(line) == KindRegainChance);
+    }
+
+    public static double? UpgradeRegainChance(double? rate, bool enabled)
+    {
+      if (!enabled || !rate.HasValue)
+        return rate;
+      if (Math.Abs(rate.Value - .10) < .000001)
+        return .20;
+      if (Math.Abs(rate.Value - .20) < .000001)
+        return .50;
+      return rate;
     }
 
     static EffectOutcome Replay_(EffectCall call)

@@ -136,5 +136,29 @@ namespace AABattle
       if (m.Success) return m.Groups["s"].Value + "의 특성을 「" + m.Groups["a"].Value + "」" + EffectModules.Ro(m.Groups["a"].Value) + " 한다";
       return null;
     }
+
+    // 출처: 칼데아 POTENTIALS.tsv — 메어리 『철여제의 징세』
+    internal static string ExclusiveBorrow(string text)
+    {
+      if (ExclusiveBorrowModules.Classify(text).Length > 0 || Regex.IsMatch(text, @"^아군의 『전용』을 자신의 『전용』으로 사용할 수 있다$"))
+        return ExclusiveBorrowModules.Sentence;
+      return null;
+    }
+
+    // 출처: 칼데아 POTENTIALS.tsv — 알리사 『표적, 대접하는 화살』
+    internal static string ForcedCounter(string text)
+    {
+      if (Regex.IsMatch(text, @"^(?:아군의|자신의) 『격』이 반드시 발동한다$"))
+        return ForcedCounterModules.BodySentence;
+      return null;
+    }
+
+    // 출처: 칼데아 POTENTIALS.tsv — 메어리 『황금』
+    internal static string BondRegainChance(string text)
+    {
+      if (Regex.IsMatch(text, @"^포텐셜을 다시 받을 확률이 오른다$"))
+        return BondModules.RegainChanceSentence;
+      return null;
+    }
   }
 }

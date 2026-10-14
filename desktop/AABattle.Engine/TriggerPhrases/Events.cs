@@ -9,6 +9,14 @@ namespace AABattle
   // 트리거 정규화 규칙 모음(사건). 적용 순서는 PhrasePipeline.cs에만 둔다.
   public static partial class TriggerPhraseRules
   {
+    // 출처: 칼데아 POTENTIALS.tsv — 알리사 『표적, 대접하는 화살』
+    internal static string RoleActivation(string text)
+    {
+      return Regex.IsMatch(text, @"^상대의 『역할』이 발동했을 때$")
+        ? "상대의 『역할』이 발동했을 때"
+        : null;
+    }
+
     // 자신(아군)의 공격·기술 명중
     // 출처: 칼데아 시트(트리거)
     internal static string HitSelf(string t)

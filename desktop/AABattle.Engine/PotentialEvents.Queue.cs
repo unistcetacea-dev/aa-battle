@@ -189,6 +189,7 @@ namespace AABattle
       {
         double? rate = PotentialProbability.Rate(BondModules.WithoutOwnRoll(rolling[i].Source.Description) + " " + rolling[i].Source.Activation);
         rolling[i].ProbabilityOk = !rate.HasValue || rolled[i];
+        ForcedCounterModules.GuaranteePlan(scope, rolling[i].Source, ref rolling[i].ProbabilityOk);
       }
 
       foreach (var plan in plans)
@@ -397,6 +398,8 @@ namespace AABattle
         usage.Declared.Remove(source.Key);
       if (source.Slot == AbilityModules.Slot && source.Owner != null)
         AnsweredTriggers.AbilityActivated(source.Owner, Regex.Replace(source.Name, @" \(\d+\)$", ""), x => Say(log, x));
+      if (source.Slot == "역할" && source.Owner != null)
+        TriggerModules.Raise(new TriggerFact { Kind = ForcedCounterModules.RoleActivationKind, Method = "역할" }, source.Owner, OpponentOf(source.Owner), source.Owner.Data.name + "의 『" + source.Name + "』 역할 포텐셜이 발동했다", x => Say(log, x));
       chainFired.Add(source.Key);
       // f. 실행. 실행 중 생긴 사건은 같은 연쇄, 깊이+1로 즉시 처리된다
       var saved = current;

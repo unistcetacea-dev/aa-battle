@@ -167,6 +167,7 @@ namespace AABattle
         for (int i = 0; i < candidates.Count; i++)
         {
           var c = candidates[i];
+          ForcedCounterModules.GuaranteeRoll(owner, c.Potential, ref rolled[i]);
           string label = LabelOf(owner, c.Potential);
           if (!rolled[i])
           {

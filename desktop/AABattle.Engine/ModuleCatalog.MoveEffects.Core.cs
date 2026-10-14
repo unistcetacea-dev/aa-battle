@@ -26,6 +26,11 @@ namespace AABattle
       CoreAdd(modules, "effect.move.repeat", "연속 사용 위력 강화", "연속 사용 강화", family, "자신이 같은 기술을 연속으로 내보낼 때마다 그 기술의 위력을 {배율}배씩 강화한다(최대 {최대배율}배).", S("배율", ModuleSlotKind.Multiplier, "0.1"), S("최대배율", ModuleSlotKind.Multiplier, "2"));
       CoreAdd(modules, "effect.move.priority.next", "다음 턴 우선도 상승", "다음 T 우선도", family, "다음 T 자신의 기술 우선도를 {수치} 올린다.", CoreNumber("수치", ModuleSlotKind.Rank, "1", 7));
       CoreAdd(modules, "effect.move.charge.skip", "모으기 생략", "모으기 생략", family, "자신의 「모으기」 기술의 모으기를 생략한다.");
+      CoreAdd(modules, "effect.move.charge.skip.condition", "지정 기술 모으기 생략", "모으기 생략", family, "자신의 {조건} 기술의 모으기를 생략한다.", S("조건", ModuleSlotKind.MoveCondition, "「기술:솔라빔」"));
+      CoreAdd(modules, "effect.exclusive.borrow", "아군 전용 빌려쓰기", ExclusiveBorrowModules.Classify(ExclusiveBorrowModules.Sentence), "트레이너", "아군의 『전용』을 자신의 『전용』으로 사용한다.");
+      var forceCounters = CoreAdd(modules, "effect.counter.force", "『격』 강제 발동", ForcedCounterModules.Kind, "역할·트레이너", "아군의 『격』이 반드시 발동한다.");
+      forceCounters.AllowDuration = true;
+      CoreAdd(modules, "effect.bond.regain.chance", "유대 재사용 확률 상승", BondModules.KindRegainChance, "트레이너", BondModules.RegainChanceSentence);
       CoreAdd(modules, "effect.move.contact.ignore", "접촉 반응 무시", "접촉 반응 무시", family, "자신의 「접촉」 기술에 반응하는 효과를 받지 않는다.");
       CoreAdd(modules, "effect.move.rank.restore", "능력 하락 복구", "능력 하락 복구", family, "자신의 내려간 능력을 원래대로 되돌린다.");
       CoreAdd(modules, "effect.item.give", "소지품 상대에게 이동", "소지품 이동", family, "자신의 소지품을 상대에게 옮긴다.");

@@ -103,6 +103,22 @@ namespace AABattle {
    Assert.That(TeamRules.Check(team).Any(x => x.Contains("전용")), Is.False, "발동 금지는 세지 않는다");
   }
 
+  [Test] public void BasicKingSetsPokemonExclusiveCapacityToSix() {
+   var trainer = new TrainerRecord { name = "T" };
+   trainer.ability.rank = "B";
+   trainer.potentials.Add(new PotentialRecord { slot = "고유", name = "반상위 각개전투", effect = "자신의 『전용』 용량을 「6」으로 한다" });
+   var team = new TeamRecord { trainer = trainer };
+   for (int i = 0; i < 3; i++) {
+    var mon = new PokemonRecord { name = "M" + i };
+    mon.potentials.Add(new PotentialRecord { slot = TeamRules.ExclusiveSlot, name = "전용" + i + "a" });
+    mon.potentials.Add(new PotentialRecord { slot = TeamRules.ExclusiveSlot, name = "전용" + i + "b" });
+    team.members.Add(mon);
+   }
+   Assert.That(TeamRules.Check(team).Any(x => x.Contains("전용 포텐셜")), Is.False);
+   team.members[0].potentials.Add(new PotentialRecord { slot = TeamRules.ExclusiveSlot, name = "일곱째 전용" });
+   Assert.That(TeamRules.Check(team).Any(x => x.Contains("전용 포텐셜")), Is.True);
+  }
+
   [Test] public void LegacyTrainerExclusiveRowsAreDroppedOnLoad() {
    var project = new EditorProject();
    var trainer = new TrainerRecord { name = "T" };

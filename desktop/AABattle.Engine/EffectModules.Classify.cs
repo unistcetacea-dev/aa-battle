@@ -39,6 +39,8 @@ namespace AABattle
       if (SecondaryEffects.IsModule(s))
         return "추가효과 부여";
       string moveKind = MoveModules.Classify(s);
+      if (ExclusiveBorrowModules.Classify(s).Length > 0) return ExclusiveBorrowModules.Classify(s);
+      if (ForcedCounterModules.Classify(s).Length > 0) return ForcedCounterModules.Classify(s);
       string batonKind = BatonModules.Classify(s);
       if (batonKind.Length == 0)
         batonKind = PursuitModules.Classify(s);

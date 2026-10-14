@@ -77,10 +77,11 @@ namespace AABattle
     }
 
     // 공격 이외의 대미지를 받지 않는다(자신)
-    // 출처: 칼데아 3차
+    // 출처: 칼데아 3차 · 2026-10-14 사용자 결정(저주·반동 제외 괄호도 같은 효과)
     internal static string NonAttackDamageSelf(string s)
     {
-      if (Regex.IsMatch(s, @"^(?:자신은\s*)?공격 이외의 (?:대미지|데미지)(?:를|로)\s*(?:받지 않는다|무효화한다|무시한다)$"))
+      string withoutExceptionNote = Regex.Replace(s, @"\s*[（(][^）)]*[）)]$", "").Trim().TrimEnd('.', '。', '．');
+      if (Regex.IsMatch(withoutExceptionNote, @"^(?:자신은\s*)?공격 이외의 (?:대미지|데미지)(?:를|로)\s*(?:받지 않는다|무효화한다|무시한다)$"))
         return "자신은 공격 이외의 대미지를 받지 않는다.";
       return null;
     }

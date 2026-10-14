@@ -122,6 +122,7 @@ namespace AABattle {
   }
 
   static void RegisterTriggerEvents(List<ModuleDefinition> modules) {
+   TF(modules, "ability.role.activated", ForcedCounterModules.RoleActivationKind, "상대 역할 발동", "역할·트레이너", "상대의 『역할』이 발동했을 때");
    TX(modules, "role.changed", RoleModules.EventModule, "역할이 됨", "역할·트레이너", "자신이 {역할} 되었을 때", "역할", RoleModules.Choices.Select(RoleModules.TriggerChoice).ToArray());
    TF(modules, "item.stolen", "소지품 소실", "소지품을 빼앗김", "소지품·특성", "자신의 소지품을 빼앗겼을 때");
    T(modules, "entry", "등장", "장소에 등장", "등장·교대", "{주체}가 장소에 나올 때",

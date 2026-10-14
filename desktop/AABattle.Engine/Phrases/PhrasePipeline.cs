@@ -79,6 +79,9 @@ namespace AABattle
       PhraseRules.CostExtraLast,
       PhraseRules.BondGuideRise,
       PhraseRules.RoleAppoint,
+      PhraseRules.ExclusiveBorrow,
+      PhraseRules.ForcedCounter,
+      PhraseRules.BondRegainChance,
       PotentialGrantModules.Normalize
     };
 
@@ -220,7 +223,8 @@ namespace AABattle
       TriggerPhraseRules.OmittedStateSubject,
       TriggerPhraseRules.SpeedCompare,
       TriggerPhraseRules.TrainerName,
-      TriggerPhraseRules.NoAttack
+      TriggerPhraseRules.NoAttack,
+      TriggerPhraseRules.RoleActivation
     };
 
     // 정리된 트리거 절(Clean)을 받아 표준 문장을 돌려준다. 해당 없으면 null

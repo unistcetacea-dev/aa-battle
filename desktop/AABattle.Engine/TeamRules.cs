@@ -33,8 +33,9 @@ namespace AABattle {
    }
    if(Known(ability)){
     int unique=Active(t.potentials,s=>s=="고유").Count(),exclusive=members.Sum(m=>Active(m.potentials,s=>s==ExclusiveSlot).Count());
+    int exclusiveLimit=ExclusiveCapacityRules.Limit(t,ExclusiveLimit(ability));
     if(unique>UniqueLimit(ability))problems.Add("고유 포텐셜 "+unique+"개 — 능력 "+ability+"는 "+UniqueLimit(ability)+"개까지");
-    if(exclusive>ExclusiveLimit(ability))problems.Add("전용 포텐셜 "+exclusive+"개 — 능력 "+ability+"는 "+ExclusiveLimit(ability)+"개까지");
+    if(exclusive>exclusiveLimit)problems.Add("전용 포텐셜 "+exclusive+"개 — 능력 "+ability+"는 "+exclusiveLimit+"개까지");
    }
    if(Known(training))foreach(var m in members)foreach(var p in Active(m.potentials,s=>s.StartsWith("종족"))){string need=SpeciesTierRank(p.slot);if(need.Length>0&&!At(training,need))problems.Add(m.name+": 『"+p.slot+"』는 육성 "+need+" 필요");}
    return problems;

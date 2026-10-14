@@ -110,7 +110,7 @@ namespace AABattle
         }
 
         // 기존 모으기 실행기가 읽는 상시 문장으로 해당 턴 효과를 노출한다.
-        var chargeSkip = activeLines.FirstOrDefault(line => line == "자신의 「모으기」 기술의 모으기를 생략한다");
+        var chargeSkip = activeLines.FirstOrDefault(ChargeSkipModules.IsSkip);
         if (chargeSkip != null && !OriginalPotentialLists.TryGetValue(owner, out _))
         {
           OriginalPotentialLists.Add(owner, originalPotentials);

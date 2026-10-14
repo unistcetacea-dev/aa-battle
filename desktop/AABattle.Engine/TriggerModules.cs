@@ -92,6 +92,8 @@ namespace AABattle {
   public static string Canonical(TriggerSpec s) {
    if (AbaddonTriggers.IsMine(s)) return AbaddonTriggers.Canonical(s);
    if (RoleModules.IsRoleSpec(s)) return RoleModules.Canonical(s);
+   string forcedCanonical = ForcedCounterModules.CanonicalTrigger(s);
+   if (forcedCanonical != null) return forcedCanonical;
    if (TriggerTheft.IsTheft(s)) return TriggerTheft.Canonical(s);
    if (s.Module == "소지품 소실") return CanonicalItemLoss(s);
    if (ExclusiveTriggerModules.IsNormalSwitchLast(s)) return ExclusiveTriggerModules.NormalSwitchLastSentence;
@@ -125,6 +127,7 @@ namespace AABattle {
    string t = Clean(text);
    if (t.Length == 0) return false;
    if (AbaddonTriggers.TryParse(t, out spec)) return true;
+   if (ForcedCounterModules.TryParseTrigger(t, out spec)) return true;
    if (RoleModules.TryParse(t, out spec)) return true;
    if (ExclusiveTriggerModules.TryParse(t, out spec)) return true;
    if (TriggerTheft.TryParse(t, out spec)) return true;
@@ -279,6 +282,7 @@ namespace AABattle {
    if (s == null || f == null || s.Module.Length == 0) return false;
    if (AbaddonTriggers.IsMine(s)) return AbaddonTriggers.Matches(s, f, owner);
    if (RoleModules.IsRoleSpec(s)) return RoleModules.Matches(s, f);
+   if (ForcedCounterModules.IsRoleActivationSpec(s) || ForcedCounterModules.IsRoleActivationFact(f)) return ForcedCounterModules.MatchesTrigger(s, f);
    if (ExclusiveTriggerModules.IsNormalSwitchLast(s)) return ExclusiveTriggerModules.MatchesNormalSwitchLast(f, owner);
    if (TriggerTheft.IsTheft(s)) return TriggerTheft.Matches(s, f);
    if (s.Module == "소지품 소실" && f.Kind == "소지품 소실" && f.Method == "약탈") return false;
