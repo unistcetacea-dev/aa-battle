@@ -1,6 +1,6 @@
 # AA BATTLE 작업 안내
 
-Windows C# WinForms 프로그램이다. 현재 상태는 `PROJECT_HANDOFF.md`, 빌드는 `desktop/build.ps1`을 참고한다. 웹 프로토타입을 주 배포 대상으로 착각하지 않는다.
+Windows C# WinForms 프로그램이다. 현재 상태는 `PROJECT_HANDOFF.md`(목차) → `docs/handoff/<주제>.md`, 빌드는 `desktop/build.ps1`을 참고한다. 웹 프로토타입을 주 배포 대상으로 착각하지 않는다.
 
 ## 공동 개발
 - Claude가 설계·지시서·리뷰를, ChatGPT(Codex)가 지시서대로 구현을 맡는다. 지시서에 적힌 파일·범위만 수정하고, 범위 밖 발견은 고치지 말고 보고한다.
@@ -38,6 +38,6 @@ Windows C# WinForms 프로그램이다. 현재 상태는 `PROJECT_HANDOFF.md`, �
 ## 검증과 보고
 - C# 변경 후 `./desktop/verify.ps1 -OutputPath outputs/candidate`로 빌드와 회귀 검사(NUnit, `desktop/AABattle.Tests`)를 실행한다. UI 변경은 `-Visual`을 붙여 생성된 캡처 이미지를 확인한다.
 - EXE가 사용 중이면 `./desktop/build.ps1 -OutputPath outputs/candidate`로 별도 빌드하고 실제 실행 경로를 안내한다.
-- 동작 변경은 관련 회귀 검사와 `PROJECT_HANDOFF.md`를 갱신한다. 검사는 `AABattle.Tests`에 기능별 `[Test]`로 추가하고, 실행 코드 안에 새 검사를 넣지 않는다. 버그 수정이나 규칙이 갈리는 지점만 검사하고, 단순 존재 확인·데이터 개수 고정·문장 전체 비교는 넣지 않는다. 같은 모양의 검사는 `[TestCase]`로 묶는다. UI 리플렉션 검사는 `[Category("UI")]`를 붙인다. 산출물·임시 파일·비밀은 Git에서 제외한다.
+- 동작 변경은 관련 회귀 검사와 해당 주제 파일(`docs/handoff/<주제>.md`)을 갱신한다. 검사는 `AABattle.Tests`에 기능별 `[Test]`로 추가하고, 실행 코드 안에 새 검사를 넣지 않는다. 버그 수정이나 규칙이 갈리는 지점만 검사하고, 단순 존재 확인·데이터 개수 고정·문장 전체 비교는 넣지 않는다. 같은 모양의 검사는 `[TestCase]`로 묶는다. UI 리플렉션 검사는 `[Category("UI")]`를 붙인다. 산출물·임시 파일·비밀은 Git에서 제외한다.
 - 사용자 요청 범위와 연결된 수정만 한다. 변경 이유, 테스트 결과, 실행 파일 위치를 짧게 보고한다.
 - 배포는 `desktop/publish.ps1` 후 `release/windows`를 커밋·push한다(받는 쪽 프로그램이 이 폴더에서 업데이트를 받는다).
