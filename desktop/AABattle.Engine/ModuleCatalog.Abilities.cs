@@ -38,7 +38,7 @@ namespace AABattle {
     filled = Regex.Replace(filled, @"[ \t]+", " ").Trim();
     // 타입·숫자의 조사만 공용 표준 조사에 맞춘다.
     filled = Regex.Replace(filled, "「([^」]+)」로 한다", m => "「" + m.Groups[1].Value + "」" + EffectModules.Ro(m.Groups[1].Value) + " 한다");
-    if (EffectModules.Classify(filled) != expected) throw new ArgumentException("이 빈칸 조합은 효과 모듈로 읽을 수 없습니다.");
+    if (EffectModules.Classify(filled) != expected && !(id == "priority.lag" && EffectModules.Classify(filled) == "우선도 -0.5")) throw new ArgumentException("이 빈칸 조합은 효과 모듈로 읽을 수 없습니다.");
     return filled;
    };
    var formatter = definition.Formatter;

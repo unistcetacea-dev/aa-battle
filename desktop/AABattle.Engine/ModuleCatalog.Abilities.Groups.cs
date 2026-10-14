@@ -75,6 +75,13 @@ namespace AABattle
       // 조건 없는 「자신의 기술의 우선도를 -0.5한다」(느림보꼬리)도 이 모듈의 -0.5 선택값이다
       var merged = modules.Single(m => m.Id == "effect.priority.올린다");
       merged.AdditionalExpectedKinds = merged.AdditionalExpectedKinds.Concat(new[] { "우선도 -0.5" }).Distinct().ToArray();
+      var baseReader = merged.Reader;
+      merged.Reader = text =>
+      {
+        if ((text ?? "").Trim() == "자신의 기술의 우선도를 -0.5한다.")
+          return new Dictionary<string, string> { { "우선도방식", "-0.5" }, { "기술조건", "" } };
+        return baseReader(text);
+      };
     }
 
     // TX와 같은 선택 서식 도우미. 선택값마다 원래 서식의 Fill/TryRead를 그대로 사용한다.
