@@ -10,12 +10,12 @@
 |---|---|---|---|---|---|---|
 | 1 | BattleDialogs.cs:21 `DirectiveForm` 생성자(교대 대상 목록), BattleApp.cs:36 `Battle()`, BattleEngine.Turn.cs:99~116 | 대기석 목록은 모두 낼 수 있는 포켓몬 | 쓰러진 포켓몬도 대기석에 남는다(죽어내밀기 때 나간 쓰러진 포켓몬이 `reserves` 뒤에 붙음) | 행동 선택 창에서 빈사 포켓몬을 교대 대상으로 고르면 엔진이 거르지 않고 HP 0인 포켓몬이 장소에 나옴. 재현: 대기석 HP 0 + `BattleCommand.SwitchIn`으로 `Engine.Resolve` | 잘못된 동작 | 수정 |
 | 2 | BattleApp.cs:39 `directiveButtons[i].Subtext` | 「대기 N」 = 낼 수 있는 대기 수 | 쓰러진 포켓몬 포함 | 대기 수가 실제 교대 가능 수보다 많이 표시 | 표시만 | 수정 |
-| 3 | BattleApp.cs:25 초기화(reset) 버튼 | 트레이너 상태는 `new TrainerBattleState{Trainer,InitialSize}`로 충분 | `LoadTeams`가 `RefreshUnlocks`(트레이너·파티 전원 포텐셜의 해금)를 채우고, 룰에는 봉인·물놀이·진흙놀이·날씨 잠금·마지막 쓰러진 포켓몬 기록이 있다 | 초기화 뒤 대기석 포켓몬 포텐셜이 주던 PT/지령 해금이 사라지고, 봉인 기록·날씨 잠금이 남음. 재현: 해금 포텐셜을 가진 대기석 포켓몬이 있는 팀을 불러와 초기화 | 잘못된 동작 | 수정 |
+| 3 | BattleApp.cs:25 초기화(reset) 버튼 | 트레이너 상태는 `new TrainerBattleState{Trainer,InitialSize}`로 충분 | `LoadTeams`가 `RefreshUnlocks`(트레이너·파티 전원 포텐셜의 해금)를 채우고, 룰에는 봉인·물놀이·진흙놀이·날씨 잠금·마지막 쓰러진 포켓몬 기록이 있다 | 초기화 뒤 대기석 포켓몬 포텐셜이 주던 PT/지령 해금과 트레이너 지시 급소·통솔 명중 보정(`ResetFighter`가 랭크와 함께 지움)이 사라지고, 봉인 기록·날씨 잠금이 남음. 재현: 해금 포텐셜을 가진 대기석 포켓몬이 있는 팀을 불러와 초기화 | 잘못된 동작 | 수정 |
 | 4 | StateEffectsMore.cs:104 상태 「봉인」 | 포켓몬 기술 목록 = `Data.moves` | 배틀 중 기술 목록은 `Fighter.Moves`(4개 초과 가능, 배틀 창 편집이 `Moves`만 바꿈) | 배틀 창에서 기술을 바꾸면 봉인 후보가 옛 기술 목록 | 잘못된 동작 | 수정 |
 | 5 | TriggerStructures.cs:96 `RankBand`(트리거 「트레이너 자질」) | 자질 등급 = 글자 비교 | 사용자 결정: 육성 EX = AA (`TrainerAccessRules.Band`) | 「통솔/육성/… AA」 트리거가 EX 트레이너(샘플: 마히토 육성 EX, 유키나리 능력 EX)에서 불발 | 잘못된 동작 | 수정 |
 | 6 | RoleModules.cs:93~99 `Rank`(자질 랭크 올림·내림) | EX를 알지 못해 인덱스 −1 → 랭크 그대로 | EX = AA | 「자질을 N랭크 올린다」가 EX 트레이너에서 아무 일도 안 함(성공으로 로그만 남음) | 잘못된 동작 | 수정 |
 | 7 | StartUI.cs:83 시작 화면 팀 창 「포켓몬 N체」 | 팀 = 출전 구성 | 팀 = 파티 후보(칼데아 28체) + 출전 선택(H) | 후보 전체 수와 공 아이콘 12개가 나와 출전 수로 오해 | 표시만 | 수정 |
-| 8 | BenchEvents.cs:121, SwitchRuntime.cs:67·75 | 로그 문자열(「토큰 + 트리거 충족」)로 교대 판단 | `TriggerFact`·포텐셜 큐 | 다른 포켓몬·지난 T 로그가 섞임(b4048a9에서 일부 수정) | 타 작업 | 보류: `task/fix-entry-switch-onfield`가 같은 파일을 고치는 중 |
+| 8 | BenchEvents.cs:121, SwitchRuntime.cs:67·76 | 로그 문자열(「토큰 + 트리거 충족」)로 교대 판단 | `TriggerFact`·포텐셜 큐 | 다른 포켓몬·지난 T 로그가 섞임(b4048a9에서 일부 수정, 로그 범위는 현재 행동 구간으로 제한됨) | 잘못된 동작(구조) | 보류: `task/fix-entry-switch-onfield`는 병합됐지만(0f4e83a) 이 로그 매칭은 남아 있다. 교대 효과 판정(`ResolveTriggeredSwitches`)이 `actionStart` 이후 로그에서 `『이름』`+「트리거」를 찾으므로, 같은 이름의 포텐셜을 양쪽(거울 대전)이 가질 때 상대 쪽 줄이 내 것으로 읽힐 수 있다. 바로잡으려면 발동 기록(소유자·포텐셜·시점)을 로그가 아닌 구조로 남기는 변경이 필요하고 로그를 내는 경로가 6곳 이상(`PotentialEvents.Queue`·`TriggerModules`·`EntryTriggers`·`AnsweredTriggers`·`FieldEffects`·`MakenTurnLast`)이라 이번 범위에서 제외 |
 | 9 | docs/handoff/build-release.md:72~75 (옛 `version.txt` 업데이트 절) | raw `version.txt` + 저장소 EXE | GitHub Releases zip (같은 파일 87~89줄) | 문서가 서로 모순 | 표시만 | 수정(옛 절에 폐기 표시) |
 | 10 | BattleApp.cs:63 `LoadFromEditor`(팀 편집기에서 배틀 슬롯으로 불러오기) | 밀려난 포켓몬을 `Copy()`만 해 대기석에 추가 | 대기석 = 장소 밖(`OnField=false`, `LeaveField`로 랭크·상태 정리) | 대기석에 `OnField=true`인 포켓몬이 생겨 대기석 판정(`BenchEvents`·관측 포텐셜)이 장소 안으로 오인 | 잘못된 동작 | 수정 |
 | 11 | BattleApp.cs:64 `LoadTrainerFromEditor`(트레이너 불러오기) | 트레이너 상태 = `new TrainerBattleState{Trainer}` | `InitialSize`(「여기다！」 기준)·해금(`RefreshUnlocks`)을 채운다 | 대기석 포켓몬 포텐셜의 PT/지령 해금과 처음 인원 기록이 사라짐(항목 3과 같은 원인) | 잘못된 동작 | 수정(항목 3과 `NewTrainerState` 공용) |
@@ -32,6 +32,13 @@
 | 성별 「없음」 | `Genders.Normalize`가 빈 값을 「없음」으로 바꾸고 `FailModules`가 같은 함수로 비교. 칼데아 샘플의 「없음」 6체 정상 |
 | 팀 편성 규칙 | `TeamRules.Check`는 출전 구성만 검사(후보 전체를 합산하지 않음), 등급 비교는 `TrainerAccessRules.RankAtLeast`(EX 처리 포함) |
 | 정규화 전 문장 직접 비교 | 남은 마침표 문장 비교(`ItemRuntime`·`AbilitySentenceTable`)는 `Rewrite`/정규화 입력 쪽 표이고 실행기는 표준 문장만 해석 |
+
+## 남긴 것
+- 항목 8(교대 판단의 로그 매칭): 위 이유로 보류. 구조 변경 지시서가 필요하다.
+- `LoadTrainerFromEditor`(트레이너 불러오기)는 새 트레이너 기준으로 포켓몬의 PT 슬롯 포텐셜 거름(`CanUsePotentialSlot`)을 다시 하지 않는다(보정·해금은 항목 11에서 맞춤). 배틀 중 트레이너 교체는 개발용 기능이라 이번엔 두었다.
+- 한 턴 계산이 1초 이상 걸린다(칼데아 샘플, 한 판 14턴에 20초 안팎). 정확성 문제는 아니라 점검 범위 밖이다.
+- 시작 화면 `Begin`은 미등록 기술 경고가 있으면 배틀을 막지만(`warning.Length>0` 예외), `BattleStartFlowTests`는 경고를 무시한다. 두 샘플은 경고가 없어(점검 시 `warn=` 비어 있음) 문제가 드러나지 않는다.
+- 확인한 두 샘플의 임의 진행(점검 하니스 `SylphBattleAudit`를 칼데아 트레이너 0~3·여러 선봉으로 14턴 이상 돌림): 예외 0. 스모크 검사 자체는 사용자 결정으로 보류.
 
 ## 사용자 판단 필요
 

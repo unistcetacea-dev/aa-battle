@@ -22,6 +22,14 @@ namespace AABattle {
    return new Move { name = "미등록", category = "변화", types = new[] { "노말" }, target = "자신", accuracy = 100, tags = new string[0] };
   }
 
+  // 창이 뜨는 선택(선택 발동·임의 능력 등)은 자동으로 거절·첫 항목으로 답해 검사가 멈추지 않게 한다
+  static void Quiet(MainForm battle) {
+   battle.Rules.OptionalEffectPrompt = (s, t, p) => false;
+   battle.Rules.ChooseStat = (s, f, list) => list.First();
+   battle.Rules.ChooseBondPotential = (f, list) => -1;
+   battle.Rules.ChooseSealMove = (f, list) => list.First();
+  }
+
   // 항목 1: 대기석에는 쓰러진 포켓몬이 남지만 교대 대상이 될 수 없다
   [Test] public void FaintedReserveCannotBeSwitchedIn() {
    var lead = F(); var bench = F(); var foe = F();
@@ -38,7 +46,7 @@ namespace AABattle {
   }
 
   // 항목 1: 행동 선택 창은 쓰러진 포켓몬을 목록에서 빼되 고른 번호는 대기석 원래 번호로 돌려준다
-  [Test, Category("UI"), Apartment(System.Threading.ApartmentState.STA)]
+  [Test, Category("UI"), Apartment(System.Threading.ApartmentState.STA), Timeout(60000)]
   public void DirectiveFormListsOnlyLivingReservesWithOriginalIndex() {
    var fainted = F(); fainted.HP = 0;
    var alive = F();
@@ -56,16 +64,17 @@ namespace AABattle {
   }
 
   // 항목 3: 초기화는 트레이너 상태를 LoadTeams처럼 다시 채운다(대기석 포켓몬이 주는 해금·봉인 기록 등)
-  [Test, Category("UI"), Apartment(System.Threading.ApartmentState.STA)]
+  [Test, Category("UI"), Apartment(System.Threading.ApartmentState.STA), Timeout(60000)]
   public void ResetBattleRefillsTrainerUnlocksAndClearsFieldRecords() {
    Theme.Instant = true;
    var db = TestData.Db;
-   var unlocker = F(new Potential { id = "종족 ①", name = "해금 검사", description = "자신의 「공격」이 오른다.", unlocks = new[] { TrainerAccessRules.Pt2 }, triggers = new[] { TriggerStructures.EntryLabel } });
+   var unlocker = F(new Potential { id = "종족 ①", name = "해금 검사", description = "", unlocks = new[] { TrainerAccessRules.Pt2 } });
    var fighters = new[] { new List<Fighter> { F(), unlocker }, new List<Fighter> { F() } };
    var trainer = new TrainerRecord();
    trainer.command.rank = "A";   // 지시 A: 급소 +1
    var team = new TeamRecord { name = "t", trainer = trainer, members = new List<PokemonRecord>() };
    using (var battle = new MainForm(db) { TestMode = true }) {
+    Quiet(battle);
     battle.LoadTeams(new[] { team, team }, fighters, new[] { 0, 0 });
     Assert.That(battle.TrainerStatesForTest[0].UnlockedCapabilities, Does.Contain(TrainerAccessRules.Pt2));
     Assert.That(battle.Fighters[0].CriticalStage, Is.EqualTo(1));
@@ -81,14 +90,15 @@ namespace AABattle {
   }
 
   // 항목 11: 팀 편집기에서 트레이너를 불러와도 대기석 포켓몬이 주는 해금과 처음 인원이 유지된다
-  [Test, Category("UI"), Apartment(System.Threading.ApartmentState.STA)]
+  [Test, Category("UI"), Apartment(System.Threading.ApartmentState.STA), Timeout(60000)]
   public void TrainerLoadedFromEditorKeepsPartyUnlocksAndInitialSize() {
    Theme.Instant = true;
    var db = TestData.Db;
-   var unlocker = F(new Potential { id = "종족 ①", name = "해금 검사", description = "자신의 「공격」이 오른다.", unlocks = new[] { TrainerAccessRules.Pt2 }, triggers = new[] { TriggerStructures.EntryLabel } });
+   var unlocker = F(new Potential { id = "종족 ①", name = "해금 검사", description = "", unlocks = new[] { TrainerAccessRules.Pt2 } });
    var fighters = new[] { new List<Fighter> { F(), unlocker }, new List<Fighter> { F() } };
    var team = new TeamRecord { name = "t", trainer = new TrainerRecord(), members = new List<PokemonRecord>() };
    using (var battle = new MainForm(db) { TestMode = true }) {
+    Quiet(battle);
     battle.LoadTeams(new[] { team, team }, fighters, new[] { 0, 0 });
     typeof(MainForm).GetMethod("LoadTrainerFromEditor", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(battle, new object[] { new TrainerRecord { name = "교체" }, 0 });
     Assert.That(battle.TrainerStatesForTest[0].UnlockedCapabilities, Does.Contain(TrainerAccessRules.Pt2));
@@ -98,7 +108,7 @@ namespace AABattle {
   }
 
   // 항목 10: 팀 편집기에서 불러오기로 밀려난 포켓몬은 장소 밖(대기석)으로 간다
-  [Test, Category("UI"), Apartment(System.Threading.ApartmentState.STA)]
+  [Test, Category("UI"), Apartment(System.Threading.ApartmentState.STA), Timeout(60000)]
   public void PokemonReplacedByEditorLoadIsBenchedOffField() {
    Theme.Instant = true;
    var db = TestData.Db;
@@ -109,6 +119,7 @@ namespace AABattle {
     stats = new StatsRecord { hp = 100, attack = 100, defense = 100, spAttack = 100, spDefense = 100, speed = 100 }
    };
    using (var battle = new MainForm(db) { TestMode = true }) {
+    Quiet(battle);
     battle.LoadTeams(new[] { team, team }, fighters, new[] { 0, 0 });
     var previous = battle.Fighters[0].Data.name;
     typeof(MainForm).GetMethod("LoadFromEditor", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(battle, new object[] { record, 0 });

@@ -124,3 +124,4 @@
 - 대기석에는 쓰러진 포켓몬도 남는다. 교대 대상은 `Mechanics.CanSwitchIn`(HP>0)으로 거르고, 행동 선택 창은 목록에서 빼되 고른 번호는 대기석 원래 번호로 돌려준다. `Engine.Resolve`도 쓰러진 `SwitchIn`을 예외로 거부한다. 「대기 N」 표시는 낼 수 있는 수.
 - 초기화 버튼(`MainForm.ResetBattle`)은 트레이너 상태를 `LoadTeams`처럼 다시 채우고(`RefreshUnlocks`: 트레이너·파티 전원 포텐셜 해금), 봉인 기록·물놀이·진흙놀이·날씨 잠금·마지막 쓰러진 기록·`Rules.Turn`도 되돌린다. 선발 등장 효과는 다시 실행하지 않는다(사용자 판단 대기: `research/LEGACY_AUDIT.md`).
 - 점검표와 확인 완료 항목: `research/LEGACY_AUDIT.md`. 검사: `LegacyAuditTests`.
+- 팀 편집기에서 포켓몬·트레이너를 배틀 슬롯으로 불러올 때도 같은 기준이다: 밀려난 포켓몬은 `LeaveField`를 거쳐 대기석(장소 밖)으로 가고, 트레이너 상태는 `NewTrainerState`(해금·처음 인원·지시/통솔 보정 재적용)로 만든다. 초기화도 같은 함수를 쓰므로 랭크 초기화 뒤에도 지시 C·통솔 명중 보정이 유지된다.
