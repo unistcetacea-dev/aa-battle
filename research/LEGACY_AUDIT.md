@@ -17,6 +17,8 @@
 | 7 | StartUI.cs:83 시작 화면 팀 창 「포켓몬 N체」 | 팀 = 출전 구성 | 팀 = 파티 후보(칼데아 28체) + 출전 선택(H) | 후보 전체 수와 공 아이콘 12개가 나와 출전 수로 오해 | 표시만 | 수정 |
 | 8 | BenchEvents.cs:121, SwitchRuntime.cs:67·75 | 로그 문자열(「토큰 + 트리거 충족」)로 교대 판단 | `TriggerFact`·포텐셜 큐 | 다른 포켓몬·지난 T 로그가 섞임(b4048a9에서 일부 수정) | 타 작업 | 보류: `task/fix-entry-switch-onfield`가 같은 파일을 고치는 중 |
 | 9 | docs/handoff/build-release.md:72~75 (옛 `version.txt` 업데이트 절) | raw `version.txt` + 저장소 EXE | GitHub Releases zip (같은 파일 87~89줄) | 문서가 서로 모순 | 표시만 | 수정(옛 절에 폐기 표시) |
+| 10 | BattleApp.cs:63 `LoadFromEditor`(팀 편집기에서 배틀 슬롯으로 불러오기) | 밀려난 포켓몬을 `Copy()`만 해 대기석에 추가 | 대기석 = 장소 밖(`OnField=false`, `LeaveField`로 랭크·상태 정리) | 대기석에 `OnField=true`인 포켓몬이 생겨 대기석 판정(`BenchEvents`·관측 포텐셜)이 장소 안으로 오인 | 잘못된 동작 | 수정 |
+| 11 | BattleApp.cs:64 `LoadTrainerFromEditor`(트레이너 불러오기) | 트레이너 상태 = `new TrainerBattleState{Trainer}` | `InitialSize`(「여기다！」 기준)·해금(`RefreshUnlocks`)을 채운다 | 대기석 포켓몬 포텐셜의 PT/지령 해금과 처음 인원 기록이 사라짐(항목 3과 같은 원인) | 잘못된 동작 | 수정(항목 3과 `NewTrainerState` 공용) |
 
 ## 확인했으나 문제없던 것 (옛 가정이 이미 정리됨)
 

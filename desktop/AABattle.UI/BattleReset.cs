@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Collections.Generic;
 using System.Windows.Forms;
 
 namespace AABattle {
@@ -9,14 +10,24 @@ namespace AABattle {
   // (선발 등장 효과는 다시 실행하지 않는다.)
   internal TrainerBattleState[] TrainerStatesForTest { get { return trainerStates; } }
 
+  internal List<Fighter>[] ReservesForTest { get { return reserves; } }
+
+  // 트레이너 사용 이력을 비운 새 상태. LoadTeams와 같이 트레이너·파티 전원 포텐셜의 해금을 다시 채운다
+  void NewTrainerState(int side) {
+   var state = new TrainerBattleState { Trainer = trainers[side], InitialSize = initialTeamSizes[side] };
+   state.RefreshUnlocks();
+   foreach (var member in new[] { Fighters[side] }.Concat(reserves[side])) state.RefreshUnlocks(member.Data.potentials);
+   trainerStates[side] = state;
+   // 지시 C·통솔 명중 보정은 포켓몬에 쌓여 있으므로(랭크 초기화로 지워졌거나 옛 트레이너 값) 새 트레이너 기준으로 다시 맞춘다
+   foreach (var member in new[] { Fighters[side] }.Concat(reserves[side])) TrainerAccessRules.ApplyTrainerPassives(member, trainers[side], state);
+  }
+
   public void ResetBattle() {
    Save();
    for (int i = 0; i < 2; i++) {
     ResetFighter(Fighters[i], true);
     foreach (var reserve in reserves[i]) ResetFighter(reserve, true);
-    trainerStates[i] = new TrainerBattleState { Trainer = trainers[i], InitialSize = initialTeamSizes[i] };
-    trainerStates[i].RefreshUnlocks();
-    foreach (var member in new[] { Fighters[i] }.Concat(reserves[i])) trainerStates[i].RefreshUnlocks(member.Data.potentials);
+    NewTrainerState(i);
     selections[i] = new TurnSelection();
    }
    Rules.Weather = "없음";

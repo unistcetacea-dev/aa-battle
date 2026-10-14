@@ -62,16 +62,59 @@ namespace AABattle {
    var db = TestData.Db;
    var unlocker = F(new Potential { id = "종족 ①", name = "해금 검사", description = "자신의 「공격」이 오른다.", unlocks = new[] { TrainerAccessRules.Pt2 }, triggers = new[] { TriggerStructures.EntryLabel } });
    var fighters = new[] { new List<Fighter> { F(), unlocker }, new List<Fighter> { F() } };
-   var team = new TeamRecord { name = "t", trainer = new TrainerRecord(), members = new List<PokemonRecord>() };
+   var trainer = new TrainerRecord();
+   trainer.command.rank = "A";   // 지시 A: 급소 +1
+   var team = new TeamRecord { name = "t", trainer = trainer, members = new List<PokemonRecord>() };
    using (var battle = new MainForm(db) { TestMode = true }) {
     battle.LoadTeams(new[] { team, team }, fighters, new[] { 0, 0 });
     Assert.That(battle.TrainerStatesForTest[0].UnlockedCapabilities, Does.Contain(TrainerAccessRules.Pt2));
+    Assert.That(battle.Fighters[0].CriticalStage, Is.EqualTo(1));
     battle.Rules.SealedMoves["키"] = "몸통박치기";
     battle.Rules.WaterSport = 3;
     battle.ResetBattle();
     Assert.That(battle.TrainerStatesForTest[0].UnlockedCapabilities, Does.Contain(TrainerAccessRules.Pt2));
     Assert.That(battle.Rules.SealedMoves, Is.Empty);
     Assert.That(battle.Rules.WaterSport, Is.EqualTo(0));
+    Assert.That(battle.Fighters[0].CriticalStage, Is.EqualTo(1), "랭크 초기화 뒤에도 트레이너 지시 보정은 유지");
+    battle.Close();
+   }
+  }
+
+  // 항목 11: 팀 편집기에서 트레이너를 불러와도 대기석 포켓몬이 주는 해금과 처음 인원이 유지된다
+  [Test, Category("UI"), Apartment(System.Threading.ApartmentState.STA)]
+  public void TrainerLoadedFromEditorKeepsPartyUnlocksAndInitialSize() {
+   Theme.Instant = true;
+   var db = TestData.Db;
+   var unlocker = F(new Potential { id = "종족 ①", name = "해금 검사", description = "자신의 「공격」이 오른다.", unlocks = new[] { TrainerAccessRules.Pt2 }, triggers = new[] { TriggerStructures.EntryLabel } });
+   var fighters = new[] { new List<Fighter> { F(), unlocker }, new List<Fighter> { F() } };
+   var team = new TeamRecord { name = "t", trainer = new TrainerRecord(), members = new List<PokemonRecord>() };
+   using (var battle = new MainForm(db) { TestMode = true }) {
+    battle.LoadTeams(new[] { team, team }, fighters, new[] { 0, 0 });
+    typeof(MainForm).GetMethod("LoadTrainerFromEditor", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(battle, new object[] { new TrainerRecord { name = "교체" }, 0 });
+    Assert.That(battle.TrainerStatesForTest[0].UnlockedCapabilities, Does.Contain(TrainerAccessRules.Pt2));
+    Assert.That(battle.TrainerStatesForTest[0].InitialSize, Is.EqualTo(2));
+    battle.Close();
+   }
+  }
+
+  // 항목 10: 팀 편집기에서 불러오기로 밀려난 포켓몬은 장소 밖(대기석)으로 간다
+  [Test, Category("UI"), Apartment(System.Threading.ApartmentState.STA)]
+  public void PokemonReplacedByEditorLoadIsBenchedOffField() {
+   Theme.Instant = true;
+   var db = TestData.Db;
+   var fighters = new[] { new List<Fighter> { F() }, new List<Fighter> { F() } };
+   var team = new TeamRecord { name = "t", trainer = new TrainerRecord(), members = new List<PokemonRecord>() };
+   var record = new PokemonRecord {
+    id = "legacy-editor", name = "편집기 포켓몬", level = 100, types = new List<string> { "노말" }, moves = new List<string> { "몸통박치기" },
+    stats = new StatsRecord { hp = 100, attack = 100, defense = 100, spAttack = 100, spDefense = 100, speed = 100 }
+   };
+   using (var battle = new MainForm(db) { TestMode = true }) {
+    battle.LoadTeams(new[] { team, team }, fighters, new[] { 0, 0 });
+    var previous = battle.Fighters[0].Data.name;
+    typeof(MainForm).GetMethod("LoadFromEditor", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(battle, new object[] { record, 0 });
+    var benched = battle.ReservesForTest[0].Single(x => x.Data.name == previous);
+    Assert.That(benched.OnField, Is.False);
+    Assert.That(battle.Fighters[0].Data.name, Is.EqualTo("편집기 포켓몬"));
     battle.Close();
    }
   }
