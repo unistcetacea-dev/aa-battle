@@ -33,3 +33,4 @@ abaddon.pivot.attack	effect.switch.pivot	유턴대상	공격기술	자신의 공
 ability.priority.condition	effect.priority.올린다	우선도방식	올린다	자신의 「변화」 기술 우선도를 1 올린다.	조건 우선도
 effect.priority.올린다	effect.priority.올린다	우선도방식	올린다	자신의 기술 우선도를 1 올린다.	우선도 변화
 ability.priority.lag	effect.priority.올린다	우선도방식	-0.5	자신의 「변화」 기술의 우선도를 -0.5한다.	조건 우선도 -0.5
+effect.priority.lag	effect.priority.올린다	우선도방식	-0.5	자신의 기술의 우선도를 -0.5한다.	우선도 -0.5

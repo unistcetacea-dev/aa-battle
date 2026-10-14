@@ -43,7 +43,6 @@ namespace AABattle
       CoreAdd(modules, "effect.critical.rank", "기술 급소 랭크 보정", "급소 보정", family, "자신의 {조건} 기술의 급소 랭크를 +{랭크}한다.", S("조건", ModuleSlotKind.MoveCondition, ""), CoreNumber("랭크", ModuleSlotKind.Rank, "1", 9));
       CoreBracketList(CoreAdd(modules, "effect.place.extend", "전개 상태 지속 연장", "지속 연장", "장소", "자신이 전개하는 「{상태}」의 지속 T를 +{기간}한다.", S("상태", ModuleSlotKind.Text, "쾌청", Mechanics.Weathers.Where(x => x != "없음").Concat(EffectModules.TerrainNames).Concat(new[] { "리플렉터", "빛의장막" }).ToArray()), CoreNumber("기간", ModuleSlotKind.Turns, "3")), "상태");
       CoreBracketList(CoreAdd(modules, "effect.weather.ignore", "날씨 영향 무시", "날씨 무시", "장소", "자신은 「{날씨}」의 영향을 받지 않는다.", S("날씨", ModuleSlotKind.Weather, "쾌청", Mechanics.Weathers.Where(x => x != "없음").ToArray())), "날씨");
-      CoreAdd(modules, "effect.priority.lag", "우선도 0.5 감소", "우선도 -0.5", "행동", "자신의 기술의 우선도를 -0.5한다.");
       foreach (string verb in new[] { "한다", "할 수 있다" })
         CoreAdd(modules, "effect.ability.change." + verb, "특성 변경 " + verb, "특성 변경", family, "{주체}의 특성을 「{특성}」@ro:특성@ " + verb + ".", S("주체", ModuleSlotKind.Subject, "자신", "자신", "상대"), S("특성", ModuleSlotKind.Ability, "위협"));
       CoreAdd(modules, "effect.item.break", "소지품 소실", "소지품 소실", family, "자신의 소지품이 부서진다.");

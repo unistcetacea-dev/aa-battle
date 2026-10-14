@@ -12,6 +12,7 @@ namespace AABattle
     static Fighter Curser()
     {
       var f = AbilityRemaining3MoveTests.F();
+      f.OnField = true;
       AbilityRemaining3MoveTests.Rule(f, EffectModules.Normalize(Raw));
       return f;
     }
@@ -61,6 +62,33 @@ namespace AABattle
       using (EffectScope.Begin(new[] { victim, holder }, new Rules(), () => 0))
         Mechanics.Hurt(victim, holder, new Rules(), 25, "독", new List<string>());
       Assert.That(victim.HP, Is.EqualTo(before));
+    }
+
+    [Test]
+    public void PierceEndsWhenTheHolderSwitchesOutAndStaysEndedAfterReturn()
+    {
+      var holder = Curser();
+      var victim = AbilityRemaining3MoveTests.F("매직가드");
+      victim.Conditions.Curse = true;
+      victim.Conditions.CurseSource = holder;
+      holder.FieldOpponent = victim;
+      victim.OnField = true;
+      Mechanics.LeaveField(holder);
+      holder.OnField = true;
+      Assert.That(victim.Conditions.Curse, Is.True);
+      Assert.That(CurseLoss(victim, victim.Conditions.CurseSource, holder), Is.EqualTo(0));
+    }
+
+    [Test]
+    public void PierceEndsWhenTheHolderFaintsAndReturnsWhenCursedAgain()
+    {
+      var holder = Curser();
+      var victim = AbilityRemaining3MoveTests.F("매직가드");
+      holder.HP = 0;
+      Assert.That(CurseLoss(victim, holder, holder), Is.EqualTo(0));
+      holder.HP = holder.Data.@base[0];
+      victim.Conditions.Curse = false;
+      Assert.That(CurseLoss(victim, holder, holder), Is.GreaterThan(0), "다시 걸리면 관통이 다시 붙는다");
     }
   }
 }

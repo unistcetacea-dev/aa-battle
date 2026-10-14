@@ -72,6 +72,9 @@ namespace AABattle
       AbilityChoice(modules, "effect.priority.올린다", "기술 우선도 변경", "우선도방식",
         new[] { "올린다", "-0.5" }, "{주체}의 {기술조건} 기술 우선도를 변경한다.",
         "effect.priority.올린다", "ability.priority.lag");
+      // 조건 없는 「자신의 기술의 우선도를 -0.5한다」(느림보꼬리)도 이 모듈의 -0.5 선택값이다
+      var merged = modules.Single(m => m.Id == "effect.priority.올린다");
+      merged.AdditionalExpectedKinds = merged.AdditionalExpectedKinds.Concat(new[] { "우선도 -0.5" }).Distinct().ToArray();
     }
 
     // TX와 같은 선택 서식 도우미. 선택값마다 원래 서식의 Fill/TryRead를 그대로 사용한다.

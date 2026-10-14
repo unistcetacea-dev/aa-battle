@@ -89,6 +89,8 @@ namespace AABattle {
    if (victim == null || reason != "저주" || !victim.Conditions.Curse) return false;
    var source = victim.Conditions.CurseSource;
    if (source == null || source.Data == null) return false;
+   // 건 보유자가 장소를 떠나거나 빈사가 되면 관통은 사라진다(저주는 남는다)
+   if (!source.OnField || source.HP <= 0) { victim.Conditions.CurseSource = null; return false; }
    var rules = EffectScope.Current == null ? null : EffectScope.Current.Rules;
    return Own(source, victim, rules, "저주").Any(x => x == CursePierce);
   }
