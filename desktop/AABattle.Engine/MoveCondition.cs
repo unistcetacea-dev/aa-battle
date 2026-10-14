@@ -323,7 +323,8 @@ namespace AABattle
       // 「물기」「엄니」처럼 계통·이름 괄호가 여럿이면 하나라도 맞으면 된다. 「접촉」은 최종 접촉 판정
       if (Tags.Count > 0 && !Tags.Any(tag => tag == "접촉" ? Mechanics.Contact(move) : tag == "비접촉" ? !Mechanics.Contact(move) : tag == "자신과 같은 타입" ? MatchTarget != null && (move.types ?? new string[0]).Any(t => Mechanics.Has(MatchTarget, t)) : tag == "기능확장" ? move.extension : (move.tags ?? new string[0]).Contains(tag) || (move.effect ?? "").Contains(tag) || move.name == tag))
         return false;
-      if (Names.Count > 0 && !Names.Contains(move.name))
+      // 「기술:테크노버스터」는 이름 뒤에 （1P）처럼 구분이 붙은 변형도 같은 기술로 본다
+      if (Names.Count > 0 && !Names.Any(name => name == move.name || (move.name ?? "").StartsWith(name + "（")))
         return false;
       return true;
     }

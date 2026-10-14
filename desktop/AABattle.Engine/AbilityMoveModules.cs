@@ -26,6 +26,8 @@ namespace AABattle {
   public const string FullMultiHit = "자신의 「연속」 기술은 반드시 최대 횟수만큼 명중한다";
 
   static readonly Regex SureHit = new Regex(@"^자신의 (?<c>(?:「[^」]+」)*)\s*기술은 (?:「(?<vs>[^」]+)」 타입에게 )?필중이다$");
+  // 서로의 조건 기술 필중(서부극): 필드에 있는 어느 쪽이 갖고 있어도 양쪽 기술에 적용
+  static readonly Regex BothSureHit = new Regex(@"^서로의 (?<c>(?:「[^」]+」)+)\s*기술은 필중이다$");
   static readonly Regex AlwaysCrit = new Regex(@"^자신의 (?<c>(?:「[^」]+」)*)\s*기술은 반드시 급소에 맞는다$");
   static readonly Regex CritRate = new Regex(@"^자신의 급소 배율을 (?<n>[0-9.]+)배로 한다$");
   static readonly Regex Category = new Regex(@"^자신의 공격기술의 분류를 「(?<k>물리|특수)」(?:으로|로) 한다$");
@@ -72,7 +74,7 @@ namespace AABattle {
 
   public static string Classify(string sentence) {
    string s = Clean(sentence);
-   if (s == FieldSureHit || SureHit.IsMatch(s)) return "필중 부여";
+   if (s == FieldSureHit || SureHit.IsMatch(s) || BothSureHit.IsMatch(s)) return "필중 부여";
    if (AlwaysCrit.IsMatch(s)) return "반드시 급소";
    if (CritRate.IsMatch(s)) return "급소 배율";
    if (Category.IsMatch(s)) return "기술 분류 변경";
@@ -104,6 +106,10 @@ namespace AABattle {
   public static bool GrantsSureHit(Fighter a, Fighter b, Move move, Rules rules) {
    if (move == null) return false;
    if (Field(a, b, rules, "필중").Any(x => x == FieldSureHit)) return true;
+   foreach (string line in Field(a, b, rules, "필중")) {
+    var both = BothSureHit.Match(line); MoveCondition shared;
+    if (both.Success && Cond(both.Groups["c"].Value, out shared) && shared.Matches(move, a, 1)) return true;
+   }
    foreach (string line in Own(a, b, rules, "필중")) {
     var m = SureHit.Match(line); MoveCondition c;
     if (!m.Success || !Cond(m.Groups["c"].Value, out c) || !c.Matches(move, a, 1)) continue;

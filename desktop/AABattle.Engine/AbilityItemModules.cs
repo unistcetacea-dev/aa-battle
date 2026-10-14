@@ -24,6 +24,7 @@ namespace AABattle {
   public const string Replay = "사용한 나무열매의 효과를 다시 받는다";
   public const string RipenRule = "자신이 소모하는 「나무열매」의 효과가 2배가 된다";
   public const string PlateType = "자신의 타입을 소지품 「플레이트」의 타입으로 한다";
+  public const string CassetteType = "자신의 타입에 소지품 「카세트」의 타입을 추가한다";
   public const string NoItems = "자신은 소지품을 사용할 수 없다";
   public const string NoConsumedItems = "상대는 소비하는 소지품을 사용할 수 없다";
   public const string ProtectItem = "자신의 소지품은 파괴되거나 약탈되지 않는다";
@@ -53,6 +54,7 @@ namespace AABattle {
    if (s == Replay) return "나무열매 효과 다시 받기";
    if (s == RipenRule) return "나무열매 효과 2배";
    if (s == PlateType) return "소지품 타입 변화";
+   if (s == CassetteType) return "소지품 타입 추가";
    if (s == NoItems || s == NoConsumedItems) return "소지품 사용 금지";
    if (s == ProtectItem) return "소지품 보호";
    return "";
@@ -106,12 +108,19 @@ namespace AABattle {
    if (f == null || f.Data == null) return;
    var c = f.Conditions;
    var definition = AbilityCatalog.Find(AbilityRuntime.Name(f));
-   bool rule = !f.AbilitySuppressed && definition != null && AbilityModules.Sentences(definition).Any(s => Clean(s) == PlateType);
+   bool active = !f.AbilitySuppressed && definition != null;
+   bool rule = active && AbilityModules.Sentences(definition).Any(s => Clean(s) == PlateType);
+   bool addRule = active && AbilityModules.Sentences(definition).Any(s => Clean(s) == CassetteType);
    var item = rule && CanUseItem(f) ? ItemCatalog.Find(f.Data.item) : null;
    bool plate = item != null && item.Type.Length > 0 && item.Name.EndsWith("플레이트");
+   // 카세트: 원래 타입은 그대로 두고 카세트의 타입을 더한다
+   string cassette = addRule && CanUseItem(f) ? HeldTypeTable.TypeOf("카세트", f.Data.item) : null;
    if (plate) {
     if (c.ItemTypeBackup == null) c.ItemTypeBackup = f.Data.types.ToArray();
     f.Data.types = new[] { item.Type };
+   } else if (cassette != null) {
+    if (c.ItemTypeBackup == null) c.ItemTypeBackup = f.Data.types.ToArray();
+    f.Data.types = c.ItemTypeBackup.Concat(new[] { cassette }).Distinct().ToArray();
    } else if (c.ItemTypeBackup != null) {
     f.Data.types = c.ItemTypeBackup.ToArray();
     c.ItemTypeBackup = null;

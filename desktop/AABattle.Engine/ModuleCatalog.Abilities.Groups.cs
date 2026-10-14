@@ -19,7 +19,7 @@ namespace AABattle
         || id.StartsWith("survive.") || id.StartsWith("recoil.") || id.StartsWith("damage.")
         || id == "guard.restore" || id == "drain.reverse") return "체력";
       if (id.StartsWith("weather.") || id == "hazard.immune" || id == "screens.clear") return "장소";
-      if (id.StartsWith("type.") || id == "item.type" || id == "aura.reverse") return "타입·상성";
+      if (id.StartsWith("type.") || id == "item.type" || id == "item.type.add" || id == "aura.reverse") return "타입·상성";
       if (id.StartsWith("item.") || id.StartsWith("berry.") || id == "machine.extra") return "기술·소지품";
       if (id.StartsWith("secondary.")) return "추가효과";
       if (id.StartsWith("move.") || id == "contact.remove" || id == "multihit.max"
@@ -44,8 +44,8 @@ namespace AABattle
         new[] { "상대", "필드에 있는 전원" }, "{주체}의 {기술조건} 기술이 실패한다.",
         "ability.move.fail.opponent", "ability.move.fail.field");
       AbilityChoice(modules, "ability.surehit", "기술 필중", "필중범위",
-        new[] { "자신의 조건 기술", "지정 타입 상대", "필드 전원" }, "자신의 {기술조건} 기술은 필중이다.",
-        "ability.surehit", "ability.surehit.type", "ability.surehit.field");
+        new[] { "자신의 조건 기술", "서로의 조건 기술", "지정 타입 상대", "필드 전원" }, "자신의 {기술조건} 기술은 필중이다.",
+        "ability.surehit", "ability.surehit.both", "ability.surehit.type", "ability.surehit.field");
       AbilityChoice(modules, "ability.recoil.condition", "기술 반동 무효", "반동범위",
         new[] { "조건 기술", "전체 기술" }, "자신의 {기술조건} 기술의 반동 대미지를 받지 않는다.",
         "ability.recoil.condition", "ability.recoil.immune");

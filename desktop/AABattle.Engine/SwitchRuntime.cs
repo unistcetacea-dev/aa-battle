@@ -97,9 +97,30 @@ namespace AABattle {
 
  public static class StatIgnoreRuntime {
   public static bool IsWildBoss(Fighter fighter){return fighter!=null&&fighter.Data!=null&&fighter.HP>0&&fighter.OnField&&(fighter.Data.potentials??new Potential[0]).Any(x=>x!=null&&x.id=="역할"&&x.name=="야생의 두목");}
-  static bool Covers(string stats,int index){if(index<1||index>5)return false;string value=PotentialParts.Clean(stats??"").Replace(" ","").Replace("　","").Replace("「","").Replace("」","");if(value=="능력"||value=="전능력치")return true;if(value=="공/특공"||value=="공격/특공")return index==1||index==3;if(value=="방/특방"||value=="방어/특방")return index==2||index==4;if(value=="속도/회피")return index==5;return value==Engine.Names[index];}
+  // 인덱스 7은 회피(명중 판정용). 이름으로 「회피」가 지정된 무시만 해당하고 「능력」 전체 무시에는 넣지 않는다
+  static bool Covers(string stats,int index){string value=PotentialParts.Clean(stats??"").Replace(" ","").Replace("　","").Replace("「","").Replace("」","");if(index==7)return value=="회피"||value=="속도/회피";if(index<1||index>5)return false;if(value=="능력"||value=="전능력치")return true;if(value=="공/특공"||value=="공격/특공")return index==1||index==3;if(value=="방/특방"||value=="방어/특방")return index==2||index==4;if(value=="속도/회피")return index==5;return value==Engine.Names[index];}
   static bool HasRole(Fighter fighter,string role){return fighter!=null&&fighter.Data!=null&&(fighter.Data.potentials??new Potential[0]).Any(x=>x!=null&&x.id=="역할"&&x.name==role);}
   static bool TargetMatches(Fighter holder,Fighter source,string target){if(target=="상대")return !Object.ReferenceEquals(holder,source);if(target=="자신")return Object.ReferenceEquals(holder,source);if(target!=null&&target.Length>2&&target[0]=='『'&&target[target.Length-1]=='』')return HasRole(source,target.Substring(1,target.Length-2));return false;}
-  public static bool TryIgnorePositive(Fighter holder,Fighter source,int statIndex,out bool ignoreRank,out bool ignoreBoost){ignoreRank=ignoreBoost=false;if(holder==null||source==null||holder.Data==null||source.Data==null||holder.HP<=0||source.HP<=0||!holder.OnField||!TriggerStructures.Has(holder,TriggerStructures.FieldLabel))return false;foreach(var potential in holder.Data.potentials??new Potential[0]){string target,stats,mode;if(potential==null||!EffectStructures.TryStatIgnore(potential.description,out target,out stats,out mode)||!TargetMatches(holder,source,target)||!Covers(stats,statIndex))continue;if(mode=="강화")ignoreBoost=true;else ignoreRank=ignoreBoost=true;}return ignoreRank||ignoreBoost;}
+  // 포텐셜 설명 한 줄이 아니라 문장마다 읽는다(특성은 계속 문장을 한 포텐셜에 묶는다)
+  static IEnumerable<string> Sentences(string description){
+   var list=new List<string>{description??""};
+   list.AddRange(System.Text.RegularExpressions.Regex.Split(description??"",@"(?<=[.。])\s+").Where(x=>x.Trim().Length>0));
+   return list;
+  }
+  public static bool TryIgnorePositive(Fighter holder,Fighter source,int statIndex,out bool ignoreRank,out bool ignoreBoost){
+   ignoreRank=ignoreBoost=false;
+   if(holder==null||source==null||holder.Data==null||source.Data==null||holder.HP<=0||source.HP<=0||!holder.OnField)return false;
+   // 장소에 있는 한(포텐셜) 또는 항상(특성)
+   if(!TriggerStructures.Has(holder,TriggerStructures.FieldLabel)&&!TriggerStructures.Has(holder,TriggerStructures.AlwaysLabel))return false;
+   foreach(var potential in holder.Data.potentials??new Potential[0]){
+    if(potential==null)continue;
+    foreach(string sentence in Sentences(potential.description)){
+     string target,stats,mode;
+     if(!EffectStructures.TryStatIgnore(sentence,out target,out stats,out mode)||!TargetMatches(holder,source,target)||!Covers(stats,statIndex))continue;
+     if(mode=="강화")ignoreBoost=true;else ignoreRank=ignoreBoost=true;
+    }
+   }
+   return ignoreRank||ignoreBoost;
+  }
  }
 }

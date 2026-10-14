@@ -16,6 +16,7 @@ namespace AABattle {
     case "ability.copy.opponent": definition.Name = "상대의 특성 복사"; break;
     case "ability.copy.ally": definition.Name = "직전에 빈사한 아군의 특성 복사"; break;
     case "surehit.field": definition.Name = "필드 전원의 기술 필중"; break;
+    case "surehit.both": definition.Name = "서로의 조건 기술 필중"; break;
     case "surehit": definition.Name = "조건 기술에 필중 부여"; break;
     case "surehit.type": definition.Name = "지정 타입 상대에게 필중"; break;
     case "secondary.remove.self": definition.Name = "자신의 기술 추가효과 무효"; break;
@@ -109,6 +110,7 @@ namespace AABattle {
     new[] { "berry.replay", "나무열매 효과 다시 받기", AbilityItemModules.Replay },
     new[] { "berry.ripen", "나무열매 효과 2배", AbilityItemModules.RipenRule },
     new[] { "item.type", "소지품 타입 변화", AbilityItemModules.PlateType },
+    new[] { "item.type.add", "소지품 타입 추가", AbilityItemModules.CassetteType },
     new[] { "item.ban.self", "소지품 사용 금지", AbilityItemModules.NoItems },
     new[] { "item.ban.opponent", "소지품 사용 금지", AbilityItemModules.NoConsumedItems },
     new[] { "item.protect", "소지품 보호", AbilityItemModules.ProtectItem },

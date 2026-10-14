@@ -5,6 +5,7 @@ namespace AABattle {
  public static partial class ModuleCatalog {
   static void RegisterAbilityMoveInputs(List<ModuleDefinition> modules) {
    AE(modules, "surehit", "필중 부여", "자신의 {기술조건} 기술은 필중이다.", AC());
+   AE(modules, "surehit.both", "필중 부여", "서로의 {기술조건} 기술은 필중이다.", AC());
    AE(modules, "surehit.type", "필중 부여", "자신의 {기술조건} 기술은 「{타입}」 타입에게 필중이다.", AC(), S("타입", ModuleSlotKind.Type, "물"));
    AE(modules, "critical.always", "반드시 급소", "자신의 {기술조건} 기술은 반드시 급소에 맞는다.", AC());
    AE(modules, "critical.rate", "급소 배율", "자신의 급소 배율을 {배율}배로 한다.", S("배율", ModuleSlotKind.Multiplier, "3"));

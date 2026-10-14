@@ -115,6 +115,13 @@ namespace AABattle {
    // 얼음의벽 기술: 「4T 동안 자진에 「얼음의벽」을 전개한다」 = 진영 상태(리플렉터와 달리 전용 코드가 없다)
    x = Regex.Match(s, @"^(?<n>\d+)T 동안 자진에 「얼음의벽」을 전개한다$");
    if (x.Success) { into.Add("자신을 " + x.Groups["n"].Value + "T간 「얼음의벽」 상태로 한다."); return; }
+   // 〔특성〕을 〔X〕로 변경한다(심플빔·열창) → 「특성을 「X」로 한다」 표준 문장
+   x = Regex.Match(s, @"^(?<s>자신|상대)의 〔특성〕을 〔(?<a>[^〕]+)〕(?:으로|로) 변경한다$");
+   if (x.Success) {
+    string ability = x.Groups["a"].Value;
+    Add(into, plan, s, x.Groups["s"].Value + "의 특성을 「" + ability + "」" + EffectModules.Ro(ability) + " 한다.");
+    return;
+   }
    // 상태 부여(자진 = 자신, 적진 = 상대)
    string own = s.Replace("자진을", "자신을").Replace("적진을", "상대를");
    var state = StateEffects.Parse(own);
