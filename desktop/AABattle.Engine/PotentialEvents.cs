@@ -37,6 +37,7 @@ namespace AABattle
     public int Damage, Hit;
     public Action<string> Log; // 호출한 쪽의 로그
     public bool Announce; // 처리 직전에 Message를 로그에 남긴다(TriggerStructures.Fire 형식)
+    public bool BenchObservation; // 새 사건을 대기석 옵저버에 한정해 전달한 큐 사건
     public Func<PotentialInstance, bool, string> PendingText; // 실행하지 않을 때의 로그(호출 경로별 예전 문구). bool = 추가 조건 있음
     internal int Id, ChainId, Depth;
     public bool Matches(string clause)

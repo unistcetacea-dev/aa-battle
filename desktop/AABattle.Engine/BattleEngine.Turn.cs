@@ -88,6 +88,7 @@ namespace AABattle
       for (int i = 0; i < 2; i++)
         if (fresh[1 - i])
           RuntimeTriggers.OpponentEntered(f[i], f[1 - i], r, result.Log.Add);
+      ResolveTriggeredSwitches(db, f, commands, states, r, rng, result, 0, SwitchTiming.MidTurn, chooseSwitch);
       StateRolls.Selection(db, f, commands, r, rng, result.Log);
       var pursuit = PursuitRuntime.Begin(db, f, commands, r, states, result.Log);
       var returnTransfers = new BatonSnapshot[2];
@@ -139,6 +140,8 @@ namespace AABattle
 
         foreach (string potential in c.PreInputs ?? new string[0])
         {
+          if (BenchEvents.TryDeclarePreInput(r, i, potential, f[i], states[i].Usage, result.Log.Add))
+            continue;
           var definition = (f[i].Data.potentials ?? new Potential[0]).FirstOrDefault(x => x != null && x.name == potential);
           string key = PotentialKeys.ForName(f[i].Data, potential), uses = definition == null ? "" : definition.uses;
           if (!states[i].Usage.CanUse(key, uses))
@@ -363,7 +366,7 @@ namespace AABattle
         AbilityPhrases.ChangeUserType(a, b, m, r, result.Log);
         IceWallRules.BreakByFire(m, r, 1 - i, result.Log);
         var used = a.Conditions.Copy();
-        bool pivotGrant = SwitchEffectRuntime.TriggeredPivotGrant(a, result.Log.Skip(actionStart)) || SwitchEffectRuntime.TriggeredPivotGrant(states[i].Trainer, result.Log.Skip(actionStart));
+        bool pivotGrant = SwitchEffectRuntime.TriggeredPivotGrant(a, result.Log.Skip(actionStart), m) || SwitchEffectRuntime.TriggeredPivotGrant(states[i].Trainer, result.Log.Skip(actionStart), m);
         if (!ProtectModules.SharesChain(m))
           a.Conditions.ProtectChain = 0;
         bool target = Mechanics.TargetsOpponent(m);

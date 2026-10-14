@@ -114,6 +114,8 @@ namespace AABattle
 
       foreach (var p in (e.Owner.Data.potentials ?? new Potential[0]).Where(x => x != null && (e.SlotOnly.Length == 0 || x.id == e.SlotOnly)))
       {
+        if (e.BenchObservation && !e.Owner.OnField && !BenchEvents.MayObserve(p))
+          continue;
         var clauses = TriggerStructures.Clauses(p).ToArray();
         if (!clauses.Any(e.Matches))
           continue;

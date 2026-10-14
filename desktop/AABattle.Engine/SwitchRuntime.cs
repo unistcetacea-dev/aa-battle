@@ -62,7 +62,7 @@ namespace AABattle {
     if(HasSwitchRestriction(restrictionHolder)){block="상대의 교대 제한 효과로 비통상 교대를 할 수 없다.";return false;}return true;
    }
 
-   static bool Mentioned(IEnumerable<string> lines,string name){
+  public static bool Mentioned(IEnumerable<string> lines,string name){
    if(string.IsNullOrWhiteSpace(name))return false;string token="『"+name+"』";
    return (lines??Enumerable.Empty<string>()).Any(x=>(x??"").Contains(token)&&x.Contains("트리거"));
   }
@@ -79,10 +79,17 @@ namespace AABattle {
   public static bool TriggeredPivotGrant(TrainerRecord trainer,IEnumerable<string> lines){
    if(trainer==null)return false;return (trainer.potentials??new List<PotentialRecord>()).Any(x=>x!=null&&x.enabled&&IsPivotGrant(x.effect)&&TrainerMentioned(lines,x.name));
   }
+  public static bool TriggeredPivotGrant(TrainerRecord trainer,IEnumerable<string> lines,Move move){
+   if(trainer==null)return false;return (trainer.potentials??new List<PotentialRecord>()).Any(x=>x!=null&&x.enabled&&IsPivotGrant(x.effect)&&PivotGrantRules.AppliesTo(x.effect,move)&&TrainerMentioned(lines,x.name));
+  }
 
   public static bool TriggeredPivotGrant(Fighter owner,IEnumerable<string> lines){
    if(owner==null||owner.Data==null||owner.HP<=0||!owner.OnField)return false;
    return (owner.Data.potentials??new Potential[0]).Any(x=>IsPivotGrant(x)&&Mentioned(lines,x.name));
+  }
+  public static bool TriggeredPivotGrant(Fighter owner,IEnumerable<string> lines,Move move){
+   if(owner==null||owner.Data==null||owner.HP<=0||!owner.OnField)return false;
+   return (owner.Data.potentials??new Potential[0]).Any(x=>IsPivotGrant(x)&&PivotGrantRules.AppliesTo(x.description,move)&&Mentioned(lines,x.name));
   }
 
   public static bool Limited(Potential potential){return potential!=null&&(potential.uses??"").Contains("1/");}

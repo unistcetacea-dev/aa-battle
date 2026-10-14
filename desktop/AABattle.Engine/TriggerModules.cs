@@ -335,6 +335,7 @@ namespace AABattle {
    bool received = fact.Kind == "명중";
    if (actor != null) Observe(actor, fact.For(true, false), message, log);
    if (other != null && !ReferenceEquals(other, actor)) Observe(other, fact.For(false, received), message, log);
+   if (PotentialQueue.Active) BenchEvents.Dispatch(fact, actor, other, message, log);
   }
   public static void Observe(Fighter owner, TriggerFact fact, string message, Action<string> log) {
    if (owner == null || owner.Data == null) return;

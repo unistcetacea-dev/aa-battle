@@ -222,16 +222,17 @@ namespace AABattle
     // 턴 끝: 회복한 만큼 반납(빈사가 되지 않는다)
     public static void EndTurn(Fighter[] fighters, Rules rules, List<string> log)
     {
-      for (int i = 0; i < fighters.Length; i++)
+      var all = (fighters ?? new Fighter[0]).Concat((rules == null || rules.Parties == null ? new Fighter[0][] : rules.Parties).Where(x => x != null).SelectMany(x => x)).Where(x => x != null).Distinct().ToArray();
+      foreach (var f in all)
       {
-        var f = fighters[i];
         if (f == null || f.Conditions.Repay <= 0)
           continue;
         int amount = Math.Min(f.Conditions.Repay, f.HP - 1);
         f.Conditions.Repay = 0;
         if (f.HP <= 0 || amount <= 0)
           continue;
-        Mechanics.Hurt(f, fighters[fighters.Length - 1 - i] ?? f, rules, amount, "회복한 체력의 반납", log, false);
+        var opponent = fighters == null ? null : fighters.FirstOrDefault(x => x != null && !ReferenceEquals(x, f));
+        Mechanics.Hurt(f, opponent ?? f, rules, amount, "회복한 체력의 반납", log, false);
       }
     }
   }

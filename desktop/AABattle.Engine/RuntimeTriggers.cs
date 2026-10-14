@@ -25,6 +25,7 @@ namespace AABattle {
    var fact=new TriggerFact{Kind="타이밍",Method=label};
    var list=owners.Where(x=>x!=null&&x.HP>0).ToList();
    var events=list.Select(x=>TriggerModules.EventFor(x,fact.For(true,false),x.Data.name+" · "+label,log)).Concat(list.Select(x=>{var state=BattleRecords.StateOf(x);return state==null?null:TrainerTriggers.EventFor(state.Trainer,fact.For(true,false),x,label,log);})).Where(x=>x!=null).ToArray();
+   if(PotentialQueue.Active)foreach(var owner in list)BenchEvents.Dispatch(fact,owner,EffectScope.Current==null?null:EffectScope.Current.Opponent(owner),owner.Data.name+" · "+label,log);
    if(PotentialQueue.Active){if(events.Length>0)PotentialQueue.Raise(events);}else foreach(var e in events.Where(x=>x.Trainer==null))TriggerModules.LogPending(e);
   }
   public static bool Voluntary(SwitchReason reason){return reason!=SwitchReason.Forced;}
