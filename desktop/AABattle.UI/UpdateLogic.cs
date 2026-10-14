@@ -123,8 +123,9 @@ namespace AABattle {
  }
 
  // 받은 파일 검사: 크기와 PE 헤더(MZ + PE\0\0)
+ // EXE는 DLL을 부르는 작은 실행 파일(약 5KB)이라 크기 기준은 깨진 다운로드만 거르는 정도로 둔다
  static class UpdateFileCheck {
-  public const int MinimumSize = 100 * 1024;
+  public const int MinimumSize = 1024;
 
   public static bool LooksLikeExe(byte[] data) {
    if (data == null || data.Length < MinimumSize) return false;
