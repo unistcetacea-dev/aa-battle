@@ -16,7 +16,7 @@
 | `docs/handoff/trainer.md` | 트레이너: 지시·지령·4대자질·유대·역할·추적/조사대원 |
 | `docs/handoff/ui.md` | 팀 편집기·배틀 화면·픽셀 컨트롤·데이터 ID·파티 후보 |
 | `docs/handoff/build-release.md` | 빌드·검증·프로젝트 구조·배포·업데이트 |
-| `docs/handoff/samples.md` | 샘플 파티(실프 인헨스먼츠)·조사 자료 |
+| `docs/handoff/samples.md` | 샘플 파티(실프 인헨스먼츠·피니스 칼데아)·조사 자료 |
 
 각 주제 파일은 앞에 현재 규칙, 끝의 「변경 기록」에 날짜별 기록이 있고, 사용자 결정은 「사용자 결정」 항목에 있다. 날짜별 지시서·결정 원본은 `research/tasks/`에 있다.
 
