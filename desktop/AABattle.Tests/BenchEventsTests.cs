@@ -253,6 +253,66 @@ namespace AABattle
       Assert.That(prompts, Is.EqualTo(0), log.ToString());
     }
 
+    // 같은 T 종료에 장소 A의 물러나는 교대와 대기석 B의 진입형 교대가 함께 성립하면 A를 먼저 묻고, 한 진영은 한 번만 교대한다
+    static void RunFieldAndBench(bool acceptField, out int fieldAsks, out int benchAsks, out string[] names, out int switchLines)
+    {
+      var a = F(ReverseTurn(false));
+      var b = F(ReverseTurn());
+      b.OnField = false;
+      int benchPrompts = 0;
+      int fieldPrompts = 0;
+      var rules = new Rules { OptionalEffectPrompt = (o, p, x) => { benchPrompts++; return true; } };
+      var fighters = new[] { a, F() };
+      var trainers = new[] { new TrainerBattleState(), new TrainerBattleState() };
+      names = new string[2];
+      var lines = new System.Text.StringBuilder();
+      for (int i = 0; i < 2; i++)
+      {
+        var command = new BattleCommand { Move = Idle(), Party = new[] { a, b } };
+        var result = Engine.Resolve(TestData.Db, fighters, new[] { command, Stay(F()) }, rules, trainers, () => .5, request =>
+        {
+          fieldPrompts++;
+          return acceptField ? request.Candidates.First() : null;
+        });
+        fighters = result.Fighters;
+        rules = result.Rules;
+        trainers = result.Trainers;
+        names[i] = fighters[0].Data.name;
+        lines.AppendLine(string.Join("\n", result.Log));
+      }
+
+      fieldAsks = fieldPrompts;
+      benchAsks = benchPrompts;
+      string all = lines.ToString();
+      switchLines = all.Split(new[] { "대기석에서 교대를 요청했다" }, StringSplitOptions.None).Length - 1;
+      Assert.That(names[0], Is.EqualTo(a.Data.name), all);
+      if (acceptField)
+        Assert.That(names[1], Is.EqualTo(b.Data.name), all);
+    }
+
+    [Test]
+    public void FieldRetreatSwitchIsAskedFirstAndBlocksTheBenchEntrySwitchInTheSameTurnEnd()
+    {
+      int fieldAsks, benchAsks, switchLines;
+      string[] names;
+      RunFieldAndBench(true, out fieldAsks, out benchAsks, out names, out switchLines);
+      Assert.That(fieldAsks, Is.EqualTo(1));
+      Assert.That(benchAsks, Is.EqualTo(0));
+      Assert.That(switchLines, Is.EqualTo(0));
+    }
+
+    [Test]
+    public void DecliningTheFieldRetreatSwitchThenAsksTheBenchEntrySwitchOnce()
+    {
+      int fieldAsks, benchAsks, switchLines;
+      string[] names;
+      RunFieldAndBench(false, out fieldAsks, out benchAsks, out names, out switchLines);
+      Assert.That(fieldAsks, Is.EqualTo(1));
+      Assert.That(benchAsks, Is.EqualTo(1));
+      Assert.That(switchLines, Is.EqualTo(1));
+      Assert.That(names[1], Is.Not.EqualTo(names[0]));
+    }
+
     [Test]
     public void BenchRobotCanBeDeclaredAndItsHealingIsRepaid()
     {
