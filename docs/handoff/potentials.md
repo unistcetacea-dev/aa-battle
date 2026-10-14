@@ -339,3 +339,7 @@ Codex 작업 지침과 검증 절차는 `AGENTS.md`, `HARNESS.md`, `desktop/veri
 ### P 후속 (구현)
 - 우선도 모듈은 하나다. `effect.priority.올린다`가 기술 조건 빈칸(비우면 모든 기술)을 갖고, 선택값 「올린다/-0.5」로 조건 우선도 -0.5(`ability.priority.lag`)를 묶는다. 옛 `ability.priority.condition`은 없어졌다. 표준 문장은 「자신의 「조건」 기술 우선도를 N 올린다」이고 옛 「…기술의 우선도를 +N한다」는 `AbilityPhrases.Normalize`·`PhraseRules`가 바꾼다(실행기 `AbilityPhrases.PriorityBonus`는 옛 꼴도 읽는다). 도감 효과 문장 정규화 덤프 전후 차이는 이 조건 우선도 문장 8줄뿐이다. 조건 없는 -0.5(`effect.priority.lag`, 느림보꼬리)는 별도 모듈로 남아 있다.
 - 검사 수 점검: 검사가 빠지는 것은 없다. 요약의 「전체」는 `Explicit` 연구 도구 3개(`JudgeSheet`·`DumpCatalog`·`Probe`, `ChaldeaJudgeTool.cs`)를 뺀 수이고 실제 목록(`--list-tests`, trx)은 그보다 3개 많다. O에서 케이스를 늘렸는데 수가 거의 안 늘어난 것은 모듈을 합치면서 모듈별 검사(`ModuleDefault_`·`CoreSchema_`, 모듈당 하나씩)가 22개 줄고 `OChoice_` 33개가 늘었기 때문이다. `TableRow_` 이름 9쌍이 겹쳐 있던 것은 번호를 붙여 구분했다.
+
+### 사용자 결정 (P 후속, 2026-10-14)
+- 조건 없는 「우선도 −0.5」 모듈(`effect.priority.lag`)은 합친 우선도 모듈의 「−0.5」 선택값과 **하나로 합친다**.
+- 『아름다운 육식수』의 저주 관통은 **저주를 건 보유자가 장소에 있는 동안만** 유지된다. 보유자가 교대로 나가거나 빈사가 되면 그 저주의 관통이 **사라지고**(저주 자체는 남아 평소처럼 면역에 막힘), 같은 보유자에게 저주를 **다시 받을 때** 관통이 다시 붙는다.
