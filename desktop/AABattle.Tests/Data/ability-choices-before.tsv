@@ -26,3 +26,9 @@ ability.survive.chance	ability.survive.chance	버팀방식	확률	자신은 빈�
 ability.switch.trap	ability.switch.trap	교대금지조건	조건 없음	상대는 「통상교대」를 할 수 없다.	통상교대 금지
 ability.switch.trapground	ability.switch.trap	교대금지조건	접지	접지한 상대는 「통상교대」를 할 수 없다.	통상교대 금지
 ability.switch.traptype	ability.switch.trap	교대금지조건	지정 타입	「강철」 타입인 상대는 「통상교대」를 할 수 없다.	통상교대 금지
+abaddon.switch.optional	effect.switch.voluntary	교대방식	할 수 있다	아군과 임의교대할 수 있다.	교대 효과
+effect.switch.voluntary	effect.switch.voluntary	교대방식	한다	아군과 임의교대한다.	교대 효과
+effect.switch.pivot	effect.switch.pivot	유턴대상	기술	자신의 기술에 「유턴」 효과를 부여한다.	유턴 효과
+abaddon.pivot.attack	effect.switch.pivot	유턴대상	공격기술	자신의 공격기술에 「유턴」 효과를 부여한다.	유턴 효과
+ability.priority.condition	ability.priority.condition	우선도방식	올린다	자신의 「변화」 기술의 우선도를 +1한다.	조건 우선도
+ability.priority.lag	ability.priority.condition	우선도방식	-0.5	자신의 「변화」 기술의 우선도를 -0.5한다.	조건 우선도 -0.5

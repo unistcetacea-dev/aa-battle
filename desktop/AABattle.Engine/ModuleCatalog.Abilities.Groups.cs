@@ -61,6 +61,16 @@ namespace AABattle
       AbilityChoice(modules, "ability.rank.dropimmune.all", "능력 하락 무효", "능력범위",
         new[] { "모든 능력", "지정 능력" }, "자신은 상대에 의해 능력이 내려가지 않는다.",
         "ability.rank.dropimmune.all", "ability.rank.dropimmune.named");
+      // 다른 분류의 모듈과 문장 틀이 같은 쌍(지시서 O 3단계). 선택값이 원래 문장 글자를 그대로 만든다.
+      AbilityChoice(modules, "effect.switch.voluntary", "아군과 임의교대", "교대방식",
+        new[] { "한다", "할 수 있다" }, "아군과 임의교대{교대방식}.",
+        "effect.switch.voluntary", "abaddon.switch.optional");
+      AbilityChoice(modules, "effect.switch.pivot", "유턴 효과 부여", "유턴대상",
+        new[] { "기술", "공격기술" }, "자신의 {유턴대상}에 「유턴」 효과를 부여한다.",
+        "effect.switch.pivot", "abaddon.pivot.attack");
+      AbilityChoice(modules, "ability.priority.condition", "조건 우선도", "우선도방식",
+        new[] { "올린다", "-0.5" }, "자신의 {기술조건} 기술의 우선도를 변경한다.",
+        "ability.priority.condition", "ability.priority.lag");
     }
 
     // TX와 같은 선택 서식 도우미. 선택값마다 원래 서식의 Fill/TryRead를 그대로 사용한다.

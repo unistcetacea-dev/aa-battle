@@ -975,3 +975,8 @@ Codex 공유 링크는 특정 시점의 읽기 전용 대화 스냅샷이다. �
 ## 2026-10-14 N 작은 수정 묶음 (task/N-small-fixes)
 - 효과 표준문장 끝 마침표 및 조사 정정, 특성 검색창 공용화/슬롯 입력, 상태변화 해제 시 상태이상 유지와 타입 대미지 특성 무효화 비적용 회귀를 반영했다. 두 정규화 진입점 연결은 사용자 승인 범위다.
 - 전체 검증: 통과!  - 실패:     0, 통과:  2735, 건너뜀:     0, 전체:  2735, 기간: 1 m 15 s - AABattle.Tests.dll (net48); -Visual 완료. 공격기술 한정 유턴 런타임 연결은 M에서 처리한다.
+
+## 2026-10-14 O 특성 효과 분류 해체와 빈칸 합치기 (task/O-ability-family-split)
+- 효과 분류 「특성·계속 효과」를 없애고 `ability.*` 100개를 기능별 분류(급소·능력 랭크·방호·회피·기술 변형·기술·소지품·특성 조작·체력·장소·교대·상태·타입·상성·수치 배율·우선도·종족치·효과 없음)로 옮겼다(`AbilityEffectFamily`). 새 분류는 「급소」「특성 조작」「효과 없음」뿐이고 「효과 없음」은 목록 맨 끝이다. 모듈 ID와 표준 문장은 그대로다. 모듈 → 새 분류 표는 `research/potentials/O_ABILITY_RELOCATION.tsv`, 분류별 모듈 수 전후는 `O_FAMILY_COUNTS.tsv`.
+- 주체·범위만 다른 쌍은 선택 빈칸 하나로 합쳤다(`ModuleCatalog.Abilities.Groups.cs`): 소지품 사용 금지·기술 추가효과 무효·조건 기술 실패·기술 필중·기술 반동 무효·공격 버팀·통상교대 금지·특성 복사·능력 하락 무효, 필드 전원 능력 배율 7개는 「능력」 빈칸 하나. 겹침 정리로 임의교대(한다/할 수 있다)·유턴 부여(기술/공격기술)·조건 우선도(+N/-0.5)도 합쳤다. 선택값은 원래 문장 글자를 그대로 만들고 `ModuleDefinition.ExpectedKinds`가 합친 모듈의 여러 실행 종류를 등록한다. 합치지 않은 쌍의 사유는 `MODULE_OVERLAPS.md`.
+- 정규화 결과 덤프(도감 효과 문장 3888줄) 합치기 전후 차이 0줄. 검사: `AbilityFamilySplitTests`(원문 복원 `ability-choices-before.tsv`, 분류), `AbilityFamilySplitUiTests`(편집기 목록). 합치기로 `ModuleCleanupTests.CrossFamilyKinds`에서 교대·유턴 예외 두 줄을 뺐다.

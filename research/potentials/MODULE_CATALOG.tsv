@@ -137,7 +137,8 @@ TriggerEvent	역할·트레이너	trigger.exclusive.received	『전용』을 받
 TriggerState	역할·트레이너	trigger.exclusive.received.turn	『전용』을 받은 T	『전용』을 받은 T
 TriggerEvent	역할·트레이너	trigger.exclusive.received.entry	『전용』을 받아 등장	『전용』을 받아 장소에 나올 때
 TriggerState	종족치	trigger.species.samegrade	종족치 같은 등급	상대의 「{능력}」 종족치가 자신과 같은 등급일 때
-TriggerLabel	등장·교대	trigger.entry.both	자신과 상대의 등장 (두 줄)	장소에 나올 때\r\n상대가 장소에 나왔을 때
+TriggerLabel	등장·교대	trigger.entry.both	자신과 상대의 등장 (두 줄)	장소에 나올 때
+상대가 장소에 나왔을 때
 TriggerLabel	확정 목록 문장	trigger.label.29	자신이 나무열매를 소모했을 때	자신이 나무열매를 소모했을 때
 Effect	능력 랭크	effect.rank.raise1	능력 1랭크 상승	{발동확률} {대상}이 오른다.
 Effect	능력 랭크	effect.rank.raise2	능력 2랭크 상승	{발동확률} {대상}이 크게 오른다.
@@ -189,8 +190,8 @@ Effect	교대	effect.switch.force	상대 강제교대	{발동확률} 상대를 �
 Effect	교대	effect.switch.force.optional	상대 강제교대 허용	{발동확률} 상대를 강제교대시킬 수 있다.
 Effect	교대	effect.switch.force.immune	강제교대 면역	{발동확률} 자신은 강제교대되지 않는다.
 Effect	상태	effect.floating	공중 부유	{발동확률} 자신은 공중에 떠오른다.
-Effect	교대	effect.switch.voluntary	아군과 임의교대	{발동확률} 아군과 임의교대한다.
-Effect	교대	effect.switch.pivot	유턴 효과 부여	{발동확률} 자신의 기술에 「유턴」 효과를 부여한다.
+Effect	교대	effect.switch.voluntary	아군과 임의교대	{발동확률} 아군과 임의교대{교대방식}.
+Effect	교대	effect.switch.pivot	유턴 효과 부여	{발동확률} 자신의 {유턴대상}에 「유턴」 효과를 부여한다.
 Effect	교대	effect.switch.restrict	통상교대 외 교대 제한	{발동확률} 상대는 「통상교대」 이외의 수단으로 교대할 수 없다.
 Effect	데이터	effect.analysis.permission	데이터 해석 허용	{발동확률} 상대의 데이터를 해석할 수 있다.
 Effect	데이터	effect.analysis.immune	데이터 해석 무효	{발동확률} {효과기간} 자신에 대한 데이터 해석을 무효화한다.
@@ -317,8 +318,6 @@ Effect	기술 변형	abaddon.move.contact-grant	기술에 접촉 효과 부여	{
 Effect	우선도	abaddon.priority.first	최초로 내보내는 기술의 우선도	{발동확률} 아군이 장소에 나와 최초로 내보내는 {조건} 기술의 우선도를 {우선도} 올릴 수 있다.
 Effect	체력	abaddon.heal.full	자진 포켓몬 체력 가득 회복	{발동확률} 자진의 포켓몬의 체력을 가득 회복한다.
 Effect	체력	abaddon.heal.repay	회복한 체력 반납	{발동확률} 회복한 체력만큼 턴 끝에 대미지를 입는다(빈사 불가).
-Effect	교대	abaddon.switch.optional	아군과 임의교대(선택)	{발동확률} 아군과 임의교대할 수 있다.
-Effect	교대	abaddon.pivot.attack	공격기술에 유턴 효과 부여	{발동확률} 자신의 공격기술에 「유턴」 효과를 부여한다.
 Effect	사용 조건	abaddon.offfield	필드 밖 발동 가능	{발동확률} 이 포텐셜은 자신이 필드에 없어도 발동한다.
 Effect	급소	ability.critical.zero	급소 랭크 보정 0	{발동확률} 상대의 기술의 급소 랭크 보정을 0으로 한다.
 Effect	급소	ability.critical.immune	급소 무효	{발동확률} 자신은 급소에 맞지 않는다.
@@ -377,14 +376,13 @@ Effect	기술 변형	ability.move.category	기술 분류 변경	{발동확률} �
 Effect	기술 변형	ability.move.power	기술 위력 지정	{발동확률} 자신의 {기술조건} 기술의 위력을 「{위력}」로 한다.
 Effect	기술 변형	ability.move.accuracy	기술 명중 지정	{발동확률} 필드에 있는 전원의 기술의 명중을 「{명중}」로 한다.
 Effect	방호·회피	ability.protect.pierce	방어 관통	{발동확률} 자신의 {기술조건} 기술이 상대의 「방어」 기술을 관통한다.
-Effect	우선도	ability.priority.lag	조건 우선도 -0.5	{발동확률} 자신의 {기술조건} 기술의 우선도를 -0.5한다.
 Effect	체력	ability.recoil.condition	기술 반동 무효	{발동확률} 자신의 {기술조건} 기술의 반동 대미지를 받지 않는다.
 Effect	방호·회피	ability.ability.piercecondition	조건 특성 관통	{발동확률} 자신의 {기술조건} 기술은 상대의 〔방호 특성〕을 관통한다.
 Effect	기술 변형	ability.move.replace	상대 기술 변경	{발동확률} 상대의 {기술조건} 기술은 {확률}할로 「기술:{기술}」이 된다.
 Effect	방호·회피	ability.floating.hit	공중 상대 명중	{발동확률} 자신의 {기술조건} 기술은 공중에 떠 있는 상대에게도 명중한다.
 Effect	기술 변형	ability.move.fail	조건 기술 실패	{발동확률} {주체}의 {기술조건} 기술이 실패한다.
-Effect	우선도	ability.priority.condition	조건 우선도	{발동확률} 자신의 {기술조건} 기술의 우선도를 +{우선도}한다.
 Effect	기술 변형	ability.move.type	기술 타입 변경	{발동확률} 자신의 {기술조건} 기술의 타입을 「{타입}」로 한다.
+Effect	우선도	ability.priority.condition	조건 우선도	{발동확률} 자신의 {기술조건} 기술의 우선도를 변경한다.
 Effect	장소	ability.weather.lock	날씨 고정	{발동확률} 날씨를 「{날씨}」로 고정한다.
 Effect	수치 배율	ability.field.scalar.stats	필드 전원의 능력 배율	{발동확률} {대상}의 「{능력}」을 강화({배율}배)한다.
 Effect	수치 배율	ability.field.scalar.위력	필드 전원의 위력 배율	{발동확률} {대상}의 {기술조건} 기술의 위력을 강화({배율}배)한다.
