@@ -54,9 +54,17 @@ namespace AABattle
 
     public static IEnumerable<TestCaseData> Rows()
     {
+      // 같은 기대 문장을 가진 행이 여럿이면 이름이 겹쳐 요약에서 하나로 합쳐지므로 번호를 붙인다
+      var seen = new Dictionary<string, int>();
       foreach (string kind in new[] { "effect", "trigger" })
         foreach (var row in PhraseTable.Load(kind))
-          yield return new TestCaseData(kind, row).SetName("TableRow_" + kind + "_" + row.Expected);
+        {
+          string name = "TableRow_" + kind + "_" + row.Expected;
+          int count;
+          seen.TryGetValue(name, out count);
+          seen[name] = count + 1;
+          yield return new TestCaseData(kind, row).SetName(count == 0 ? name : name + " #" + (count + 1));
+        }
     }
 
     [TestCaseSource("Rows")]
