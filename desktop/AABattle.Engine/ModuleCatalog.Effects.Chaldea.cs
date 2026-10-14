@@ -13,7 +13,7 @@ namespace AABattle
         new ModuleSlot("분모", ModuleSlotKind.Denominator, "8"),
         new ModuleSlot("타입", ModuleSlotKind.Type, "악"));
       CoreAdd(modules, "effect.potential.grant", "포텐셜 부여", PotentialGrantModules.Kind, "포텐셜",
-        "자신에게 『{포텐셜}』를 부여한다.",
+        "자신에게 『{포텐셜}』@object:포텐셜@ 부여한다.",
         new ModuleSlot("포텐셜", ModuleSlotKind.Text, "주인의 특권", PotentialGrantModules.GrantableNames()));
     }
   }

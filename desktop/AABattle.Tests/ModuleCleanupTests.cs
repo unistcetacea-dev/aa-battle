@@ -9,7 +9,7 @@ namespace AABattle
   [TestFixture]
   public class ModuleCleanupTests
   {
-    // 끝 마침표 유무는 같은 문장으로 본다(실행기·분류기가 마침표를 떼고 읽는다)
+    // 표준 문장 출력은 끝 마침표까지 엄격히 비교한다.
     static string Bare(string text)
     {
       return (text ?? "").TrimEnd('.', '。', '．').Trim();
@@ -18,10 +18,6 @@ namespace AABattle
     // 기본값 문장이 표준 문장과 다른 모듈(사유와 함께). 정규화가 기본값을 고쳐 쓰는 경우다
     static readonly Dictionary<string, string> DefaultDrift = new Dictionary<string, string>
     {
-      { "ability.field.scalar.방어", "기본값의 조사(「방어」을)를 정규화가 「를」로 고친다" },
-      { "ability.field.scalar.속도", "기본값의 조사(「속도」을)를 정규화가 「를」로 고친다" },
-      { "ability.field.scalar.회피", "기본값의 조사(「회피」을)를 정규화가 「를」로 고친다" },
-      { "effect.potential.grant", "기본값의 조사(『…』를)를 정규화가 「을」로 고친다" },
       { "trigger.entry.both", "기본값이 두 줄 문장이라 한 줄로 합쳐진다" },
       { "trigger.label.29", "옛 표기(나무열매를 소모했을 때)를 표준 표기로 바꾼다" }
     };
@@ -39,9 +35,9 @@ namespace AABattle
       bool effect = module.Kind == ModuleKind.Effect;
       Func<string, string> normalize = effect ? (Func<string, string>)EffectNormalizer.Normalize : TriggerStructures.Normalize;
       string once = normalize(text);
-      Assert.That(Bare(normalize(once)), Is.EqualTo(Bare(once)), "재정규화");
+      Assert.That(normalize(once), Is.EqualTo(once), "재정규화");
       if (!DefaultDrift.ContainsKey(module.Id))
-        Assert.That(Bare(once), Is.EqualTo(Bare(text)), "기본값이 표준 문장");
+        Assert.That(once, Is.EqualTo(text), "기본값이 표준 문장");
     }
 
     [Test]
@@ -67,7 +63,7 @@ namespace AABattle
     public void TableExpectedSentenceIsStableUnderNormalize(string kind, PhraseTable.Row row)
     {
       Func<string, string> normalize = kind == "effect" ? (Func<string, string>)EffectNormalizer.Normalize : TriggerStructures.Normalize;
-      Assert.That(Bare(normalize(row.Expected)), Is.EqualTo(Bare(row.Expected)));
+      Assert.That(normalize(row.Expected), Is.EqualTo(row.Expected));
     }
 
     // 모듈 하나가 다른 모듈과 같은 기본값 문장을 가지면 안 된다(같은 종류 안에서)

@@ -26,7 +26,7 @@ namespace AABattle {
    AE(modules, "weather.lock", "날씨 고정", "날씨를 「{날씨}」로 고정한다.", S("날씨", ModuleSlotKind.Weather, "강한 비", "큰가뭄", "강한 비", "난기류"));
    // 오라·위압 등 필드에 있는 대상 전원의 계속 배율.
    foreach (string metric in new[] { "공격", "방어", "특공", "특방", "속도", "명중", "회피", "위력" }) {
-    string suffix = metric == "위력" ? "의 {기술조건} 기술의 위력을" : "의 「" + metric + "」을";
+    string suffix = metric == "위력" ? "의 {기술조건} 기술의 위력을" : "의 「" + metric + "」" + Particle(metric);
     var slots = new List<ModuleSlot> {
      S("대상", ModuleSlotKind.Subject, "필드에 있는 전원", "필드에 있는 전원", "자신을 제외한 전원")
     };
@@ -34,6 +34,11 @@ namespace AABattle {
     slots.Add(S("배율", ModuleSlotKind.Multiplier, "1.33"));
     AE(modules, "field.scalar." + metric, "필드 전원 수치 배율", "{대상}" + suffix + " 강화({배율}배)한다.", slots.ToArray());
    }
+  }
+
+  static string Particle(string word) {
+   char ch = (word ?? "").LastOrDefault(c => c >= '가' && c <= '힣');
+   return ch == 0 || (ch - '가') % 28 == 0 ? "를" : "을";
   }
 
   static void RegisterAbilityStateInputs(List<ModuleDefinition> modules) {

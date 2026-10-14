@@ -147,6 +147,11 @@ namespace AABattle
 
     public static string Normalize(string clean)
     {
+      return EffectPunctuation.Standardize(NormalizeCore(clean));
+    }
+
+    static string NormalizeCore(string clean)
+    {
       var activation = Activation.Match((clean ?? "").Trim());
       if (activation.Success)
       {

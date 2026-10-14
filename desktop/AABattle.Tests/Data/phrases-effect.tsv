@@ -75,8 +75,8 @@ T의 최후에 「변화기술」에 의한 추가행동권을 얻는다	가장 
 상대를 「고스트」 타입으로 한다	상대의 타입을 「고스트」로 한다.	EffectModuleTests	classify-raw
 상대의 타입을 「벌레」로 변화시킨다	상대의 타입을 「벌레」로 한다.	EffectModuleTests	classify-raw
 상대의 타입을 「독」으로 할 수 있다	상대의 타입을 「독」으로 할 수 있다.	EffectModuleTests	classify-raw
-중확률로 자신의 기술의 우선도를 ＋1한다.	중확률로 자신의 기술 우선도를 1 올린다	EffectModuleTests	
-자신의 기술의 우선도를 +2한다	자신의 기술 우선도를 2 올린다	EffectModuleTests	
+중확률로 자신의 기술의 우선도를 ＋1한다.	중확률로 자신의 기술 우선도를 1 올린다.	EffectModuleTests	
+자신의 기술의 우선도를 +2한다	자신의 기술 우선도를 2 올린다.	EffectModuleTests	
 「추격」효과의 발동 시, 기술의 데미지를 2배로 한다.	자신이 「추격」 효과로 주는 대미지를 강화(2배)한다.	ExclusiveTypeTests	
 상대의 「상태변화」를 해제한다.	상대의 모든 상태변화를 해제한다.	ExclusiveTypeTests	
 자신의 기술이 상대에게 「필중」한다.	자신의 기술은 필중이다.	ExclusiveTypeTests	

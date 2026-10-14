@@ -88,7 +88,10 @@ namespace AABattle {
     if (!slot.Valid(resolved[slot.Id])) throw new ArgumentException(slot.Name + " 값이 범위를 벗어났습니다.");
    string result = Formatter == null ? Regex.Replace(Template, @"\{([^{}]+)\}",
     m => resolved[m.Groups[1].Value]) : Formatter(resolved);
-   return Regex.Replace(result ?? "", @"[ \t]+", " ").Trim();
+   result = Regex.Replace(result ?? "", @"[ \t]+", " ").Trim();
+   if (Kind == ModuleKind.Effect && result.Length > 0)
+    result = result.TrimEnd('.', '。', '．').Trim() + ".";
+   return result;
   }
   public bool TryRead(string text, out Dictionary<string,string> values) {
    values = null;

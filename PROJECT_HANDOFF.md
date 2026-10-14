@@ -972,3 +972,6 @@ Codex 공유 링크는 특정 시점의 읽기 전용 대화 스냅샷이다. �
 - `defaultTrainerId`와 `defaultMemberIds`는 배틀마다 출전 선택 화면을 열 때 초기 선택으로 쓴다. 화면에서 트레이너 1명과 후보 포켓몬 최대 6체를 고른 뒤 그 구성만 `TeamRules.Check`, VS 연출, 배틀에 전달한다. `PokemonRecord.formOf`가 지정된 폼 데이터는 후보에서 숨긴다.
 - 편집기의 `팀 데이터` 화면은 여러 트레이너와 포켓몬 후보를 파티에 연결한다. 샘플 `samples/abaddon-sylph.aabdata.json`은 기존 6체를 기본 출전으로 저장한다.
 - 검사: `PartyRosterTests`의 다중 파티 참조·기본 출전 저장 복원과 출전 선택·폼 숨김·선택 구성 편성 검사. `verify.ps1 -Visual`은 `outputs/candidate-H/flow.roster.png`(출전 선택) 및 `flow.setup.png`(파티 편집)도 생성한다.
+## 2026-10-14 N 작은 수정 묶음 (task/N-small-fixes)
+- 효과 표준문장 끝 마침표 및 조사 정정, 특성 검색창 공용화/슬롯 입력, 상태변화 해제 시 상태이상 유지와 타입 대미지 특성 무효화 비적용 회귀를 반영했다. 두 정규화 진입점 연결은 사용자 승인 범위다.
+- 전체 검증: 통과!  - 실패:     0, 통과:  2691, 건너뜀:     0, 전체:  2691, 기간: 1 m 4 s - AABattle.Tests.dll (net48); -Visual 완료. 공격기술 한정 유턴 런타임 연결은 M에서 처리한다.

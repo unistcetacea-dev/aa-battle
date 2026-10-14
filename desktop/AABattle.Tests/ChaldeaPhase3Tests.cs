@@ -124,6 +124,20 @@ namespace AABattle.Tests
       return before - result.Fighters[1].HP;
     }
 
+    static int LossFromAbility(string ability, string typeInSentence)
+    {
+      var attacker = Mon("공", "노말", Rule("상대에게 최대 HP의 1/8 「" + typeInSentence + "」 타입 대미지를 준다."));
+      var defenderData = new Pokemon {
+        id = "typed-ability", name = "수", level = 100, types = new[] { "노말" }, ability = ability, item = "",
+        @base = new[] { 300, 100, 100, 100, 100, 100 }, iv = new[] { 31, 31, 31, 31, 31, 31 },
+        moves = new[] { "몸통박치기" }, potentials = new Potential[0]
+      };
+      var defender = new Fighter(defenderData);
+      int before = defender.HP;
+      var result = OneIdleTurn(attacker, defender);
+      return before - result.Fighters[1].HP;
+    }
+
     [Test]
     public void TypedDamageAppliesTheTypeChart()
     {
@@ -134,6 +148,12 @@ namespace AABattle.Tests
       Assert.That(Math.Abs(weak - neutral * 2), Is.LessThanOrEqualTo(2), "효과가 굉장 2배");
       Assert.That(Math.Abs(resist * 2 - neutral), Is.LessThanOrEqualTo(2), "효과가 별로 0.5배");
       Assert.That(LossFrom("고스트", "노말"), Is.EqualTo(0), "무효");
+    }
+
+    [Test]
+    public void TypedDamageDoesNotTriggerMoveTypeImmunityAbility()
+    {
+      Assert.That(LossFromAbility("타오르는불꽃", "불꽃"), Is.GreaterThan(0));
     }
 
     [Test]

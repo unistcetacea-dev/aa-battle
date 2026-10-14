@@ -187,11 +187,23 @@ namespace AABattle {
   [Test] public void ReleaseAllClearsProtectAndOtherConditionsButNotSubstitute() {
    var f = F();
    f.Conditions.Protect = true; f.Conditions.Confusion = 3; f.Conditions.Taunt = 2; f.Conditions.Substitute = 10;
+   f.Status = "화상";
    var log = new List<string>();
    Assert.That(ExclusiveModules.ReleaseAllConditions(f, log), Is.True);
    Assert.That(f.Conditions.Protect || f.Conditions.Confusion > 0 || f.Conditions.Taunt > 0, Is.False);
    Assert.That(f.Conditions.Substitute, Is.EqualTo(10));
+   Assert.That(f.Status, Is.EqualTo("화상"), "상태변화 해제는 상태이상을 포함하지 않는다");
    Assert.That(ExclusiveModules.ReleaseAllConditions(f, log), Is.False, "더 풀 것이 없으면 실패");
+  }
+
+  [Test] public void PivotGrantDistinguishesAttackMovesFromStatusMoves() {
+   const string attackOnly = "자신의 공격기술에 「유턴」 효과를 부여한다.";
+   const string allMoves = "자신의 기술에 「유턴」 효과를 부여한다.";
+   var attack = new Move { category = "물리" };
+   var status = new Move { category = "변화" };
+   Assert.That(PivotGrantRules.AppliesTo(attackOnly, attack), Is.True);
+   Assert.That(PivotGrantRules.AppliesTo(attackOnly, status), Is.False);
+   Assert.That(PivotGrantRules.AppliesTo(allMoves, status), Is.True);
   }
 
   // ===== 그 밖의 유형 =====

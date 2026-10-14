@@ -38,7 +38,7 @@ namespace AABattle {
 
   [Test] public void SpeciesValueIncreaseIsARegisteredEffectModule() {
    const string sentence = "자신의 「체력」 종족치를 50 올린다.";
-   Assert.That(EffectNormalizer.Normalize(sentence), Is.EqualTo("자신의 「체력」 종족치를 50 올린다"));
+   Assert.That(EffectNormalizer.Normalize(sentence), Is.EqualTo("자신의 「체력」 종족치를 50 올린다."));
    Assert.That(EffectModules.Classify(sentence), Is.EqualTo("종족치 변경"));
    SpeciesEffect effect;
    Assert.That(EffectModules.TrySpecies(sentence, out effect), Is.True);
