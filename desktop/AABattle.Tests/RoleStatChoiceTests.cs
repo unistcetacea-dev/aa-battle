@@ -41,6 +41,31 @@ namespace AABattle
         EntryTriggers.Enter(fighter, other, rules, () => 0, EntryReason.Lead, new List<string>().Add);
     }
 
+    // 죽어내밀기 직후(다음 Resolve 전)에 이미 처리되고, 다음 Resolve에서 다시 일어나지 않는다
+    [Test]
+    public void ReplacementEntryAppliesImmediatelyAndOnce()
+    {
+      var fighter = Holder("탐사대원", 1);
+      var other = Holder("상대역", 1);
+      other.Data.potentials = new Potential[0];
+      int asked = 0;
+      var rules = new Rules { ChooseStat = (s, f, list) => { asked++; return "속도"; } };
+      var fighters = new[] { fighter, other };
+      Mechanics.SetParties(rules, fighters);
+      var states = new[] { new TrainerBattleState(), new TrainerBattleState() };
+      using (EffectScope.Begin(fighters, rules, () => 0, states))
+      {
+        EntryTriggers.Enter(fighter, other, rules, () => 0, EntryReason.Replacement, new List<string>().Add, null, true);
+        fighter.Conditions.EntryTriggered = true;
+      }
+      Assert.That(asked, Is.EqualTo(1));
+      Assert.That(fighter.Stages[5], Is.EqualTo(1));
+      var idle = TestData.Db.moves.First(m => m.name == "몸통박치기");
+      var turn = Engine.Resolve(TestData.Db, fighters, new[] { idle, idle }, rules, () => .5);
+      Assert.That(asked, Is.EqualTo(1));
+      Assert.That(turn.Fighters[0].Stages[5], Is.EqualTo(1));
+    }
+
     [TestCase("탐사대원", 1)]
     [TestCase("야생 포켓몬", 2)]
     public void ChosenStatRisesOnce(string role, int amount)
