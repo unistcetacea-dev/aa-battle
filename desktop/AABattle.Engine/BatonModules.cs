@@ -18,7 +18,7 @@ namespace AABattle {
   public const string BilateralRanks = "자신이 나가거나 들어오는 임의교대의 「능력변화」를 인계할 수 있다";
   public static readonly string[] StateFields = {
    "Heated", "Chilled", "Charged", "Bomb", "BombSetTurn", "Intercept",
-   "Confusion", "FocusEnergy", "Substitute", "Seed", "Curse", "Ingrain", "AquaRing",
+   "Confusion", "FocusEnergy", "Substitute", "Seed", "Curse", "CurseSource", "Ingrain", "AquaRing",
    "MagnetRise", "Telekinesis", "MindReaderSide", "MindReaderSetTurn", "Embargo",
    "HealBlock", "DeathCount", "Rage", "Flinch", "Bound", "BindDivisor"
   };

@@ -12,6 +12,7 @@ namespace AABattle {
  public class ConditionState {
   public int SleepTurns=2,SleepStart=2,ToxicStage=1,Confusion,Taunt,Substitute,ProtectChain,PriorityModifier,PriorityModifierTurns;
   public bool Protect,Flinch,Recharge,Seed,Curse,AquaRing,Ingrain,FlashFire,BalloonPopped,AbilityEntryApplied,RoleEntryApplied,EntryTriggered;public int ActFirst;
+  public Fighter CurseSource;// 저주를 건 쪽(『아름다운 육식수』 관통 판정용)
   public bool Heated,Chilled,Charged,Dark,Soaked,Electrified;
   public bool HelpingHand,Curled,SleepFromRest;public int AttractSide=-1,DeathCount,Hibernate,RampageTurns;public string RampageMove="";public int EncoreTurns;public string EncoreMove="";public int RolloutCount;public string RolloutMove="";
   public bool FocusSashUsed;public bool Bomb;public int Intercept,Rage,MindReaderSide=-1,BombSetTurn,MindReaderSetTurn;

@@ -25,7 +25,7 @@ namespace AABattle {
     side.WishTurns = 2; side.WishHeal = Math.Max(1, Mechanics.MaxHP(c.Target, c.Target, c.Rules) / 2);
     return true;
    }, true));
-   rules.Add(Rule("저주", c => Flag(c, "저주", c.Target.Conditions.Curse, () => c.Target.Conditions.Curse = true)));
+   rules.Add(Rule("저주", c => Flag(c, "저주", c.Target.Conditions.Curse, () => { c.Target.Conditions.Curse = true; c.Target.Conditions.CurseSource = c.Source; })));
    rules.Add(Rule("기충전", c => Flag(c, "기충전", c.Target.Conditions.FocusEnergy, () => c.Target.Conditions.FocusEnergy = true), true));
    // 날따름·순서미루기(사용자 결정): 상태변화로 걸리지만 싱글에서는 효과가 없다(트리거는 될 수 있다)
    rules.Add(Rule("날따름", c => Flag(c, "날따름", c.Target.Conditions.FollowMe, () => { c.Target.Conditions.FollowMe = true; c.Say("싱글 배틀에서는 효과가 없다"); }), true));

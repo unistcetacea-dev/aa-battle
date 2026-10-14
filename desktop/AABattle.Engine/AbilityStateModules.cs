@@ -16,6 +16,8 @@ namespace AABattle {
  public static class AbilityStateModules {
   public const string MoveLock = "자신은 장소에 나와서 최초로 내보낸 기술만 내보낼 수 있다";
   public const string SleepHalf = "자신의 「잠듦」 상태의 지속 T를 절반으로 한다";
+  public const string CursePierce = "자신이 건 「저주」의 대미지는 무효화되지 않는다";
+  static readonly Regex CursePierceRaw = new Regex(@"^상대의 「저주」\s*대미지가 무효화되지 않는다$");
   public const string SurviveIndirect = "자신은 공격 이외의 대미지로 빈사가 되지 않는다";
   public const string ReverseDrain = "자신에 대한 상대의 드레인 효과를 반전한다";
   public const string AuraBreak = "〔오라〕의 효과를 반전한다";
@@ -40,6 +42,7 @@ namespace AABattle {
   public static string Normalize(string text) {
    string s = Clean(text);
    if (s.Length == 0) return null;
+   if (CursePierceRaw.IsMatch(s)) return CursePierce + ".";
    if (Classify(s).Length > 0) return s + ".";
    return null;
   }
@@ -48,6 +51,7 @@ namespace AABattle {
    if (s == MoveLock) return "기술 고정";
    if (s == SleepHalf) return "잠듦 기간 절반";
    if (s == SurviveIndirect) return "간접 대미지 빈사 방지";
+   if (s == CursePierce) return "저주 대미지 관통";
    if (s == ReverseDrain) return "드레인 반전";
    if (s == AuraBreak) return "오라 반전";
    if (Chance.IsMatch(s)) return "확률 버팀";
@@ -79,6 +83,14 @@ namespace AABattle {
      : Rate(m.Groups["p"].Value))) return true;
    }
    return false;
+  }
+  // 저주 대미지가 무효화되지 않는가: 저주를 건 쪽이 CursePierce 문장을 가지면 간접 대미지 면역을 건너뛴다
+  public static bool PiercesCurse(Fighter victim, string reason) {
+   if (victim == null || reason != "저주" || !victim.Conditions.Curse) return false;
+   var source = victim.Conditions.CurseSource;
+   if (source == null || source.Data == null) return false;
+   var rules = EffectScope.Current == null ? null : EffectScope.Current.Rules;
+   return Own(source, victim, rules, "저주").Any(x => x == CursePierce);
   }
   // 사유(독·맹독·화상·동상)의 대미지를 받지 않는가
   public static bool IgnoresDamageSource(Fighter f, string reason) {

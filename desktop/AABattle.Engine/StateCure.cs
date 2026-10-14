@@ -85,7 +85,7 @@ namespace AABattle {
     case "먹이를 문": c.Gulping = false; break;
     case "방어": c.Protect = false; break;
     case "버티기": c.Enduring = false; break;
-    case "저주": c.Curse = false; break;
+    case "저주": c.Curse = false; c.CurseSource = null; break;
     case "작아지기": c.Minimized = false; break;
     case "꿰뚫어보기": c.Foresight = ""; break;
     case "하품": c.Yawn = 0; break;

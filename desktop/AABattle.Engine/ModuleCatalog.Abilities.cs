@@ -137,6 +137,7 @@ namespace AABattle {
     new[] { "movelock", "기술 고정", AbilityStateModules.MoveLock },
     new[] { "sleep.half", "잠듦 기간 절반", AbilityStateModules.SleepHalf },
     new[] { "indirect.survive", "간접 대미지 빈사 방지", AbilityStateModules.SurviveIndirect },
+    new[] { "indirect.cursepierce", "저주 대미지 관통", AbilityStateModules.CursePierce },
     new[] { "drain.reverse", "드레인 반전", AbilityStateModules.ReverseDrain },
     new[] { "aura.reverse", "오라 반전", AbilityStateModules.AuraBreak },
     new[] { "rank.riseagain", "올라간 만큼 올림", AbilityMiscModules.RiseAgain },
