@@ -34,8 +34,10 @@ namespace AABattle {
     var f = fighters[i];
     if (f == null) continue;
     bool next = suppresses[1 - i] && !immune[i] && !AbilityChangeModules.CannotSuppress(f, fighters[1 - i]);
-    if (f.AbilitySuppressed == next) continue;
+    bool keeps = next && AbilityPhrases.SuppressionKeepsChanges(fighters[1 - i], f);
+    if (f.AbilitySuppressed == next && f.AbilityKeepsChanges == keeps) continue;
     f.AbilitySuppressed = next;
+    f.AbilityKeepsChanges = keeps;
     AbilityModules.Sync(f);
     if (log != null) log(f.Data.name + ": 특성 「" + Name(f) + "」 " + (next ? "무효화" : "상시 효과 재개"));
    }

@@ -27,6 +27,22 @@ namespace AABattle {
    Assert.That(AbilityRuntime.Name(t.Fighters[1]), Is.EqualTo("열혈"), Log(t));
   }
 
+  [Test] public void ShoutNeverMissesDespiteEvasionRise() {
+   var target = F(); target.EvasionStage = 6;
+   Assert.That(Mechanics.Accuracy(F(), target, M("열창"), new Rules()), Is.EqualTo(double.PositiveInfinity));
+  }
+
+  [Test] public void CanopyKeepsOnlySpeciesAndTypeChangesOfOpponentAbility() {
+   var owner = F("천개");
+   var coat = F("퍼코트"); var machine = F("기계몸"); var other = F("쓱쓱");
+   foreach (var target in new[] { coat, machine, other }) AbilityRuntime.RefreshSuppression(new[] { owner, target }, null);
+   Func<Fighter, bool> hasSlot = f => f.Data.potentials.Any(p => p.id == AbilityModules.Slot);
+   Assert.That(coat.AbilitySuppressed, Is.True);
+   Assert.That(hasSlot(coat), Is.True, "종족치 변경은 남는다");
+   Assert.That(machine.Data.types, Does.Contain("강철"), "타입 변경은 남는다");
+   Assert.That(hasSlot(other), Is.False, "그 밖의 특성은 무효");
+  }
+
   [Test] public void ShoutFailsAgainstAbilityThatDoesNotChange() {
    var t = Turn(F(), F("천개"), M("열창"), Idle());
    Assert.That(AbilityRuntime.Name(t.Fighters[1]), Is.EqualTo("천개"), Log(t));

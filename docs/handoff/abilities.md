@@ -165,3 +165,4 @@
 
 ## 2026-10-14 지시서 R / 칼데아 오리지널 특성 5개
 - 도감에 천개·서부극·감각차폐·바람칼날·재생을 추가했다(`AbilitySentenceTable`). 천개 = 상대 특성 무효 + 변화 불가(기존 모듈). 서부극 = 새 모듈 「서로의 「조건」 기술은 필중이다」(`AbilityMoveModules.BothSureHit`, 편집기 `surehit.both`). 감각차폐 = 기존 소지품 사용 금지 + 능력 상승 무시를 회피까지 확장(`StatIgnoreRuntime` 인덱스 7, 명중 판정에서 사용, 특성의 항상 트리거·문장별 판독). 바람칼날 = 기존 문장 그대로. 재생 = 새 모듈 「자신의 타입에 소지품 「카세트」의 타입을 추가한다」(`AbilityItemModules.CassetteType`) + 기존 위력 배율(`MoveCondition`의 기술 이름이 （1P）형 변형과도 맞는다).
+- 사용자 결정(R 후속): 천개로 무효화한 상대 특성 중 종족치 변경·타입 변경 효과는 남긴다(시트 주석). 천개 문장은 「상대의 〔특성〕 중 종족치·타입 변경 이외를 무효화한다」(`AbilityPhrases.SuppressAbilityKeepChanges`, 편집기 `ability.suppress.partial`). `Fighter.AbilityKeepsChanges`가 켜지면 `AbilityModules.Sync`가 무효화된 특성에서 문장의 효과 종류(종족치 변경·타입 추가/변경/복사·소지품 타입)로 판별한 문장만 남긴다(이름 분기 없음). 화학변화가스는 기존대로 전부 무효화한다.

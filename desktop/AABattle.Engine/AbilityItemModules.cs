@@ -108,7 +108,7 @@ namespace AABattle {
    if (f == null || f.Data == null) return;
    var c = f.Conditions;
    var definition = AbilityCatalog.Find(AbilityRuntime.Name(f));
-   bool active = !f.AbilitySuppressed && definition != null;
+   bool active = (!f.AbilitySuppressed || f.AbilityKeepsChanges) && definition != null;
    bool rule = active && AbilityModules.Sentences(definition).Any(s => Clean(s) == PlateType);
    bool addRule = active && AbilityModules.Sentences(definition).Any(s => Clean(s) == CassetteType);
    var item = rule && CanUseItem(f) ? ItemCatalog.Find(f.Data.item) : null;

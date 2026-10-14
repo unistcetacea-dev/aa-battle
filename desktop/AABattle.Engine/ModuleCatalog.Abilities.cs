@@ -100,6 +100,7 @@ namespace AABattle {
     new[] { "status.protectpierce", "변화기술 방어 관통", AbilityPhrases.StatusProtectPierce },
     new[] { "poison.pierce", "독 타입 면역 관통", AbilityPhrases.PoisonPierce },
     new[] { "ability.suppress", "상대 특성 무효", AbilityPhrases.SuppressAbility },
+    new[] { "ability.suppress.partial", "상대 특성 무효", AbilityPhrases.SuppressAbilityKeepChanges },
     new[] { "type.move", "기술 타입으로 변화", AbilityPhrases.MatchMoveType },
     new[] { "recoil.immune", "기술 반동 무효", AbilityPhrases.NoRecoil },
     new[] { "item.take", "소지품 약탈", AbilityItemModules.Take },

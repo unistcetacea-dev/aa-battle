@@ -26,10 +26,12 @@ namespace AABattle {
   public const string StatusProtectPierce = "자신의 「변화」 기술이 상대의 「방어」 기술을 관통한다";
   public const string PoisonPierce = "자신이 거는 「독」「맹독」은 타입 면역을 관통한다";
   public const string SuppressAbility = "상대의 〔특성〕을 무효화한다";
+  // 천개: 종족치 변경·타입 변경 효과는 무효화하지 않는다(시트 주석)
+  public const string SuppressAbilityKeepChanges = "상대의 〔특성〕 중 종족치·타입 변경 이외를 무효화한다";
   static readonly Dictionary<string, string> ContinuousRules = new Dictionary<string, string> {
    { ExtraStage, "능력 변화량 추가" }, { ReverseStage, "능력 변화 반전" }, { ReflectStage, "능력 하락 반사" },
    { NoWeather, "날씨 효과 무효" }, { StatusProtectPierce, "변화기술 방어 관통" },
-   { PoisonPierce, "독 타입 면역 관통" }, { SuppressAbility, "상대 특성 무효" }
+   { PoisonPierce, "독 타입 면역 관통" }, { SuppressAbility, "상대 특성 무효" }, { SuppressAbilityKeepChanges, "상대 특성 무효" }
   };
   static readonly Regex DropImmune = new Regex(@"^자신은 상대에 의해 (?:(?<s>「[^」]+」)이|능력이) 내려가지 않는다$");
   static readonly Regex AddType = new Regex(@"^자신의 타입에 「(?<t>[^」]+)」를 추가한다$");
@@ -185,7 +187,15 @@ namespace AABattle {
    // 제거된 슬롯도 원래 문장으로 조회한다. 양쪽 판정이 끝날 때까지 상태를 바꾸지 않는다.
    var potentials = AbilityModules.UnsuppressedPotentials(owner);
    if (abilityOnly) potentials = potentials.Where(p => p != null && p.id == AbilityModules.Slot);
-   return PotentialModifiers.Sentences(owner, other, rules, SuppressAbility, potentials, true).Any(x => Clean(x) == SuppressAbility);
+   return PotentialModifiers.Sentences(owner, other, rules, SuppressAbility, potentials, true).Any(x => Clean(x) == SuppressAbility)
+    || PotentialModifiers.Sentences(owner, other, rules, "무효화한다", potentials, true).Any(x => Clean(x) == SuppressAbilityKeepChanges);
+  }
+  // 무효화하더라도 종족치 변경·타입 변경 효과는 남기는 무효화인가(일반 무효화가 함께 있으면 아니다)
+  public static bool SuppressionKeepsChanges(Fighter owner, Fighter other) {
+   var rules = EffectScope.Current == null ? new Rules() : EffectScope.Current.Rules;
+   var potentials = AbilityModules.UnsuppressedPotentials(owner);
+   if (PotentialModifiers.Sentences(owner, other, rules, SuppressAbility, potentials, true).Any(x => Clean(x) == SuppressAbility)) return false;
+   return PotentialModifiers.Sentences(owner, other, rules, "무효화한다", potentials, true).Any(x => Clean(x) == SuppressAbilityKeepChanges);
   }
   public static bool NoCrit(Fighter target, Fighter attacker) { return Lines(target, attacker, "급소").Any(x => x == NoCritical); }
   public static bool Endures(Fighter target, Fighter attacker) { return Lines(target, attacker, "버틴다").Any(x => x == Sturdy); }

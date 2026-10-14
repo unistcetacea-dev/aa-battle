@@ -162,12 +162,37 @@ namespace AABattle {
    var definition = AbilityCatalog.Find(AbilityRuntime.Name(f));
    return Runnable(definition) ? ordinary.Concat(ToPotentials(definition)) : ordinary;
   }
+  // 종족치 변경·타입 변경 모듈 문장인가(천개로 무효화되지 않는 효과). 이름이 아니라 문장의 효과 종류로 판별한다
+  public static bool IsStatOrTypeChange(string sentence) {
+   string condition, effect;
+   PotentialLibrary.Split(sentence ?? "", out condition, out effect);
+   if (effect.Length == 0) effect = sentence ?? "";
+   foreach (string kind in EffectModules.Classify(effect).Split(new[] { " + " }, StringSplitOptions.RemoveEmptyEntries)) {
+    if (kind == "종족치 변경" || kind == "타입 추가" || kind == "타입 변경" || kind == "타입 복사" || kind.StartsWith("소지품 타입")
+     || kind == "기술 타입으로 변화" || kind == "받은 기술 타입으로 변화") return true;
+   }
+   return false;
+  }
+  // 무효화된 특성에서 남는 포텐셜: 조건 없는 문장은 문장별로, 조건이 붙은 것은 효과가 모두 해당할 때만
+  static IEnumerable<Potential> KeptChanges(AbilityDefinition d) {
+   foreach (var p in ToPotentials(d)) {
+    var sentences = Regex.Split(p.description ?? "", @"(?<=[.。])\s+").Select(x => x.Trim()).Where(x => x.Length > 0).ToList();
+    bool unconditional = p.triggers != null && p.triggers.Length > 0;
+    var kept = sentences.Where(IsStatOrTypeChange).ToList();
+    if (kept.Count == 0 || !unconditional && kept.Count != sentences.Count) continue;
+    p.description = string.Join(" ", kept);
+    yield return p;
+   }
+  }
   public static void Sync(Fighter f) {
    if (f == null || f.Data == null) return;
    var list = (f.Data.potentials ?? new Potential[0]).Where(p => p == null || p.id != Slot).ToList();
    if (!f.AbilitySuppressed) {
     var d = AbilityCatalog.Find(AbilityRuntime.Name(f));
     if (Runnable(d)) list.AddRange(ToPotentials(d));
+   } else if (f.AbilityKeepsChanges) {
+    var d = AbilityCatalog.Find(AbilityRuntime.Name(f));
+    if (Runnable(d)) list.AddRange(KeptChanges(d));
    }
    f.Data.potentials = list.ToArray();
    AbilityPhrases.SyncTypes(f);
