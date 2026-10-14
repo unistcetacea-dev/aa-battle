@@ -242,14 +242,15 @@ namespace AABattle {
    Assert.That(t1.Fighters[1].HP, Is.EqualTo(dodger2.HP), string.Join("\n", t1.Log));
   }
 
-  [Test] public void ReverseTurnSwitchesOutAtTheEndOfTheSecondTurn() {
+  // 사용자 결정: 진입형 교대(역선회)는 대기석 전용이라 필드의 보유자는 2T째 종료에도 물러나지 않는다(대기석 동작은 BenchEventsTests)
+  [Test] public void ReverseTurnDoesNotSwitchOutTheFieldHolderAtTheEndOfTheSecondTurn() {
    var user = F(100, Exclusive("역선회")); var foe = F(50); var bench = F();
    var rules = new Rules { OptionalEffectPrompt = (f, o, p) => true };
    BattleCommand Stay() { return new BattleCommand { Move = Idle(), Party = new[] { bench } }; }
    var t1 = Run(user, foe, Stay(), Use(Idle()), null, rules);
    Assert.That(ReferenceEquals(t1.Fighters[0], bench), Is.False, "1턴째에는 교대하지 않는다\n" + string.Join("\n", t1.Log));
    var t2 = Run(t1.Fighters[0], t1.Fighters[1], Stay(), Use(Idle()), null, rules);
-   Assert.That(t2.Fighters[0].Data.name, Is.EqualTo(bench.Data.name), string.Join("\n", t2.Log));
+   Assert.That(t2.Fighters[0].Data.name, Is.EqualTo(user.Data.name), string.Join("\n", t2.Log));
   }
 
   [Test] public void BumpUpRaisesEverySpeciesGrade() {
