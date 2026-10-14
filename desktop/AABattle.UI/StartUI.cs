@@ -85,7 +85,7 @@ namespace AABattle {
    using(var vs=Theme.UI(24))Theme.Text(g,"VS",vs,new Rectangle(cw/2-56,teamWindows[0].Y+teamWindows[0].Height/2-30,112,60),Color.Black,ContentAlignment.MiddleCenter);}
   void Begin(){try{var teams=new[]{SelectedTeam(0),SelectedTeam(1)};if(teams.Any(x=>x==null))throw new Exception("1팀과 2팀에서 저장 파일을 불러오거나 팀을 선택하세요.");using(var roster=new PartyRosterForm(teams)){if(roster.ShowDialog(this)!=DialogResult.OK)return;teams=roster.SelectedTeams;}if(teams.Any(x=>x.trainer==null||x.members==null||x.members.Count<1))throw new Exception("선택한 출전 구성에 트레이너와 포켓몬이 필요합니다.");var problems=new List<string>();for(int side=0;side<2;side++)problems.AddRange(TeamRules.Check(teams[side]).Select(x=>(side+1)+"팀 · "+x));if(problems.Count>0&&GameDialog.Show(this,"4대자질 편성 규칙과 다른 부분이 있습니다.\n\n"+string.Join("\n",problems.Take(12))+(problems.Count>12?"\n… 외 "+(problems.Count-12)+"건":"")+"\n\n이대로 배틀을 시작할까요?","편성 규칙 확인",MessageBoxButtons.YesNo)!=DialogResult.Yes)return;
     var fighters=teams.Select(t=>t.members.Select(m=>{string warning;var f=new Fighter(EditorBridge.ToPokemon(m,db,out warning,t.trainer));if(warning.Length>0)throw new Exception(m.name+": "+warning);f.AA=m.asciiArt;return f;}).ToList()).ToArray();using(var intro=new VersusForm(teams)){if(intro.ShowDialog(this)!=DialogResult.OK)return;}int[] leads;using(var pick=new LeadForm(fighters,"선발 선택")){if(pick.ShowDialog(this)!=DialogResult.OK)return;leads=pick.Selected;}using(var battle=new MainForm(db)){battle.LoadTeams(teams,fighters,leads);Hide();try{battle.ShowDialog();}finally{Show();}}
-  }catch(Exception ex){GameDialog.Show(this,ex.Message,"배틀 준비");}}
+  }catch(Exception ex){ErrorLog.Write(ex);GameDialog.Show(this,ex.Message,"배틀 준비");}}
  }
 
  class VersusForm:Form {
