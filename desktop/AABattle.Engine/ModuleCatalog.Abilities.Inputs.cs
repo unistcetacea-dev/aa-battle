@@ -25,15 +25,13 @@ namespace AABattle {
    AE(modules, "move.type", "기술 타입 변경", "자신의 {기술조건} 기술의 타입을 「{타입}」로 한다.", AC("「노말」"), S("타입", ModuleSlotKind.Type, "페어리"));
    AE(modules, "weather.lock", "날씨 고정", "날씨를 「{날씨}」로 고정한다.", S("날씨", ModuleSlotKind.Weather, "강한 비", "큰가뭄", "강한 비", "난기류"));
    // 오라·위압 등 필드에 있는 대상 전원의 계속 배율.
-   foreach (string metric in new[] { "공격", "방어", "특공", "특방", "속도", "명중", "회피", "위력" }) {
-    string suffix = metric == "위력" ? "의 {기술조건} 기술의 위력을" : "의 「" + metric + "」" + Particle(metric);
-    var slots = new List<ModuleSlot> {
-     S("대상", ModuleSlotKind.Subject, "필드에 있는 전원", "필드에 있는 전원", "자신을 제외한 전원")
-    };
-    if (metric == "위력") slots.Add(AC("「악」"));
-    slots.Add(S("배율", ModuleSlotKind.Multiplier, "1.33"));
-    AE(modules, "field.scalar." + metric, "필드 전원 수치 배율", "{대상}" + suffix + " 강화({배율}배)한다.", slots.ToArray());
-   }
+   AE(modules, "field.scalar.stats", "필드 전원 수치 배율", "{대상}의 「{능력}」@object:능력@ 강화({배율}배)한다.",
+    S("대상", ModuleSlotKind.Subject, "필드에 있는 전원", "필드에 있는 전원", "자신을 제외한 전원"),
+    S("능력", ModuleSlotKind.Stats, "공격", "공격", "방어", "특공", "특방", "속도", "명중", "회피"),
+    S("배율", ModuleSlotKind.Multiplier, "1.33"));
+   AE(modules, "field.scalar.위력", "필드 전원 수치 배율", "{대상}의 {기술조건} 기술의 위력을 강화({배율}배)한다.",
+    S("대상", ModuleSlotKind.Subject, "필드에 있는 전원", "필드에 있는 전원", "자신을 제외한 전원"),
+    AC("「악」"), S("배율", ModuleSlotKind.Multiplier, "1.33"));
   }
 
   static string Particle(string word) {

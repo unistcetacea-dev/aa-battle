@@ -1,0 +1,101 @@
+OriginalId	BeforeFamily	NewId	AfterFamily	OriginalSentence
+ability.critical.zero	특성·계속 효과	ability.critical.zero	급소	상대의 기술의 급소 랭크 보정을 0으로 한다.
+ability.critical.immune	특성·계속 효과	ability.critical.immune	급소	자신은 급소에 맞지 않는다.
+ability.sturdy	특성·계속 효과	ability.survive.chance	체력	자신은 빈사가 되는 공격을 HP 1로 버틴다.
+ability.indirect.immune	특성·계속 효과	ability.indirect.immune	체력	자신은 공격 이외의 대미지를 받지 않는다.
+ability.hazard.immune	특성·계속 효과	ability.hazard.immune	장소	자신은 설치물의 영향을 받지 않는다.
+ability.ability.pierce	특성·계속 효과	ability.ability.pierce	방호·회피	자신의 기술은 상대의 〔방호 특성〕을 관통한다.
+ability.rank.extra	특성·계속 효과	ability.rank.extra	능력 랭크	자신의 능력 변화량을 1 늘린다.
+ability.rank.reverse	특성·계속 효과	ability.rank.reverse	능력 랭크	자신에 대한 능력 변화를 반대로 한다.
+ability.rank.reflect	특성·계속 효과	ability.rank.reflect	능력 랭크	상대에 의한 능력 하락을 상대에게 되돌린다.
+ability.weather.cancel	특성·계속 효과	ability.weather.cancel	장소	날씨의 효과를 무효화한다.
+ability.status.protectpierce	특성·계속 효과	ability.status.protectpierce	방호·회피	자신의 「변화」 기술이 상대의 「방어」 기술을 관통한다.
+ability.poison.pierce	특성·계속 효과	ability.poison.pierce	상태	자신이 거는 「독」「맹독」은 타입 면역을 관통한다.
+ability.ability.suppress	특성·계속 효과	ability.ability.suppress	특성 조작	상대의 〔특성〕을 무효화한다.
+ability.type.move	특성·계속 효과	ability.type.move	타입·상성	자신의 타입을 내보내는 기술의 타입으로 한다.
+ability.recoil.immune	특성·계속 효과	ability.recoil.condition	체력	자신의 기술의 반동 대미지를 받지 않는다.
+ability.item.take	특성·계속 효과	ability.item.take	기술·소지품	상대의 소지품을 빼앗는다.
+ability.item.break	특성·계속 효과	ability.item.break	기술·소지품	상대의 소지품을 파괴한다.
+ability.item.frisk	특성·계속 효과	ability.item.frisk	기술·소지품	상대의 소지품을 해석한다.
+ability.berry.use	특성·계속 효과	ability.berry.use	기술·소지품	자신의 「나무열매」를 사용한다.
+ability.berry.recycle	특성·계속 효과	ability.berry.recycle	기술·소지품	소모한 「나무열매」를 되돌려받는다.
+ability.berry.replay	특성·계속 효과	ability.berry.replay	기술·소지품	사용한 나무열매의 효과를 다시 받는다.
+ability.berry.ripen	특성·계속 효과	ability.berry.ripen	기술·소지품	자신이 소모하는 「나무열매」의 효과가 2배가 된다.
+ability.item.type	특성·계속 효과	ability.item.type	타입·상성	자신의 타입을 소지품 「플레이트」의 타입으로 한다.
+ability.item.ban.self	특성·계속 효과	ability.item.ban	기술·소지품	자신은 소지품을 사용할 수 없다.
+ability.item.ban.opponent	특성·계속 효과	ability.item.ban	기술·소지품	상대는 소비하는 소지품을 사용할 수 없다.
+ability.item.protect	특성·계속 효과	ability.item.protect	기술·소지품	자신의 소지품은 파괴되거나 약탈되지 않는다.
+ability.type.copy	특성·계속 효과	ability.type.copy	타입·상성	자신의 타입을 상대와 같은 타입으로 한다.
+ability.type.received	특성·계속 효과	ability.type.received	타입·상성	자신의 타입을 받은 기술의 타입으로 한다.
+ability.status.reflect	특성·계속 효과	ability.status.reflect	상태	상대를 자신과 같은 상태이상으로 한다.
+ability.rank.follow	특성·계속 효과	ability.rank.follow	능력 랭크	자신의 능력을 상대가 올린 만큼 올린다.
+ability.damage.return	특성·계속 효과	ability.damage.return	체력	상대에게 자신이 마지막으로 받은 대미지만큼 고정 대미지를 준다.
+ability.screens.clear	특성·계속 효과	ability.screens.clear	장소	전체 필드의 「벽」을 해제한다.
+ability.guard.restore	특성·계속 효과	ability.guard.restore	체력	자신의 1번만 효과의 사용 횟수를 복구한다.
+ability.ability.swap	특성·계속 효과	ability.ability.swap	특성 조작	자신과 상대의 특성을 교환한다.
+ability.ability.copy.opponent	특성·계속 효과	ability.ability.copy.opponent	특성 조작	상대의 특성을 복사한다.
+ability.ability.copy.ally	특성·계속 효과	ability.ability.copy.opponent	특성 조작	직전에 빈사한 아군의 특성을 복사한다.
+ability.ability.changeimmune	특성·계속 효과	ability.ability.changeimmune	특성 조작	자신의 특성은 변화되지 않는다.
+ability.ability.suppressimmune	특성·계속 효과	ability.ability.suppressimmune	특성 조작	자신의 특성은 무효화되지 않는다.
+ability.ability.pierceimmune	특성·계속 효과	ability.ability.pierceimmune	특성 조작	자신의 특성은 관통되지 않는다.
+ability.noeffect.multi	특성·계속 효과	ability.noeffect.multi	효과 없음	다인전 전용 효과이므로 싱글에서는 효과가 없다.
+ability.noeffect.outside	특성·계속 효과	ability.noeffect.outside	효과 없음	배틀 밖 효과이므로 효과가 없다.
+ability.surehit.field	특성·계속 효과	ability.surehit	방호·회피	필드에 있는 전원의 기술은 필중이다.
+ability.contact.remove	특성·계속 효과	ability.contact.remove	기술 변형	자신의 기술은 「접촉」 기술로 취급하지 않는다.
+ability.secondary.remove.self	특성·계속 효과	ability.secondary.remove	추가효과	자신의 기술의 추가효과를 무효화한다.
+ability.secondary.remove.opponent	특성·계속 효과	ability.secondary.remove	추가효과	상대의 기술의 추가효과를 무효화한다.
+ability.secondary.double	특성·계속 효과	ability.secondary.double	추가효과	자신의 기술의 추가효과 발동 확률을 2배로 한다.
+ability.multihit.max	특성·계속 효과	ability.multihit.max	기술 변형	자신의 「연속」 기술은 반드시 최대 횟수만큼 명중한다.
+ability.truant	특성·계속 효과	ability.truant	기술 변형	자신이 행동한 다음 T에는 자신의 기술이 실패한다.
+ability.movelock	특성·계속 효과	ability.movelock	기술 변형	자신은 장소에 나와서 최초로 내보낸 기술만 내보낼 수 있다.
+ability.sleep.half	특성·계속 효과	ability.sleep.half	상태	자신의 「잠듦」 상태의 지속 T를 절반으로 한다.
+ability.indirect.survive	특성·계속 효과	ability.indirect.survive	체력	자신은 공격 이외의 대미지로 빈사가 되지 않는다.
+ability.drain.reverse	특성·계속 효과	ability.drain.reverse	체력	자신에 대한 상대의 드레인 효과를 반전한다.
+ability.aura.reverse	특성·계속 효과	ability.aura.reverse	타입·상성	〔오라〕의 효과를 반전한다.
+ability.rank.riseagain	특성·계속 효과	ability.rank.riseagain	능력 랭크	자신의 능력을 올라간 만큼 올린다.
+ability.intimidate.immune	특성·계속 효과	ability.intimidate.immune	능력 랭크	상대의 〔위협〕에 의한 능력 하락을 무효화한다.
+ability.machine.extra	특성·계속 효과	ability.machine.extra	기술·소지품	가장 마지막에 소지품 「기술머신」의 기술에 의한 추가행동을 얻을 수 있다.
+ability.stats.copyhighest	특성·계속 효과	ability.stats.copyhighest	종족치	상대의 가장 높은 종족치를 자신의 같은 능력에 복사한다.
+ability.item.share	특성·계속 효과	ability.item.share	기술·소지품	그 소지품의 효과를 자신도 받는다.
+ability.surehit	특성·계속 효과	ability.surehit	방호·회피	자신의 기술은 필중이다.
+ability.surehit.type	특성·계속 효과	ability.surehit	방호·회피	자신의 기술은 「물」 타입에게 필중이다.
+ability.critical.always	특성·계속 효과	ability.critical.always	급소	자신의 기술은 반드시 급소에 맞는다.
+ability.critical.rate	특성·계속 효과	ability.critical.rate	급소	자신의 급소 배율을 3배로 한다.
+ability.move.category	특성·계속 효과	ability.move.category	기술 변형	자신의 공격기술의 분류를 「물리」로 한다.
+ability.move.power	특성·계속 효과	ability.move.power	기술 변형	자신의 기술의 위력을 「60」로 한다.
+ability.move.accuracy	특성·계속 효과	ability.move.accuracy	기술 변형	필드에 있는 전원의 기술의 명중을 「100」로 한다.
+ability.protect.pierce	특성·계속 효과	ability.protect.pierce	방호·회피	자신의 「접촉」 기술이 상대의 「방어」 기술을 관통한다.
+ability.recoil.condition	특성·계속 효과	ability.recoil.condition	체력	자신의 「물리」 기술의 반동 대미지를 받지 않는다.
+ability.priority.lag	특성·계속 효과	ability.priority.lag	우선도	자신의 「변화」 기술의 우선도를 -0.5한다.
+ability.ability.piercecondition	특성·계속 효과	ability.ability.piercecondition	방호·회피	자신의 「접촉」 기술은 상대의 〔방호 특성〕을 관통한다.
+ability.move.replace	특성·계속 효과	ability.move.replace	기술 변형	상대의 기술은 3할로 「기술:몸통박치기」이 된다.
+ability.floating.hit	특성·계속 효과	ability.floating.hit	방호·회피	자신의 「땅」 기술은 공중에 떠 있는 상대에게도 명중한다.
+ability.move.fail.opponent	특성·계속 효과	ability.move.fail	기술 변형	상대의 「소리」 기술이 실패한다.
+ability.move.fail.field	특성·계속 효과	ability.move.fail	기술 변형	필드에 있는 전원의 「자폭」 기술이 실패한다.
+ability.priority.condition	특성·계속 효과	ability.priority.condition	우선도	자신의 「변화」 기술의 우선도를 +1한다.
+ability.move.type	특성·계속 효과	ability.move.type	기술 변형	자신의 「노말」 기술의 타입을 「페어리」로 한다.
+ability.weather.lock	특성·계속 효과	ability.weather.lock	장소	날씨를 「강한 비」로 고정한다.
+ability.field.scalar.공격	특성·계속 효과	ability.field.scalar.stats	수치 배율	필드에 있는 전원의 「공격」을 강화(1.33배)한다.
+ability.field.scalar.방어	특성·계속 효과	ability.field.scalar.stats	수치 배율	필드에 있는 전원의 「방어」를 강화(1.33배)한다.
+ability.field.scalar.특공	특성·계속 효과	ability.field.scalar.stats	수치 배율	필드에 있는 전원의 「특공」을 강화(1.33배)한다.
+ability.field.scalar.특방	특성·계속 효과	ability.field.scalar.stats	수치 배율	필드에 있는 전원의 「특방」을 강화(1.33배)한다.
+ability.field.scalar.속도	특성·계속 효과	ability.field.scalar.stats	수치 배율	필드에 있는 전원의 「속도」를 강화(1.33배)한다.
+ability.field.scalar.명중	특성·계속 효과	ability.field.scalar.stats	수치 배율	필드에 있는 전원의 「명중」을 강화(1.33배)한다.
+ability.field.scalar.회피	특성·계속 효과	ability.field.scalar.stats	수치 배율	필드에 있는 전원의 「회피」를 강화(1.33배)한다.
+ability.field.scalar.위력	특성·계속 효과	ability.field.scalar.위력	수치 배율	필드에 있는 전원의 「악」 기술의 위력을 강화(1.33배)한다.
+ability.rank.dropimmune.all	특성·계속 효과	ability.rank.dropimmune.all	능력 랭크	자신은 상대에 의해 능력이 내려가지 않는다.
+ability.rank.dropimmune.named	특성·계속 효과	ability.rank.dropimmune.all	능력 랭크	자신은 상대에 의해 「공격」이 내려가지 않는다.
+ability.weather.damageimmune	특성·계속 효과	ability.weather.damageimmune	장소	자신은 「모래바람/싸라기눈」의 대미지를 받지 않는다.
+ability.status.powerimmune	특성·계속 효과	ability.status.powerimmune	상태	「화상」의 기술 위력 저하 효과를 무효화한다.
+ability.type.add	특성·계속 효과	ability.type.add	타입·상성	자신의 타입에 「고스트」를 추가한다.
+ability.survive.chance	특성·계속 효과	ability.survive.chance	체력	자신은 빈사가 되는 공격을 드물게 HP 1로 버틴다.
+ability.damage.defer	특성·계속 효과	ability.damage.defer	체력	자신은 상대의 기술의 대미지를 저확률로 자신의 행동 후로 미룬다.
+ability.status.damageimmune	특성·계속 효과	ability.status.damageimmune	상태	자신은 「독/맹독」의 대미지를 받지 않는다.
+ability.switch.trap	특성·계속 효과	ability.switch.trap	교대	상대는 「통상교대」를 할 수 없다.
+ability.switch.trapground	특성·계속 효과	ability.switch.trap	교대	접지한 상대는 「통상교대」를 할 수 없다.
+ability.switch.traptype	특성·계속 효과	ability.switch.trap	교대	「강철」 타입인 상대는 「통상교대」를 할 수 없다.
+ability.status.random	특성·계속 효과	ability.status.random	상태	상대를 「독/마비/잠듦」 중 무작위 상태이상으로 한다.
+ability.rank.set	특성·계속 효과	ability.rank.set	능력 랭크	자신의 「공격」 랭크를 「+6」로 한다.
+ability.field.healtype	특성·계속 효과	ability.field.healtype	체력	필드에 있는 「독」 타입 전원의 체력을 최대 HP의 1/8 회복한다.
+ability.field.hurtothers	특성·계속 효과	ability.field.hurtothers	체력	필드에 있는 「독」 타입 이외의 전원에게 최대 HP의 1/8 대미지를 준다.
+ability.fallen.scalarrate	특성·계속 효과	ability.fallen.scalarrate	수치 배율	자신의 「공격/특공」을 빈사 상태인 아군의 수에 비례해 강화(1.2배~1.6배)한다.

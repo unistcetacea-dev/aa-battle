@@ -69,6 +69,9 @@ namespace AABattle {
  }
  public sealed class ModuleDefinition {
   public string Id, Name, Family, Template, Expected;
+  // 선택 서식 하나가 여러 실행 종류를 보존할 때의 등록 정보(기본값 Expected는 그대로).
+  public string[] AdditionalExpectedKinds = new string[0];
+  public IEnumerable<string> ExpectedKinds { get { return new[] { Expected }.Concat(AdditionalExpectedKinds).Distinct(); } }
   public ModuleKind Kind;
   public bool AllowDuration;
   public ModuleSlot[] Slots;
@@ -151,7 +154,7 @@ namespace AABattle {
    RegisterTriggers(list); RegisterTriggerLabels(list); RegisterCoreEffects(list); RegisterAbilityEffects(list);
    if (list.GroupBy(x => x.Id).Any(x => x.Count() > 1)) throw new InvalidOperationException("중복 모듈 ID");
    foreach (var module in list.Where(x => x.Kind == ModuleKind.Effect)) AttachModifiers(module);
-   return list.ToArray();
+   return list.OrderBy(x => x.Family == "효과 없음" ? 1 : 0).ToArray();
   }
   static void AttachModifiers(ModuleDefinition module) {
    var original = new ModuleDefinition(module.Id, module.Name, module.Kind, module.Family, module.Template, module.Slots) {

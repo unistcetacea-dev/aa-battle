@@ -9,7 +9,7 @@ namespace AABattle {
   public static readonly Dictionary<string, string> AbilityEffectExclusions = new Dictionary<string, string>();
 
   static void AE(List<ModuleDefinition> modules, string id, string expected, string template, params ModuleSlot[] slots) {
-   var definition = new ModuleDefinition("ability." + id, expected, ModuleKind.Effect, "특성·계속 효과", template, slots) { Expected = expected };
+   var definition = new ModuleDefinition("ability." + id, expected, ModuleKind.Effect, AbilityEffectFamily(id), template, slots) { Expected = expected };
    switch (id) {
     case "item.ban.self": definition.Name = "자신의 소지품 사용 금지"; break;
     case "item.ban.opponent": definition.Name = "상대의 소비 소지품 사용 금지"; break;
@@ -31,9 +31,10 @@ namespace AABattle {
     case "field.hurtothers": definition.Name = "필드의 지정 타입 이외 전원 대미지"; break;
     case "fallen.scalarrate": definition.Name = "빈사 아군 수에 비례한 배율"; break;
    }
-   if (id.StartsWith("field.scalar.")) definition.Name = "필드 전원의 " + id.Substring("field.scalar.".Length) + " 배율";
+   if (id.StartsWith("field.scalar.")) definition.Name = "필드 전원의 " + (id.EndsWith(".stats") ? "능력" : id.Substring("field.scalar.".Length)) + " 배율";
    definition.Formatter = values => {
     string filled = Regex.Replace(template, @"\{([^{}]+)\}", m => values[m.Groups[1].Value]);
+    filled = Regex.Replace(filled, @"@object:([^@]+)@", m => Particle(values[m.Groups[1].Value]));
     filled = Regex.Replace(filled, @"[ \t]+", " ").Trim();
     // 타입·숫자의 조사만 공용 표준 조사에 맞춘다.
     filled = Regex.Replace(filled, "「([^」]+)」로 한다", m => "「" + m.Groups[1].Value + "」" + EffectModules.Ro(m.Groups[1].Value) + " 한다");
@@ -61,11 +62,12 @@ namespace AABattle {
     }
     return null;
    };
+   definition.Template = Regex.Replace(template, @"@object:([^@]+)@", m => Particle(slots.First(s => s.Id == m.Groups[1].Value).Default));
    modules.Add(definition);
   }
 
   static string AbilityLiteral(string text) {
-   return Regex.Escape(text).Replace(@"\ ", @"\s*").Replace("」로", "」(?:으로|로)");
+   return Regex.Replace(Regex.Escape(text), @"@object:([^@]+)@", "(?:을|를)").Replace(@"\ ", @"\s*").Replace("」로", "」(?:으로|로)");
   }
 
   static ModuleSlot AC(string value = "") { return S("기술조건", ModuleSlotKind.MoveCondition, value); }
@@ -79,6 +81,7 @@ namespace AABattle {
    RegisterAbilityConstants(modules);
    RegisterAbilityMoveInputs(modules);
    RegisterAbilityStateInputs(modules);
+   MergeAbilityChoices(modules);
   }
 
   static void RegisterAbilityConstants(List<ModuleDefinition> modules) {
