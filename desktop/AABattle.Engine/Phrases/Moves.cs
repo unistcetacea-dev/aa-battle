@@ -77,7 +77,7 @@ namespace AABattle
           c = "「" + kind + "」 ";
         int n = int.Parse(m.Groups["n"].Value);
         if (c != null && c.Length > 0)
-          return "자신의 " + c + "기술의 우선도를 +" + n + "한다.";
+          return "자신의 " + c + "기술 우선도를 " + n + " 올린다.";
         if (c != null && n >= 1 && n <= 7)
           return "자신의 기술 우선도를 " + n + " 올린다";
       }
@@ -170,7 +170,7 @@ namespace AABattle
     internal static string AbilityConditionPriority(string s)
     {
       Match m;
-      if ((m = Regex.Match(s, @"^자신의 「(?<c>[^」]+)」 (?:타입 )?기술의 우선도를 [+＋](?<n>\d)한다$")).Success) return "자신의 「" + m.Groups["c"].Value + "」 기술의 우선도를 +" + m.Groups["n"].Value + "한다";
+      if ((m = Regex.Match(s, @"^자신의 「(?<c>[^」]+)」 (?:타입 )?기술의 우선도를 [+＋](?<n>\d)한다$")).Success) return "자신의 「" + m.Groups["c"].Value + "」 기술 우선도를 " + m.Groups["n"].Value + " 올린다";
       return null;
     }
 

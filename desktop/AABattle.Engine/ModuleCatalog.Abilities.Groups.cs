@@ -68,9 +68,10 @@ namespace AABattle
       AbilityChoice(modules, "effect.switch.pivot", "유턴 효과 부여", "유턴대상",
         new[] { "기술", "공격기술" }, "자신의 {유턴대상}에 「유턴」 효과를 부여한다.",
         "effect.switch.pivot", "abaddon.pivot.attack");
-      AbilityChoice(modules, "ability.priority.condition", "조건 우선도", "우선도방식",
-        new[] { "올린다", "-0.5" }, "자신의 {기술조건} 기술의 우선도를 변경한다.",
-        "ability.priority.condition", "ability.priority.lag");
+      // 우선도 모듈 하나: 기본 effect.priority.올린다(기술 조건 빈칸 포함)와 조건 우선도 -0.5를 선택값으로 묶는다
+      AbilityChoice(modules, "effect.priority.올린다", "기술 우선도 변경", "우선도방식",
+        new[] { "올린다", "-0.5" }, "{주체}의 {기술조건} 기술 우선도를 변경한다.",
+        "effect.priority.올린다", "ability.priority.lag");
     }
 
     // TX와 같은 선택 서식 도우미. 선택값마다 원래 서식의 Fill/TryRead를 그대로 사용한다.

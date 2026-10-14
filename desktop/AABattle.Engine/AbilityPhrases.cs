@@ -12,7 +12,7 @@ namespace AABattle {
  //  설치물 무시     자신은 설치물의 영향을 받지 않는다.
  //  특성 관통       자신의 기술은 상대의 〔방호 특성〕을 관통한다.
  //  타입 추가       자신의 타입에 「X」를 추가한다.
- //  조건 우선도     자신의 「조건」 기술의 우선도를 +N한다.
+ //  조건 우선도     자신의 「조건」 기술 우선도를 N 올린다.
  public static partial class AbilityPhrases {
   public const string NoCritical = "자신은 급소에 맞지 않는다";
   public const string Sturdy = "자신은 빈사가 되는 공격을 HP 1로 버틴다";
@@ -33,7 +33,9 @@ namespace AABattle {
   };
   static readonly Regex DropImmune = new Regex(@"^자신은 상대에 의해 (?:(?<s>「[^」]+」)이|능력이) 내려가지 않는다$");
   static readonly Regex AddType = new Regex(@"^자신의 타입에 「(?<t>[^」]+)」를 추가한다$");
-  static readonly Regex Priority = new Regex(@"^자신의 (?<c>(?:「[^」]+」)+) 기술의 우선도를 \+(?<n>\d)한다$");
+  // 표준 문장은 「자신의 「조건」 기술 우선도를 N 올린다」(effect.priority.올린다). 옛 「…기술의 우선도를 +N한다」도 읽는다
+  static readonly Regex Priority = new Regex(@"^자신의 (?<c>(?:「[^」]+」)+) 기술(?: 우선도를 (?<n>\d) 올린다|의 우선도를 \+(?<n>\d)한다)$");
+  static readonly Regex OldPriority = new Regex(@"^자신의 (?<c>(?:「[^」]+」)+) 기술의 우선도를 \+(?<n>\d)한다$");
   static readonly Regex WeatherDamage = new Regex(@"^자신은 (?<w>(?:「[^」]+」)+)의 대미지를 받지 않는다$");
   static readonly Regex StatusPower = new Regex(@"^(?<s>(?:「[^」]+」)+)의 기술 위력 저하 효과를 무효화한다$");
   internal static readonly string[] WeatherNames = { "쾌청", "큰가뭄", "비", "강한 비", "모래바람", "싸라기눈", "눈", "난기류" };
@@ -117,6 +119,8 @@ namespace AABattle {
   // ===== 새 계속 효과 모듈 =====
   public static string Normalize(string text) {
    string t = Clean(text);
+   var oldPriority = OldPriority.Match(t);
+   if (oldPriority.Success) return "자신의 " + oldPriority.Groups["c"].Value + " 기술 우선도를 " + oldPriority.Groups["n"].Value + " 올린다.";
    if (ClassifyTypeSentence(t).Length > 0) return t + ".";
    if (ContinuousRules.ContainsKey(t) || t == NoCritical || t == Sturdy || t == MagicGuard || t == HazardProof || t == Pierce || DropImmune.IsMatch(t) || AddType.IsMatch(t) || Priority.IsMatch(t) || WeatherDamageRule(t) || StatusPower.IsMatch(t)) return t + ".";
    return null;

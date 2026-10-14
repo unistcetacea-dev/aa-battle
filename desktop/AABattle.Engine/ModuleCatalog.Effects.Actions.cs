@@ -28,7 +28,16 @@ namespace AABattle
         }
       CoreAdd(modules, "effect.extra.reduced", "위력이 약화된 추가행동", "추가행동", "행동", "가장 {순서} 같은 기술에 의한 추가행동을 얻는다(위력 {배율}배).", S("순서", ModuleSlotKind.Timing, "마지막에", "먼저", "마지막에"), new ModuleSlot("배율", ModuleSlotKind.Multiplier, "0.5") { Minimum = 0.01M, Maximum = 0.99M, Decimals = 2 });
       foreach (string verb in new[] { "올린다", "내린다" })
-        CoreAdd(modules, "effect.priority." + verb, "기술 우선도 " + verb, "우선도 변화", "행동", "{주체}의 기술 우선도를 {수치} " + verb + ".", S("주체", ModuleSlotKind.Subject, "자신", "자신", "상대", "아군", "아군 1체", "아군 전체"), CoreNumber("수치", ModuleSlotKind.Rank, "1", 7));
+      {
+        // 올린다는 기술 조건 빈칸을 가진다(비우면 모든 기술). 특성의 조건 우선도 문장과 같은 모듈이다
+        bool conditional = verb == "올린다";
+        var priority = CoreAdd(modules, "effect.priority." + verb, "기술 우선도 " + verb, "우선도 변화", "행동",
+          conditional ? "{주체}의 {기술조건} 기술 우선도를 {수치} 올린다." : "{주체}의 기술 우선도를 {수치} " + verb + ".",
+          conditional
+            ? new[] { S("주체", ModuleSlotKind.Subject, "자신", "자신", "상대", "아군", "아군 1체", "아군 전체"), S("기술조건", ModuleSlotKind.MoveCondition, ""), CoreNumber("수치", ModuleSlotKind.Rank, "1", 7) }
+            : new[] { S("주체", ModuleSlotKind.Subject, "자신", "자신", "상대", "아군", "아군 1체", "아군 전체"), CoreNumber("수치", ModuleSlotKind.Rank, "1", 7) });
+        if (conditional) priority.AdditionalExpectedKinds = new[] { "조건 우선도" };
+      }
       foreach (string mode in new[] { "상승(강화)", "강화" })
         CoreAdd(modules, "effect.stat.ignore." + mode, "능력 " + mode + " 무시", "능력 상승·강화 무시", "능력 랭크", "{대상}의 {능력} " + mode + (mode == "강화" ? "를" : "을") + " 무시한다.", S("대상", ModuleSlotKind.Text, "상대", "상대", "『야생의 두목』"), S("능력", ModuleSlotKind.Text, "능력", "능력", "전능력치", "공격", "방어", "특공", "특방", "속도", "명중", "회피", "C", "공/특공", "방/특방", "속도/회피"));
       CoreAdd(modules, "effect.secondary.state", "상태 추가효과 부여", "추가효과 부여", "추가효과", "자신의 {조건} {범위}에 「{확률}할:{상태}」의 추가효과를 부여한다.", S("조건", ModuleSlotKind.MoveCondition, ""), S("범위", ModuleSlotKind.Text, "기술", "공격", "기술"), CoreNumber("확률", ModuleSlotKind.Count, "3", 10), S("상태", ModuleSlotKind.State, "마비"));

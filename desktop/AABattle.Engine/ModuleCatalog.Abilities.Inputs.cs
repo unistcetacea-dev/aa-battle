@@ -21,7 +21,6 @@ namespace AABattle {
    AE(modules, "floating.hit", "공중 상대 명중", "자신의 {기술조건} 기술은 공중에 떠 있는 상대에게도 명중한다.", AC("「땅」"));
    AE(modules, "move.fail.opponent", "기술 실패", "상대의 {기술조건} 기술이 실패한다.", AC("「소리」"));
    AE(modules, "move.fail.field", "기술 실패", "필드에 있는 전원의 {기술조건} 기술이 실패한다.", AC("「자폭」"));
-   AE(modules, "priority.condition", "조건 우선도", "자신의 {기술조건} 기술의 우선도를 +{우선도}한다.", AC("「변화」"), S("우선도", ModuleSlotKind.Count, "1"));
    AE(modules, "move.type", "기술 타입 변경", "자신의 {기술조건} 기술의 타입을 「{타입}」로 한다.", AC("「노말」"), S("타입", ModuleSlotKind.Type, "페어리"));
    AE(modules, "weather.lock", "날씨 고정", "날씨를 「{날씨}」로 고정한다.", S("날씨", ModuleSlotKind.Weather, "강한 비", "큰가뭄", "강한 비", "난기류"));
    // 오라·위압 등 필드에 있는 대상 전원의 계속 배율.
