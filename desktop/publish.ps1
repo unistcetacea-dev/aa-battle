@@ -11,6 +11,14 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $outputDirectory = Join-Path $projectRoot 'outputs\publish'
 $gh = Get-Command gh -ErrorAction SilentlyContinue
+# gh가 있어도 로그인하지 않았으면 업로드하지 않는다(로그인 안내 후 zip만 만든다)
+if ($gh) {
+    & cmd /c "gh auth status >nul 2>&1"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Output 'gh is installed but not logged in. Run: gh auth login  (building the zip only)'
+        $gh = $null
+    }
+}
 
 # 이미 쓴 버전 번호(로컬 태그 + gh가 있으면 Release 태그)를 모은다
 function Get-UsedTags {
@@ -45,6 +53,13 @@ $stage = Join-Path $outputDirectory 'zip-stage'
 New-Item -ItemType Directory -Path $stage -Force | Out-Null
 foreach ($file in 'AABattle.exe', 'AABattle.exe.config', 'AABattleDataEditor.exe', 'AABattleDataEditor.exe.config', 'AABattle.UI.dll', 'AABattle.Engine.dll') {
     Copy-Item (Join-Path $outputDirectory $file) (Join-Path $stage $file) -Force
+}
+# 샘플 파티(samples/*.aabdata.json)를 함께 넣는다. 업데이트는 실행 파일만 바꾸므로 받은 사람의 샘플은 덮어쓰지 않는다.
+$samples = Join-Path (Split-Path $PSScriptRoot -Parent) 'samples'
+if (Test-Path $samples) {
+    $sampleStage = Join-Path $stage 'samples'
+    New-Item -ItemType Directory -Path $sampleStage -Force | Out-Null
+    Copy-Item (Join-Path $samples '*.aabdata.json') $sampleStage -Force
 }
 $utf8Bom = New-Object System.Text.UTF8Encoding($true)
 $readme = [System.IO.File]::ReadAllText((Join-Path $PSScriptRoot 'dist-readme.txt'), (New-Object System.Text.UTF8Encoding($false)))
