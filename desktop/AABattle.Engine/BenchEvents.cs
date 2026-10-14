@@ -7,12 +7,28 @@ namespace AABattle
 {
   public static class BenchEvents
   {
+    // 대기석 관측 트리거 로그에 붙는 표지. 보유자 이름이 함께 붙어 다른 포켓몬의 같은 이름 포텐셜과 섞이지 않는다
+    public const string BenchMark = " · 대기석 ";
+
+    public static string BenchTag(Fighter bench)
+    {
+      return BenchMark + bench.Data.name;
+    }
+
+    // 대기석에서 판정하는 교대는 「교대해 필드에 나올 수 있다」 진입형뿐이다(「아군과 교대할 수 있다」 둔주류는 장소에 있을 때만)
+    public static bool IsEntrySwitch(Potential potential)
+    {
+      if (potential == null || !SwitchEffectRuntime.IsSwitchEffect(potential))
+        return false;
+      return PotentialParts.Clean(potential.description ?? "").Replace(" ", "").Contains("필드에나올");
+    }
+
     public static bool MayObserve(Potential potential)
     {
       if (potential == null)
         return false;
       var use = UseConditionModules.Of(potential.description);
-      return use.OffField || use.PartyWide || SwitchEffectRuntime.IsSwitchEffect(potential);
+      return use.OffField || use.PartyWide || IsEntrySwitch(potential);
     }
 
     public static bool Matches(string clause, TriggerFact fact, Fighter bench, Fighter fieldAlly, Fighter opponent)
@@ -60,7 +76,7 @@ namespace AABattle
           Log = log,
           Announce = true,
           BenchObservation = true,
-          PendingText = (source, extra) => "『" + source.Name + "』 " + TriggerStructures.Normalize(label) + " 트리거 충족" + (extra ? " · 추가 조건 확인 필요" : "") + " · 효과 판정 대기: " + source.Description
+          PendingText = (source, extra) => "『" + source.Name + "』 " + TriggerStructures.Normalize(label) + " 트리거 충족" + BenchTag(bench) + (extra ? " · 추가 조건 확인 필요" : "") + " · 효과 판정 대기: " + source.Description
         });
       }
     }
@@ -92,11 +108,28 @@ namespace AABattle
       return true;
     }
 
-    public static IEnumerable<Potential> TriggeredSwitches(Fighter holder, IEnumerable<string> lines)
+    // 보유자 본인이 대기석에서 본 트리거 로그(아직 처리하지 않은 것)의 절대 위치. 없으면 -1
+    public static int TriggerLine(Fighter holder, Potential potential, IList<string> log, int start, ISet<int> handled)
+    {
+      if (holder == null || holder.Data == null || potential == null || string.IsNullOrWhiteSpace(potential.name))
+        return -1;
+      string token = "『" + potential.name + "』";
+      string tag = BenchTag(holder);
+      for (int i = Math.Max(0, start); i < log.Count; i++)
+      {
+        string line = log[i] ?? "";
+        if (line.Contains(token) && line.Contains("트리거 충족") && line.Contains(tag) && !handled.Contains(i))
+          return i;
+      }
+
+      return -1;
+    }
+
+    public static IEnumerable<Potential> SwitchPotentials(Fighter holder)
     {
       if (holder == null || holder.Data == null || holder.HP <= 0 || holder.OnField)
         return Enumerable.Empty<Potential>();
-      return (holder.Data.potentials ?? new Potential[0]).Where(p => SwitchEffectRuntime.IsSwitchEffect(p) && SwitchEffectRuntime.Mentioned(lines, p.name));
+      return (holder.Data.potentials ?? new Potential[0]).Where(IsEntrySwitch);
     }
   }
 }

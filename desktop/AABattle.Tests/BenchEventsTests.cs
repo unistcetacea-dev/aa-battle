@@ -29,14 +29,15 @@ namespace AABattle
       return new Move { name = "미등록", category = "변화", types = new[] { "노말" }, target = "자신", accuracy = 100, tags = new string[0] };
     }
 
-    static Potential ReverseTurn()
+    // 대기석용 진입형: 아군과 임의교대해 필드에 나온다(entry=false는 물러나는 둔주형)
+    static Potential ReverseTurn(bool entry = true)
     {
       var type = ExclusiveTypes.Find("역선회");
       return new Potential
       {
         id = "전용",
         name = "역선회 검사",
-        description = ExclusiveTypes.Filled(type, type.Effect),
+        description = entry ? ExclusiveTypes.Filled(type, type.Effect) : "아군과 임의교대할 수 있다.",
         activation = type.Activation,
         uses = type.Uses,
         triggers = ExclusiveTypes.Filled(type, type.Trigger).Split(new[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries)
@@ -112,6 +113,118 @@ namespace AABattle
         first.Trainers, () => .5, request => request.Candidates.First());
 
       Assert.That(second.Fighters[0].Data.name, Is.EqualTo(bench.Data.name), string.Join("\n", second.Log));
+    }
+
+    static bool Ask(Func<int, bool> answer, int count)
+    {
+      return answer == null || answer(count);
+    }
+
+    // 여러 T를 이어서 돌리고 매 T 종료 때의 필드 선두 이름과 선택 확인 횟수를 기록한다
+    static string[] PlayTurns(int turns, Func<int, bool> answer, out int prompts, out string log, Fighter bench)
+    {
+      var active = F();
+      bench.OnField = false;
+      int asked = 0;
+      var rules = new Rules { OptionalEffectPrompt = (owner, opponent, potential) => Ask(answer, ++asked) };
+      var names = new string[turns];
+      var fighters = new[] { active, F() };
+      var trainers = new[] { new TrainerBattleState(), new TrainerBattleState() };
+      var all = new System.Text.StringBuilder();
+      for (int i = 0; i < turns; i++)
+      {
+        var result = Engine.Resolve(TestData.Db, fighters, new[] { Stay(bench), Stay(F()) }, rules, trainers, () => .5, request => request.Candidates.First());
+        fighters = result.Fighters;
+        rules = result.Rules;
+        trainers = result.Trainers;
+        names[i] = fighters[0].Data.name;
+        all.AppendLine("--T" + (i + 1)).AppendLine(string.Join("\n", result.Log));
+      }
+
+      prompts = asked;
+      log = all.ToString();
+      return names;
+    }
+
+    [Test]
+    public void ReverseTurnFiresOnlyAtTheSecondFieldTurnEndAndAsksFirst()
+    {
+      int prompts;
+      string log;
+      var holder = F(ReverseTurn());
+      var names = PlayTurns(5, null, out prompts, out log, holder);
+      Assert.That(names[0], Is.Not.EqualTo(holder.Data.name), log);
+      Assert.That(names[1], Is.EqualTo(holder.Data.name), log);
+      Assert.That(prompts, Is.EqualTo(1), log);
+      Assert.That(log.Split(new[] { "대기석에서 교대를 요청했다" }, StringSplitOptions.None).Length - 1, Is.EqualTo(1), log);
+    }
+
+    [Test]
+    public void DecliningReverseTurnKeepsTheFieldAllyAndDoesNotSwitchLater()
+    {
+      int prompts;
+      string log;
+      var holder = F(ReverseTurn());
+      var names = PlayTurns(4, n => false, out prompts, out log, holder);
+      Assert.That(names.All(x => x != holder.Data.name), Is.True, log);
+      Assert.That(prompts, Is.GreaterThanOrEqualTo(1), log);
+    }
+
+    [Test]
+    public void LimitedReverseTurnIsUsedOnceAndNotAgainAtLaterSecondTurns()
+    {
+      int prompts;
+      string log;
+      var potential = ReverseTurn();
+      potential.uses = "1/시";
+      var holder = F(potential);
+      var names = PlayTurns(7, null, out prompts, out log, holder);
+      Assert.That(names[1], Is.EqualTo(holder.Data.name), log);
+      Assert.That(prompts, Is.EqualTo(1), log);
+      Assert.That(log.Split(new[] { "대기석에서 교대를 요청했다" }, StringSplitOptions.None).Length - 1, Is.EqualTo(1), log);
+    }
+
+    [Test]
+    public void ReverseTurnDoesNotFireAtTheBenchHoldersOwnLaterTurnEnds()
+    {
+      int prompts;
+      string log;
+      var holder = F(ReverseTurn());
+      PlayTurns(3, null, out prompts, out log, holder);
+      // T1·T3 종료에는 대기석 트리거가 없고, T2 종료의 한 번만 묻는다
+      Assert.That(prompts, Is.EqualTo(1), log);
+    }
+
+    [Test]
+    public void BenchRetreatTypeSwitchDoesNotFireButOnFieldOneDoes()
+    {
+      int prompts;
+      string log;
+      var benchHolder = F(ReverseTurn(false));
+      var names = PlayTurns(4, null, out prompts, out log, benchHolder);
+      Assert.That(names.All(x => x != benchHolder.Data.name), Is.True, log);
+      Assert.That(log.Contains("대기석에서 교대를 요청했다"), Is.False, log);
+
+      // 장소에 있는 둔주류는 2T째 종료에 물러난다
+      var holder = F(ReverseTurn(false));
+      var partner = F();
+      var foe = F();
+      var rules = new Rules { OptionalEffectPrompt = (o, p, x) => true };
+      var fighters = new[] { holder, foe };
+      var trainers = new[] { new TrainerBattleState(), new TrainerBattleState() };
+      partner.OnField = false;
+      string last = null;
+      for (int i = 0; i < 2; i++)
+      {
+        var command = new BattleCommand { Move = Idle(), Party = new[] { holder, partner } };
+        var result = Engine.Resolve(TestData.Db, fighters, new[] { command, Stay(F()) }, rules, trainers, () => .5, request => request.Candidates.First());
+        fighters = result.Fighters;
+        rules = result.Rules;
+        trainers = result.Trainers;
+        last = fighters[0].Data.name;
+      }
+
+      Assert.That(last, Is.EqualTo(partner.Data.name));
     }
 
     [Test]

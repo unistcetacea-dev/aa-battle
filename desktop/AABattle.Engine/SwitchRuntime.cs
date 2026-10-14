@@ -64,7 +64,7 @@ namespace AABattle {
 
   public static bool Mentioned(IEnumerable<string> lines,string name){
    if(string.IsNullOrWhiteSpace(name))return false;string token="『"+name+"』";
-   return (lines??Enumerable.Empty<string>()).Any(x=>(x??"").Contains(token)&&x.Contains("트리거"));
+   return (lines??Enumerable.Empty<string>()).Any(x=>(x??"").Contains(token)&&x.Contains("트리거")&&!x.Contains(BenchEvents.BenchMark));
   }
 
   public static IEnumerable<Potential> TriggeredSwitches(Fighter owner,IEnumerable<string> lines){

@@ -93,7 +93,7 @@ namespace AABattle
           }
         }
 
-        ResolveBenchTriggeredSwitches(db, fighters, states, rules, rng, result, side, owner, lines, timing);
+        ResolveBenchTriggeredSwitches(db, fighters, states, rules, rng, result, side, owner, logStart, timing);
       }
     }
 

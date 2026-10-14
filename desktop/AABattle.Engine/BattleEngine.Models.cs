@@ -219,5 +219,6 @@ namespace AABattle
     public bool[] Switched = new bool[2];
     public List<SwitchRecord> Switches = new List<SwitchRecord>();
     public List<string> Log = new List<string>();
+    public HashSet<int> HandledBenchLines = new HashSet<int>(); // 이미 처리(교대·거절)한 대기석 트리거 로그 위치
   }
 }
