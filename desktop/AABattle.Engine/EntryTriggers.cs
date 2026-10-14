@@ -60,7 +60,7 @@ namespace AABattle {
   static void Raise(Fighter fighter,Fighter opponent,Rules rules,int stat,int amount,string role,List<string> log){if(stat<1||stat>5)return;if(Mechanics.ChangeStage(fighter,opponent,stat,amount,rules,role,log))log.Add("『"+role+"』: "+Engine.Names[stat]+" "+(amount>1?"크게 ":"")+"상승");}
   public static void Enter(Fighter fighter,Fighter opponent,Rules rules,Func<double> rng,Action<string> log){
    if(fighter==null||opponent==null||rules==null||log==null||fighter.HP<=0||fighter.Conditions.RoleEntryApplied)return;fighter.Conditions.RoleEntryApplied=true;var lines=new List<string>();
-   if(IsRole(fighter,"탐사대원")||IsRole(fighter,"야생 포켓몬")){string role=IsRole(fighter,"야생 포켓몬")?"야생 포켓몬":"탐사대원";int amount=role=="야생 포켓몬"?2:1;string stat=PotentialStatRules.ChooseRandom(rng??(()=>0));Raise(fighter,opponent,rules,Array.IndexOf(Engine.Names,stat),amount,role,lines);}
+   // 탐사대원·야생 포켓몬의 「임의의 능력」은 역할 포텐셜 문장이 표준 경로(RunRank, 사용자 선택)로 처리한다
    if(IsRole(fighter,"야생의 두목"))foreach(int stat in Enumerable.Range(1,5))Raise(fighter,opponent,rules,stat,2,"야생의 두목",lines);
    foreach(string line in lines)log(line);
   }
