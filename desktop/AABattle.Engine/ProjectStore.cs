@@ -5,8 +5,8 @@ using System.Web.Script.Serialization;
 
 namespace AABattle {
  // 저장 파일(.aabdata.json) 읽기·쓰기.
- // 포켓몬·트레이너는 고유 id를 갖고, 팀은 id(trainerId·memberIds)로만 참조한다.
- // 불러온 뒤 팀의 trainer·members는 프로젝트 목록의 같은 객체를 가리키므로 원본 수정이 팀에 그대로 반영된다.
+ // 포켓몬·트레이너는 고유 id를 갖고, 팀은 id 목록으로만 참조한다.
+ // 불러온 뒤 팀의 trainers·members는 프로젝트 목록의 같은 객체를 가리킨다.
  public static class ProjectStore {
   public const string Format = "aa-battle-data-v2";
   const int MaxJson = 50000000;
@@ -25,12 +25,12 @@ namespace AABattle {
    Normalize(project, false);
    SyncReferences(project);
    project.format = Format;
-   var saved = project.teams.Select(t => new { team = t, trainer = t.trainer, members = t.members }).ToList();
+   var saved = project.teams.Select(t => new { team = t, trainer = t.trainer, trainers = t.trainers, members = t.members }).ToList();
    try {
-    foreach (var s in saved) { s.team.trainer = null; s.team.members = new List<PokemonRecord>(); }
+    foreach (var s in saved) { s.team.trainer = null; s.team.trainers = new List<TrainerRecord>(); s.team.members = new List<PokemonRecord>(); }
     return new JavaScriptSerializer { MaxJsonLength = MaxJson }.Serialize(project);
    } finally {
-    foreach (var s in saved) { s.team.trainer = s.trainer; s.team.members = s.members; }
+    foreach (var s in saved) { s.team.trainer = s.trainer; s.team.trainers = s.trainers; s.team.members = s.members; }
    }
   }
 
@@ -47,6 +47,10 @@ namespace AABattle {
    EnsureIds(project.pokemon, "pk", p => p.id, (p, id) => p.id = id);
    foreach (var team in project.teams) {
     if (team.memberIds == null) team.memberIds = new List<string>();
+    if (team.trainerIds == null) team.trainerIds = new List<string>();
+    if (team.defaultMemberIds == null) team.defaultMemberIds = new List<string>();
+    if (team.defaultTrainerId == null) team.defaultTrainerId = "";
+    if (team.trainers == null) team.trainers = new List<TrainerRecord>();
     if (team.members == null) team.members = new List<PokemonRecord>();
     if (team.trainerId == null) team.trainerId = "";
     MigrateCopies(project, team);
@@ -66,26 +70,39 @@ namespace AABattle {
   // 팀의 trainer·members를 id로 프로젝트 목록의 객체에 연결한다. 없는 id는 버린다
   public static void Resolve(EditorProject project) {
    foreach (var team in project.teams) {
-    team.trainer = project.trainers.FirstOrDefault(t => t.id == team.trainerId);
+    if (team.trainerIds.Count == 0 && team.trainerId.Length > 0) team.trainerIds.Add(team.trainerId);
+    team.trainers = team.trainerIds.Select(id => project.trainers.FirstOrDefault(t => t.id == id)).Where(t => t != null).ToList();
+    team.trainer = team.trainers.FirstOrDefault(t => t.id == team.defaultTrainerId) ?? team.trainers.FirstOrDefault();
+    team.trainerIds = team.trainers.Select(t => t.id).ToList();
+    if (team.trainer != null) team.trainerId = team.trainer.id;
+    if (team.trainer != null && !team.trainerIds.Contains(team.defaultTrainerId)) team.defaultTrainerId = team.trainer.id;
     team.members = team.memberIds
      .Select(id => project.pokemon.FirstOrDefault(p => p.id == id))
      .Where(p => p != null)
      .ToList();
     team.memberIds = team.members.Select(p => p.id).ToList();
-    if (team.trainer == null) team.trainerId = "";
+    if (team.defaultTrainerId.Length == 0 && team.trainer != null) team.defaultTrainerId = team.trainer.id;
+    var memberIds = new HashSet<string>(team.memberIds);
+    team.defaultMemberIds = team.defaultMemberIds.Where(memberIds.Contains).Distinct().Take(6).ToList();
+    if (team.defaultMemberIds.Count == 0) team.defaultMemberIds = team.memberIds.Take(6).ToList();
    }
   }
 
   // 편집 중 바뀐 trainer·members를 id 목록에 반영한다. 프로젝트 목록에 없는 객체는 목록에 추가한다
   public static void SyncReferences(EditorProject project) {
    foreach (var team in project.teams) {
-    if (team.trainer != null) {
-     if (!project.trainers.Contains(team.trainer)) { Adopt(project.trainers, team.trainer, "tr", t => t.id, (t, id) => t.id = id); }
-     team.trainerId = team.trainer.id;
-    } else team.trainerId = "";
+    if (team.trainers == null) team.trainers = new List<TrainerRecord>();
+    if (team.trainers.Count == 0 && team.trainer != null) team.trainers.Add(team.trainer);
+    foreach (var trainer in team.trainers.Where(t => t != null))
+     if (!project.trainers.Contains(trainer)) Adopt(project.trainers, trainer, "tr", t => t.id, (t, id) => t.id = id);
+    team.trainerIds = team.trainers.Where(t => t != null).Select(t => t.id).Distinct().ToList();
+    if (team.trainer == null || !team.trainerIds.Contains(team.trainer.id)) team.trainer = team.trainers.FirstOrDefault();
+    team.trainerId = team.trainer == null ? "" : team.trainer.id;
+    if (team.defaultTrainerId.Length == 0 && team.trainer != null) team.defaultTrainerId = team.trainer.id;
     foreach (var member in team.members ?? new List<PokemonRecord>())
      if (!project.pokemon.Contains(member)) Adopt(project.pokemon, member, "pk", p => p.id, (p, id) => p.id = id);
     team.memberIds = (team.members ?? new List<PokemonRecord>()).Select(p => p.id).ToList();
+    if (team.defaultMemberIds == null || team.defaultMemberIds.Count == 0) team.defaultMemberIds = team.memberIds.Take(6).ToList();
    }
   }
 
@@ -96,6 +113,7 @@ namespace AABattle {
     var match = Match(project.trainers, team.trainer, new HashSet<object>(), t => t.id, t => t.name);
     if (match == null) { Adopt(project.trainers, team.trainer, "tr", t => t.id, (t, id) => t.id = id); match = team.trainer; }
     team.trainerId = match.id;
+    if (team.trainerIds.Count == 0) team.trainerIds.Add(match.id);
    }
    if (team.members.Count > 0 && team.memberIds.Count == 0) {
     var used = new HashSet<object>();
