@@ -1,0 +1,418 @@
+﻿Kind	Family	Id	Name	Template
+Effect	교대	effect.switch.force.immune	강제교대 면역	{발동확률} 자신은 강제교대되지 않는다.
+Effect	교대	abaddon.pivot.attack	공격기술에 유턴 효과 부여	{발동확률} 자신의 공격기술에 「유턴」 효과를 부여한다.
+Effect	교대	effect.baton.transfer.한다	교대 시 인계 한다	{발동확률} {주체}의 {인계}를 인계한다.
+Effect	교대	effect.baton.transfer.할 수 있다	교대 시 인계 할 수 있다	{발동확률} {주체}의 {인계}를 인계할 수 있다.
+Effect	교대	effect.baton.first	교대 아군 첫 기술 강화	{발동확률} 교대해 나온 아군이 최초로 내보내는 {조건} 기술의 위력을 강화({배율}배)한다.
+Effect	교대	effect.switch.force	상대 강제교대	{발동확률} 상대를 강제교대시킨다.
+Effect	교대	effect.switch.force.optional	상대 강제교대 허용	{발동확률} 상대를 강제교대시킬 수 있다.
+Effect	교대	effect.switch.voluntary	아군과 임의교대	{발동확률} 아군과 임의교대한다.
+Effect	교대	abaddon.switch.optional	아군과 임의교대(선택)	{발동확률} 아군과 임의교대할 수 있다.
+Effect	교대	effect.baton.bilateral	양방향 임의교대 인계	{발동확률} 자신이 나가거나 들어오는 임의교대의 「능력변화」를 인계할 수 있다.
+Effect	교대	effect.switch.pivot	유턴 효과 부여	{발동확률} 자신의 기술에 「유턴」 효과를 부여한다.
+Effect	교대	effect.pursuit.scale	추격 발동 배율	{발동확률} 자신이 「추격」 효과로 주는 대미지를 강화({배율}배)한다.
+Effect	교대	effect.pursuit.followup	추격 추가공격	{발동확률} 「추격」 효과로 가장 먼저 같은 기술에 의한 추가공격을 한다.
+Effect	교대	effect.pursuit.immune	추격 효과 면역	{발동확률} 자신은 「추격」 효과를 받지 않는다.
+Effect	교대	effect.pursuit.grant	추격 효과 부여	{발동확률} 자신의 {조건} 기술에 「추격」 효과를 부여한다.
+Effect	교대	effect.switch.restrict	통상교대 외 교대 제한	{발동확률} 상대는 「통상교대」 이외의 수단으로 교대할 수 없다.
+Effect	기능확장	effect.extension	기능확장 부여	{발동확률} {주체}이 「기능확장:{기술}」를 내보낼 수 있다.
+Effect	기술 변형	abaddon.move.contact-grant	기술에 접촉 효과 부여	{발동확률} 자신의 {조건} 기술에 「접촉」 효과를 부여한다.
+Effect	기술·소지품	effect.critical.rank	기술 급소 랭크 보정	{발동확률} 자신의 {조건} 기술의 급소 랭크를 +{랭크}한다.
+Effect	기술·소지품	effect.berry.consume	나무열매 소모	{발동확률} 자신의 「나무열매」를 소모한다.
+Effect	기술·소지품	effect.item.break.food	나무열매·주얼 파괴	{발동확률} 상대의 「나무열매」「주얼」을 파괴한다.
+Effect	기술·소지품	effect.rank.weather	날씨별 능력 상승폭	{발동확률} 자신의 「{능력}」이 {기본}단계 오르고, 날씨가 「{날씨}」일 때는 {강화}단계 오른다.
+Effect	기술·소지품	effect.heal.weather	날씨별 회복량	{발동확률} 자신의 체력을 날씨에 따라 최대 HP의 {악천후}·{보통}·{쾌청} 회복한다.
+Effect	기술·소지품	effect.move.rank.restore	능력 하락 복구	{발동확률} 자신의 내려간 능력을 원래대로 되돌린다.
+Effect	기술·소지품	effect.move.priority.next	다음 턴 우선도 상승	{발동확률} 다음 T 자신의 기술 우선도를 {수치} 올린다.
+Effect	기술·소지품	effect.field.clear.substitute	대타·설치물 해제	{발동확률} 전체 필드의 대타출동과 설치물을 해제한다.
+Effect	기술·소지품	effect.move.drain.boost	드레인 회복량 강화	{발동확률} 자신의 「드레인」 기술의 회복량을 {배율}배로 한다.
+Effect	기술·소지품	effect.move.charge.skip	모으기 생략	{발동확률} 자신의 「모으기」 기술의 모으기를 생략한다.
+Effect	기술·소지품	effect.stockpile.heal	비축하기 횟수에 따른 회복	{발동확률} 자신의 비축하기 상태를 해제해 그 횟수에 따라 HP를 회복한다.
+Effect	기술·소지품	effect.berry.pluck	상대 나무열매 뺏어먹기	{발동확률} 상대의 「나무열매」를 자신이 먹는다.
+Effect	기술·소지품	effect.release.all	상태변화 전체 해제	{발동확률} {주체}의 모든 상태변화를 해제한다.
+Effect	기술·소지품	effect.item.recycle.any	소모한 소지품 재획득	{발동확률} 자신이 소모한 소지품을 다시 얻는다.
+Effect	기술·소지품	effect.item.swap	소지품 교환	{발동확률} 서로의 소지품을 뒤바꾼다.
+Effect	기술·소지품	effect.item.fling	소지품 던지기	{발동확률} 자신의 소지품을 상대에게 던진다.
+Effect	기술·소지품	effect.item.give	소지품 상대에게 이동	{발동확률} 자신의 소지품을 상대에게 옮긴다.
+Effect	기술·소지품	effect.item.break	소지품 소실	{발동확률} 자신의 소지품이 부서진다.
+Effect	기술·소지품	effect.move.repeat	연속 사용 위력 강화	{발동확률} 자신이 같은 기술을 연속으로 내보낼 때마다 그 기술의 위력을 {배율}배씩 강화한다(최대 {최대배율}배).
+Effect	기술·소지품	effect.field.clear	전체 필드 상태 해제	{발동확률} 전체 필드의 특수한 상태를 해제한다.
+Effect	기술·소지품	effect.move.contact.ignore	접촉 반응 무시	{발동확률} 자신의 「접촉」 기술에 반응하는 효과를 받지 않는다.
+Effect	기술·소지품	effect.move.bind.damage	조이기 대미지 지정	{발동확률} 자신이 거는 「조이기」의 대미지를 최대 HP의 1/{분모}로 한다.
+Effect	기술·소지품	effect.move.bind.turns	조이기 지속 지정	{발동확률} 자신이 거는 「조이기」의 지속 T를 {기간}T로 한다.
+Effect	기술·소지품	effect.wall.clear	진영의 벽 해제	{발동확률} {진영}의 「벽」을 해제한다.
+Effect	기술·소지품	effect.hp.split	체력 합산 후 배분	{발동확률} 필드의 전원의 현재 HP를 더한 뒤 똑같이 배분한다.
+Effect	기술·소지품	effect.ability.change.한다	특성 변경 한다	{발동확률} {주체}의 특성을 「{특성}」으로 한다.
+Effect	기술·소지품	effect.ability.change.할 수 있다	특성 변경 할 수 있다	{발동확률} {주체}의 특성을 「{특성}」으로 할 수 있다.
+Effect	기술·소지품	effect.berry.eat.all	필드 전원 나무열매 먹기	{발동확률} 필드의 전원이 지니고 있는 「나무열매」를 먹는다.
+Effect	능력 랭크	effect.rank.raise1	능력 1랭크 상승	{발동확률} {대상}이 오른다.
+Effect	능력 랭크	effect.rank.lower1	능력 1랭크 하락	{발동확률} {대상}을 내린다.
+Effect	능력 랭크	effect.rank.raise2	능력 2랭크 상승	{발동확률} {대상}이 크게 오른다.
+Effect	능력 랭크	effect.rank.lower2	능력 2랭크 하락	{발동확률} {대상}을 크게 내린다.
+Effect	능력 랭크	effect.rank.raise3	능력 3랭크 상승	{발동확률} {대상}이 매우 크게 오른다.
+Effect	능력 랭크	effect.rank.lower3	능력 3랭크 하락	{발동확률} {대상}을 매우 크게 내린다.
+Effect	능력 랭크	effect.stat.ignore.강화	능력 강화 무시	{발동확률} {대상}의 {능력} 강화를 무시한다.
+Effect	능력 랭크	abaddon.invert.한다	능력 변화 반전	{발동확률} {대상}의 능력 변화를 반전한다.
+Effect	능력 랭크	abaddon.invert.할 수 있다	능력 변화 반전(선택)	{발동확률} {대상}의 능력 변화를 반전할 수 있다.
+Effect	능력 랭크	effect.rank.reset	능력 변화 초기화	{발동확률} {주체}의 능력 변화를 초기화한다.
+Effect	능력 랭크	effect.stat.ignore.상승(강화)	능력 상승(강화) 무시	{발동확률} {대상}의 {능력} 상승(강화)을 무시한다.
+Effect	데이터	effect.analysis.immune	데이터 해석 무효	{발동확률} {효과기간} 자신에 대한 데이터 해석을 무효화한다.
+Effect	데이터	effect.analysis.execute	데이터 해석 실행	{발동확률} 상대의 데이터를 해석한다.
+Effect	데이터	effect.analysis.permission	데이터 해석 허용	{발동확률} 상대의 데이터를 해석할 수 있다.
+Effect	방호·회피	effect.guard.pierce.pokemon	방호 관통	{발동확률} {효과기간} 자신의 {조건} 기술이 상대의 방호 포텐셜을 무시한다.
+Effect	방호·회피	effect.guard.무효화	상대 기술 무효화	{발동확률} {효과기간} 상대의 {조건} 기술을 {확률} 무효화한다.
+Effect	방호·회피	effect.guard.무효화.once	상대 기술 무효화 (1번만)	{발동확률} {효과기간} 상대의 {조건} 기술을 1번만 {확률} 무효화한다.
+Effect	방호·회피	effect.guard.반사	상대 기술 반사	{발동확률} {효과기간} 상대의 {조건} 기술을 {확률} 반사한다.
+Effect	방호·회피	effect.guard.반사.once	상대 기술 반사 (1번만)	{발동확률} {효과기간} 상대의 {조건} 기술을 1번만 {확률} 반사한다.
+Effect	방호·회피	effect.guard.회피	상대 기술 회피	{발동확률} {효과기간} 상대의 {조건} 기술을 {확률} 회피한다.
+Effect	방호·회피	effect.guard.회피.once	상대 기술 회피 (1번만)	{발동확률} {효과기간} 상대의 {조건} 기술을 1번만 {확률} 회피한다.
+Effect	방호·회피	effect.guard.pierce.trainer	트레이너 방호 관통	{발동확률} {효과기간} 자신의 {조건} 기술이 상대의 트레이너 방호 포텐셜을 무시한다.
+Effect	사용 조건	abaddon.offfield	필드 밖 발동 가능	{발동확률} 이 포텐셜은 자신이 필드에 없어도 발동한다.
+Effect	상태	effect.floating	공중 부유	{발동확률} 자신은 공중에 떠오른다.
+Effect	상태	effect.state.grant.ignore	면역을 무시한 상태 부여	{발동확률} {효과기간} 상태이상 면역을 무시하고 {대상}를 「{상태}」상태로 한다.
+Effect	상태	effect.state.immunity.all	상태 면역 	{발동확률} 자신은 「{상태}」상태가 되지 않는다.
+Effect	상태	effect.state.immunity.opponent	상태 면역 상대에 의해 	{발동확률} 상대에 의해 자신은 「{상태}」상태가 되지 않는다.
+Effect	상태	effect.state.immunity.move	상태 면역 상대의 기술에 의해 	{발동확률} 상대의 기술에 의해 자신은 「{상태}」상태가 되지 않는다.
+Effect	상태	effect.state.grant.normal	상태 부여	{발동확률} {효과기간} {대상}를 「{상태}」상태로 한다.
+Effect	상태	effect.state.cure.all	상태이상 전체 치유	{발동확률} {대상}의 상태이상을 치유한다.
+Effect	상태	abaddon.cure.seal	상태이상 치유 봉인	{발동확률} {대상}의 「상태이상」은 치유되지 않는다.
+Effect	상태	effect.state.become	자신 상태 변화	{발동확률} {효과기간} 「{상태}」상태가 된다.
+Effect	상태	effect.state.release	지정 상태변화 해제	{발동확률} {대상}의 「{상태}」 상태를 해제한다.
+Effect	상태	effect.state.cure.named	지정 상태이상 치유	{발동확률} {대상}의 「{상태}」 상태를 치유한다.
+Effect	수치 배율	effect.scalar.move.명중강화	기술 명중 강화	{발동확률} {효과기간} {주체}의 {조건} 기술의 명중을 강화({배율}배)한다.
+Effect	수치 배율	effect.scalar.move.명중약화	기술 명중 약화	{발동확률} {효과기간} {주체}의 {조건} 기술의 명중을 약화({배율}배)한다.
+Effect	수치 배율	effect.scalar.move.위력강화	기술 위력 강화	{발동확률} {효과기간} {주체}의 {조건} 기술의 위력을 강화({배율}배)한다.
+Effect	수치 배율	effect.scalar.move.위력약화	기술 위력 약화	{발동확률} {효과기간} {주체}의 {조건} 기술의 위력을 약화({배율}배)한다.
+Effect	수치 배율	effect.scalar.stats.강화	능력 강화	{발동확률} {효과기간} {대상}을 강화({배율}배)한다.
+Effect	수치 배율	effect.scalar.stats.약화	능력 약화	{발동확률} {효과기간} {대상}을 약화({배율}배)한다.
+Effect	수치 배율	abaddon.scalar.rank-lowered	능력 하락에 비례해 위력 약화	{발동확률} 상대의 능력 하락 1랭크마다 상대 기술의 위력을 약화({배율}배)한다.
+Effect	수치 배율	effect.scalar.damage.plain.강화	대미지 강화	{발동확률} {효과기간} {주체}이 {방향} 대미지를 강화({배율}배)한다.
+Effect	수치 배율	effect.scalar.damage.plain.약화	대미지 약화	{발동확률} {효과기간} {주체}이 {방향} 대미지를 약화({배율}배)한다.
+Effect	수치 배율	effect.scalar.damage.받는강화	받는 대미지 강화	{발동확률} {효과기간} {주체}이 받는 {조건} 기술의 대미지를 강화({배율}배)한다.
+Effect	수치 배율	effect.scalar.damage.받는약화	받는 대미지 약화	{발동확률} {효과기간} {주체}이 받는 {조건} 기술의 대미지를 약화({배율}배)한다.
+Effect	수치 배율	effect.scalar.damage.주는강화	주는 대미지 강화	{발동확률} {효과기간} {주체}이 주는 {조건} 기술의 대미지를 강화({배율}배)한다.
+Effect	수치 배율	effect.scalar.damage.주는약화	주는 대미지 약화	{발동확률} {효과기간} {주체}이 주는 {조건} 기술의 대미지를 약화({배율}배)한다.
+Effect	역할	effect.role.appoint	역할 임명	{발동확률} 자신을 『{역할}』로 임명할 수 있다.
+Effect	우선도	abaddon.priority.first	최초로 내보내는 기술의 우선도	{발동확률} 아군이 장소에 나와 최초로 내보내는 {조건} 기술의 우선도를 {우선도} 올릴 수 있다.
+Effect	유대	effect.bond.hot	뜨거운 유대	{발동확률} 자신의 모든 종족치에 「++」를 부여한다.
+Effect	장소	effect.place.weather.한다	날씨 변경 한다	{발동확률} {효과기간} 날씨를 「{날씨}」로 한다.
+Effect	장소	effect.place.weather.할 수 있다	날씨 변경 할 수 있다	{발동확률} {효과기간} 날씨를 「{날씨}」로 할 수 있다.
+Effect	장소	effect.weather.ignore	날씨 영향 무시	{발동확률} 자신은 「{날씨}」의 영향을 받지 않는다.
+Effect	장소	effect.hazard.clear	자진 설치물 제거	{발동확률} 자진의 설치물을 제거한다.
+Effect	장소	effect.place.room.한다	장소 상태 전개 한다	{발동확률} {효과기간} 「{룸}」을 전개한다.
+Effect	장소	effect.place.room.할 수 있다	장소 상태 전개 할 수 있다	{발동확률} {효과기간} 「{룸}」을 전개할 수 있다.
+Effect	장소	effect.hazard.install.한다	적진 설치물 설치 한다	{발동확률} 적진에 「{설치물}」을 설치한다.
+Effect	장소	effect.hazard.install.할 수 있다	적진 설치물 설치 할 수 있다	{발동확률} 적진에 「{설치물}」을 설치할 수 있다.
+Effect	장소	effect.place.extend	전개 상태 지속 연장	{발동확률} 자신이 전개하는 「{상태}」의 지속 T를 +{기간}한다.
+Effect	장소	effect.place.terrain.한다	지형 변경 한다	{발동확률} {효과기간} 지형을 「{지형}」로 한다.
+Effect	장소	effect.place.terrain.할 수 있다	지형 변경 할 수 있다	{발동확률} {효과기간} 지형을 「{지형}」로 할 수 있다.
+Effect	종족치	effect.species.copy.낮은	가장 낮은 종족치 복사	{발동확률} {대상} 종족치를 가장 낮은 종족치로 한다.
+Effect	종족치	effect.species.copy.높은	가장 높은 종족치 복사	{발동확률} {대상} 종족치를 가장 높은 종족치로 한다.
+Effect	종족치	effect.species.copy.까지 올린다	다른 종족치 까지 올린다	{발동확률} {대상} 종족치를 자신의 「{원본}」 종족치까지 올린다.
+Effect	종족치	effect.species.copy.와 같게 한다	다른 종족치 와 같게 한다	{발동확률} {대상} 종족치를 자신의 「{원본}」 종족치와 같게 한다.
+Effect	종족치	effect.species.grade.value.까지 내린다	등급 범위 내 종족치 까지 내린다	{발동확률} {대상} 종족치를 「{등급}」 범위의 「{수치}」까지 내린다.
+Effect	종족치	effect.species.grade.value.까지 올린다	등급 범위 내 종족치 까지 올린다	{발동확률} {대상} 종족치를 「{등급}」 범위의 「{수치}」까지 올린다.
+Effect	종족치	effect.species.grade.value.로 한다	등급 범위 내 종족치 로 한다	{발동확률} {대상} 종족치를 「{등급}」 범위의 「{수치}」로 한다.
+Effect	종족치	effect.species.grade.까지 내린다	종족치 등급 까지 내린다	{발동확률} {대상} 종족치를 「{등급}」까지 내린다.
+Effect	종족치	effect.species.grade.까지 올린다	종족치 등급 까지 올린다	{발동확률} {대상} 종족치를 「{등급}」까지 올린다.
+Effect	종족치	effect.species.grade.로 한다	종족치 등급 로 한다	{발동확률} {대상} 종족치를 「{등급}」로 한다.
+Effect	종족치	effect.species.raise	종족치 랭크 상승	{발동확률} {대상} 종족치를 「{수치}」로 하여 {랭크}랭크 올린다.
+Effect	종족치	effect.species.value.add	종족치 수치 가산	{발동확률} {대상} 종족치를 {수치} 올린다.
+Effect	종족치	effect.species.value	종족치 수치 지정	{발동확률} {대상} 종족치를 「{수치}」로 한다.
+Effect	종족치	effect.species.raise.auto	종족치 자동 랭크 상승	{발동확률} {대상} 종족치를 {랭크}랭크 올린다.
+Effect	종족치	effect.species.trainer	트레이너 자질까지 종족치 상승	{발동확률} {대상} 종족치를 트레이너 「{자질}」 등급까지 올린다.
+Effect	체력	abaddon.heal.full	자진 포켓몬 체력 가득 회복	{발동확률} 자진의 포켓몬의 체력을 가득 회복한다.
+Effect	체력	effect.hp.대미지	최대 HP 비율 대미지	{발동확률} {주체}에게 최대 HP의 1/{분모} 대미지를 준다.
+Effect	체력	effect.hp.대미지 보호	최대 HP 비율 대미지 보호	{발동확률} {주체}에게 최대 HP의 1/{분모} 대미지를 준다. 이 대미지로는 빈사로 할 수 없다.
+Effect	체력	effect.hp.소비	최대 HP 비율 소비	{발동확률} {주체}의 체력을 최대 HP의 1/{분모} 소비한다.
+Effect	체력	effect.hp.회복	최대 HP 비율 회복	{발동확률} {주체}의 체력을 최대 HP의 1/{분모} 회복한다.
+Effect	체력	effect.hp.damage.type	타입 대미지	{발동확률} {주체}에게 최대 HP의 1/{분모} 「{타입}」 타입 대미지를 준다.
+Effect	체력	abaddon.heal.repay	회복한 체력 반납	{발동확률} 회복한 체력만큼 턴 끝에 대미지를 입는다(빈사 불가).
+Effect	추가효과	effect.secondary.rank	능력 랭크 추가효과 부여	{발동확률} 자신의 {조건} {범위}에 「{확률}할:{능력}{방향}{랭크}」의 추가효과를 부여한다.
+Effect	추가효과	effect.secondary.tokens	복수 추가효과 부여	{발동확률} 자신의 {조건} {범위}에 {추가효과}의 추가효과를 부여한다.
+Effect	추가효과	effect.secondary.state	상태 추가효과 부여	{발동확률} 자신의 {조건} {범위}에 「{확률}할:{상태}」의 추가효과를 부여한다.
+Effect	타입·상성	abaddon.type.foe-move	상대 기술을 지정 타입으로	{발동확률} {효과기간} 상대의 {조건} 기술을 「{타입}」 타입으로 한다.
+Effect	타입·상성	effect.type.immune	상성 무효 관통	{발동확률} {효과기간} {주체}의 {조건} 기술이 타입 상성에 의한 무효를 관통한다.
+Effect	타입·상성	effect.type.rating.all	상성 지정	{발동확률} {효과기간} {주체}의 {조건} 기술의 상성을 「{상성}」으로 한다.
+Effect	타입·상성	effect.type.rating.named	상성 지정 (지정 타입)	{발동확률} {효과기간} 「{타입}」 타입에게 {주체}의 {조건} 기술의 상성을 「{상성}」으로 한다.
+Effect	타입·상성	effect.type.favorable	유리한 상성 판정	{발동확률} {효과기간} 자신의 기술을 유리한 상성으로 판정한다.
+Effect	타입·상성	effect.type.add.한다	유리한 타입 추가 한다	{발동확률} {효과기간} 자신의 {조건} 기술에 「{타입}」 타입을 추가해 유리한 상성으로 판정한다.
+Effect	타입·상성	effect.type.add.할 수 있다	유리한 타입 추가 할 수 있다	{발동확률} {효과기간} 자신의 {조건} 기술에 「{타입}」 타입을 추가해 유리한 상성으로 판정할 수 있다.
+Effect	타입·상성	effect.type.resist.named	지정 타입 내성 관통	{발동확률} {효과기간} 자신의 {조건} 기술이 「{타입}」 타입의 타입 내성을 관통한다.
+Effect	타입·상성	effect.type.immune.named	지정 타입 무효 관통	{발동확률} {효과기간} 자신의 {조건} 기술이 「{타입}」 타입의 무효를 관통한다.
+Effect	타입·상성	effect.type.resist	타입 내성 관통	{발동확률} {효과기간} 자신의 {조건} 기술이 상대의 타입 내성을 관통한다.
+Effect	타입·상성	effect.type.change.한다	타입 변경 한다	{발동확률} {효과기간} {주체}의 타입을 「{타입}」로 한다.
+Effect	타입·상성	effect.type.change.할 수 있다	타입 변경 할 수 있다	{발동확률} {효과기간} {주체}의 타입을 「{타입}」로 할 수 있다.
+Effect	타입·상성	effect.type.ignore	타입 상성 무시	{발동확률} {효과기간} 자신의 {조건} 기술이 상대의 타입 상성을 무시한다.
+Effect	타입·상성	effect.type.stab	타입 일치 배율 지정	{발동확률} {효과기간} 자신의 {조건} 기술의 타입 일치 배율을 「{배율}배」로 한다.
+Effect	타입·상성	effect.type.inverse	필드 전원 타입 상성 반전	{발동확률} {효과기간} 필드에 있는 전원의 타입 상성을 반전한다.
+Effect	타입·상성	effect.type.neutral	필드 전원 타입 상성 중립	{발동확률} {효과기간} 필드에 있는 전원의 기술의 타입 상성을 「효과 보통」으로 한다.
+Effect	트레이너	effect.aptitude.지시.내린다	트레이너 자질 내린다	{발동확률} 트레이너의 「지시」을 {랭크}랭크 내린다.
+Effect	트레이너	effect.aptitude.육성.내린다	트레이너 자질 내린다	{발동확률} 트레이너의 「육성」을 {랭크}랭크 내린다.
+Effect	트레이너	effect.aptitude.통솔.내린다	트레이너 자질 내린다	{발동확률} 트레이너의 「통솔」을 {랭크}랭크 내린다.
+Effect	트레이너	effect.aptitude.능력.내린다	트레이너 자질 내린다	{발동확률} 트레이너의 「능력」을 {랭크}랭크 내린다.
+Effect	트레이너	effect.aptitude.능력.올린다	트레이너 자질 올린다	{발동확률} 트레이너의 「능력」을 {랭크}랭크 올린다.
+Effect	트레이너	effect.aptitude.지시.올린다	트레이너 자질 올린다	{발동확률} 트레이너의 「지시」을 {랭크}랭크 올린다.
+Effect	트레이너	effect.aptitude.통솔.올린다	트레이너 자질 올린다	{발동확률} 트레이너의 「통솔」을 {랭크}랭크 올린다.
+Effect	트레이너	effect.aptitude.육성.올린다	트레이너 자질 올린다	{발동확률} 트레이너의 「육성」을 {랭크}랭크 올린다.
+Effect	트레이너	effect.bond.replay	트레이너 포텐셜 재발동	{발동확률} 자신을 대상으로 포텐셜을 다시 발동한다.
+Effect	트레이너	effect.bond.regain	트레이너 포텐셜 재사용 권한	{발동확률} 포텐셜을 다시 받을 수 있다.
+Effect	트레이너	effect.bond.rise	필드에 있는 한 지시 랭크 상승	{발동확률} 필드에 있는 한 트레이너의 지시를 「{랭크}」랭크 올린다.
+Effect	특성·계속 효과	ability.guard.restore	1번만 효과 복구	{발동확률} 자신의 1번만 효과의 사용 횟수를 복구한다.
+Effect	특성·계속 효과	ability.indirect.immune	간접 대미지 무효	{발동확률} 자신은 공격 이외의 대미지를 받지 않는다.
+Effect	특성·계속 효과	ability.indirect.survive	간접 대미지 빈사 방지	{발동확률} 자신은 공격 이외의 대미지로 빈사가 되지 않는다.
+Effect	특성·계속 효과	ability.floating.hit	공중 상대 명중	{발동확률} 자신의 {기술조건} 기술은 공중에 떠 있는 상대에게도 명중한다.
+Effect	특성·계속 효과	ability.critical.zero	급소 랭크 보정 0	{발동확률} 상대의 기술의 급소 랭크 보정을 0으로 한다.
+Effect	특성·계속 효과	ability.critical.immune	급소 무효	{발동확률} 자신은 급소에 맞지 않는다.
+Effect	특성·계속 효과	ability.critical.rate	급소 배율	{발동확률} 자신의 급소 배율을 {배율}배로 한다.
+Effect	특성·계속 효과	ability.movelock	기술 고정	{발동확률} 자신은 장소에 나와서 최초로 내보낸 기술만 내보낼 수 있다.
+Effect	특성·계속 효과	ability.move.accuracy	기술 명중 지정	{발동확률} 필드에 있는 전원의 기술의 명중을 「{명중}」로 한다.
+Effect	특성·계속 효과	ability.recoil.immune	기술 반동 무효	{발동확률} 자신의 기술의 반동 대미지를 받지 않는다.
+Effect	특성·계속 효과	ability.move.category	기술 분류 변경	{발동확률} 자신의 공격기술의 분류를 「{분류}」로 한다.
+Effect	특성·계속 효과	ability.move.power	기술 위력 지정	{발동확률} 자신의 {기술조건} 기술의 위력을 「{위력}」로 한다.
+Effect	특성·계속 효과	ability.move.type	기술 타입 변경	{발동확률} 자신의 {기술조건} 기술의 타입을 「{타입}」로 한다.
+Effect	특성·계속 효과	ability.type.move	기술 타입으로 변화	{발동확률} 자신의 타입을 내보내는 기술의 타입으로 한다.
+Effect	특성·계속 효과	ability.machine.extra	기술머신 추가행동	{발동확률} 가장 마지막에 소지품 「기술머신」의 기술에 의한 추가행동을 얻을 수 있다.
+Effect	특성·계속 효과	ability.berry.recycle	나무열매 되돌려받기	{발동확률} 소모한 「나무열매」를 되돌려받는다.
+Effect	특성·계속 효과	ability.berry.use	나무열매 사용	{발동확률} 자신의 「나무열매」를 사용한다.
+Effect	특성·계속 효과	ability.berry.ripen	나무열매 효과 2배	{발동확률} 자신이 소모하는 「나무열매」의 효과가 2배가 된다.
+Effect	특성·계속 효과	ability.berry.replay	나무열매 효과 다시 받기	{발동확률} 사용한 나무열매의 효과를 다시 받는다.
+Effect	특성·계속 효과	ability.weather.lock	날씨 고정	{발동확률} 날씨를 「{날씨}」로 고정한다.
+Effect	특성·계속 효과	ability.weather.damageimmune	날씨 대미지 무효	{발동확률} 자신은 「{날씨}」의 대미지를 받지 않는다.
+Effect	특성·계속 효과	ability.weather.cancel	날씨 효과 무효	{발동확률} 날씨의 효과를 무효화한다.
+Effect	특성·계속 효과	ability.rank.reverse	능력 변화 반전	{발동확률} 자신에 대한 능력 변화를 반대로 한다.
+Effect	특성·계속 효과	ability.rank.extra	능력 변화량 추가	{발동확률} 자신의 능력 변화량을 1 늘린다.
+Effect	특성·계속 효과	ability.rank.dropimmune.all	능력 전체 하락 무효	{발동확률} 자신은 상대에 의해 능력이 내려가지 않는다.
+Effect	특성·계속 효과	ability.rank.reflect	능력 하락 반사	{발동확률} 상대에 의한 능력 하락을 상대에게 되돌린다.
+Effect	특성·계속 효과	ability.noeffect.multi	다인전 전용 효과 없음	{발동확률} 다인전 전용 효과이므로 싱글에서는 효과가 없다.
+Effect	특성·계속 효과	ability.damage.defer	대미지 지연	{발동확률} 자신은 상대의 기술의 대미지를 {확률} 자신의 행동 후로 미룬다.
+Effect	특성·계속 효과	ability.poison.pierce	독 타입 면역 관통	{발동확률} 자신이 거는 「독」「맹독」은 타입 면역을 관통한다.
+Effect	특성·계속 효과	ability.drain.reverse	드레인 반전	{발동확률} 자신에 대한 상대의 드레인 효과를 반전한다.
+Effect	특성·계속 효과	ability.rank.follow	랭크 따라가기	{발동확률} 자신의 능력을 상대가 올린 만큼 올린다.
+Effect	특성·계속 효과	ability.rank.set	랭크 지정	{발동확률} 자신의 「{능력}」 랭크를 「{랭크}」로 한다.
+Effect	특성·계속 효과	ability.status.random	무작위 상태이상 부여	{발동확률} 상대를 「{상태}」 중 무작위 상태이상으로 한다.
+Effect	특성·계속 효과	ability.critical.always	반드시 급소	{발동확률} 자신의 {기술조건} 기술은 반드시 급소에 맞는다.
+Effect	특성·계속 효과	ability.sturdy	반드시 버팀	{발동확률} 자신은 빈사가 되는 공격을 HP 1로 버틴다.
+Effect	특성·계속 효과	ability.type.received	받은 기술 타입으로 변화	{발동확률} 자신의 타입을 받은 기술의 타입으로 한다.
+Effect	특성·계속 효과	ability.damage.return	받은 대미지 반격	{발동확률} 상대에게 자신이 마지막으로 받은 대미지만큼 고정 대미지를 준다.
+Effect	특성·계속 효과	ability.protect.pierce	방어 관통	{발동확률} 자신의 {기술조건} 기술이 상대의 「방어」 기술을 관통한다.
+Effect	특성·계속 효과	ability.noeffect.outside	배틀 밖 효과 없음	{발동확률} 배틀 밖 효과이므로 효과가 없다.
+Effect	특성·계속 효과	ability.status.protectpierce	변화기술 방어 관통	{발동확률} 자신의 「변화」 기술이 상대의 「방어」 기술을 관통한다.
+Effect	특성·계속 효과	ability.fallen.scalarrate	빈사 아군 수에 비례한 배율	{발동확률} 자신의 「{능력}」을 빈사 상태인 아군의 수에 비례해 강화(1.2배~1.6배)한다.
+Effect	특성·계속 효과	ability.move.replace	상대 기술 변경	{발동확률} 상대의 {기술조건} 기술은 {확률}할로 「기술:{기술}」이 된다.
+Effect	특성·계속 효과	ability.stats.copyhighest	상대 종족치 복사	{발동확률} 상대의 가장 높은 종족치를 자신의 같은 능력에 복사한다.
+Effect	특성·계속 효과	ability.ability.suppress	상대 특성 무효	{발동확률} 상대의 〔특성〕을 무효화한다.
+Effect	특성·계속 효과	ability.secondary.remove.opponent	상대의 기술 추가효과 무효	{발동확률} 상대의 기술의 추가효과를 무효화한다.
+Effect	특성·계속 효과	ability.item.ban.opponent	상대의 소비 소지품 사용 금지	{발동확률} 상대는 소비하는 소지품을 사용할 수 없다.
+Effect	특성·계속 효과	ability.move.fail.opponent	상대의 조건 기술 실패	{발동확률} 상대의 {기술조건} 기술이 실패한다.
+Effect	특성·계속 효과	ability.switch.trap	상대의 통상교대 금지	{발동확률} 상대는 「통상교대」를 할 수 없다.
+Effect	특성·계속 효과	ability.ability.copy.opponent	상대의 특성 복사	{발동확률} 상대의 특성을 복사한다.
+Effect	특성·계속 효과	ability.status.damageimmune	상태이상 대미지 면역	{발동확률} 자신은 「{상태}」의 대미지를 받지 않는다.
+Effect	특성·계속 효과	ability.status.reflect	상태이상 반사	{발동확률} 상대를 자신과 같은 상태이상으로 한다.
+Effect	특성·계속 효과	ability.status.powerimmune	상태이상 위력 저하 무효	{발동확률} 「{상태}」의 기술 위력 저하 효과를 무효화한다.
+Effect	특성·계속 효과	ability.hazard.immune	설치물 무시	{발동확률} 자신은 설치물의 영향을 받지 않는다.
+Effect	특성·계속 효과	ability.item.protect	소지품 보호	{발동확률} 자신의 소지품은 파괴되거나 약탈되지 않는다.
+Effect	특성·계속 효과	ability.item.take	소지품 약탈	{발동확률} 상대의 소지품을 빼앗는다.
+Effect	특성·계속 효과	ability.item.type	소지품 타입 변화	{발동확률} 자신의 타입을 소지품 「플레이트」의 타입으로 한다.
+Effect	특성·계속 효과	ability.item.break	소지품 파괴	{발동확률} 상대의 소지품을 파괴한다.
+Effect	특성·계속 효과	ability.item.frisk	소지품 해석	{발동확률} 상대의 소지품을 해석한다.
+Effect	특성·계속 효과	ability.item.share	소지품 효과 공유	{발동확률} 그 소지품의 효과를 자신도 받는다.
+Effect	특성·계속 효과	ability.multihit.max	연속기 최대 횟수	{발동확률} 자신의 「연속」 기술은 반드시 최대 횟수만큼 명중한다.
+Effect	특성·계속 효과	ability.aura.reverse	오라 반전	{발동확률} 〔오라〕의 효과를 반전한다.
+Effect	특성·계속 효과	ability.rank.riseagain	올라간 만큼 올림	{발동확률} 자신의 능력을 올라간 만큼 올린다.
+Effect	특성·계속 효과	ability.intimidate.immune	위협 하락 무효	{발동확률} 상대의 〔위협〕에 의한 능력 하락을 무효화한다.
+Effect	특성·계속 효과	ability.secondary.remove.self	자신의 기술 추가효과 무효	{발동확률} 자신의 기술의 추가효과를 무효화한다.
+Effect	특성·계속 효과	ability.item.ban.self	자신의 소지품 사용 금지	{발동확률} 자신은 소지품을 사용할 수 없다.
+Effect	특성·계속 효과	ability.sleep.half	잠듦 기간 절반	{발동확률} 자신의 「잠듦」 상태의 지속 T를 절반으로 한다.
+Effect	특성·계속 효과	ability.screens.clear	전체 필드 벽 해제	{발동확률} 전체 필드의 「벽」을 해제한다.
+Effect	특성·계속 효과	ability.switch.trapground	접지한 상대의 통상교대 금지	{발동확률} 접지한 상대는 「통상교대」를 할 수 없다.
+Effect	특성·계속 효과	ability.contact.remove	접촉 취급 해제	{발동확률} 자신의 기술은 「접촉」 기술로 취급하지 않는다.
+Effect	특성·계속 효과	ability.surehit	조건 기술에 필중 부여	{발동확률} 자신의 {기술조건} 기술은 필중이다.
+Effect	특성·계속 효과	ability.recoil.condition	조건 반동 무효	{발동확률} 자신의 {기술조건} 기술의 반동 대미지를 받지 않는다.
+Effect	특성·계속 효과	ability.priority.condition	조건 우선도	{발동확률} 자신의 {기술조건} 기술의 우선도를 +{우선도}한다.
+Effect	특성·계속 효과	ability.priority.lag	조건 우선도 -0.5	{발동확률} 자신의 {기술조건} 기술의 우선도를 -0.5한다.
+Effect	특성·계속 효과	ability.ability.piercecondition	조건 특성 관통	{발동확률} 자신의 {기술조건} 기술은 상대의 〔방호 특성〕을 관통한다.
+Effect	특성·계속 효과	ability.rank.dropimmune.named	지정 능력 하락 무효	{발동확률} 자신은 상대에 의해 「{능력}」이 내려가지 않는다.
+Effect	특성·계속 효과	ability.surehit.type	지정 타입 상대에게 필중	{발동확률} 자신의 {기술조건} 기술은 「{타입}」 타입에게 필중이다.
+Effect	특성·계속 효과	ability.switch.traptype	지정 타입 상대의 통상교대 금지	{발동확률} 「{타입}」 타입인 상대는 「통상교대」를 할 수 없다.
+Effect	특성·계속 효과	ability.ability.copy.ally	직전에 빈사한 아군의 특성 복사	{발동확률} 직전에 빈사한 아군의 특성을 복사한다.
+Effect	특성·계속 효과	ability.secondary.double	추가효과 확률 배율	{발동확률} 자신의 기술의 추가효과 발동 확률을 2배로 한다.
+Effect	특성·계속 효과	ability.type.copy	타입 복사	{발동확률} 자신의 타입을 상대와 같은 타입으로 한다.
+Effect	특성·계속 효과	ability.type.add	타입 추가	{발동확률} 자신의 타입에 「{타입}」를 추가한다.
+Effect	특성·계속 효과	ability.ability.pierce	특성 관통	{발동확률} 자신의 기술은 상대의 〔방호 특성〕을 관통한다.
+Effect	특성·계속 효과	ability.ability.pierceimmune	특성 관통 불가	{발동확률} 자신의 특성은 관통되지 않는다.
+Effect	특성·계속 효과	ability.ability.swap	특성 교환	{발동확률} 자신과 상대의 특성을 교환한다.
+Effect	특성·계속 효과	ability.ability.suppressimmune	특성 무효화 불가	{발동확률} 자신의 특성은 무효화되지 않는다.
+Effect	특성·계속 효과	ability.ability.changeimmune	특성 변경 불가	{발동확률} 자신의 특성은 변화되지 않는다.
+Effect	특성·계속 효과	ability.field.scalar.공격	필드 전원의 공격 배율	{발동확률} {대상}의 「공격」을 강화({배율}배)한다.
+Effect	특성·계속 효과	ability.surehit.field	필드 전원의 기술 필중	{발동확률} 필드에 있는 전원의 기술은 필중이다.
+Effect	특성·계속 효과	ability.field.scalar.명중	필드 전원의 명중 배율	{발동확률} {대상}의 「명중」을 강화({배율}배)한다.
+Effect	특성·계속 효과	ability.field.scalar.방어	필드 전원의 방어 배율	{발동확률} {대상}의 「방어」을 강화({배율}배)한다.
+Effect	특성·계속 효과	ability.field.scalar.속도	필드 전원의 속도 배율	{발동확률} {대상}의 「속도」을 강화({배율}배)한다.
+Effect	특성·계속 효과	ability.field.scalar.위력	필드 전원의 위력 배율	{발동확률} {대상}의 {기술조건} 기술의 위력을 강화({배율}배)한다.
+Effect	특성·계속 효과	ability.move.fail.field	필드 전원의 조건 기술 실패	{발동확률} 필드에 있는 전원의 {기술조건} 기술이 실패한다.
+Effect	특성·계속 효과	ability.field.scalar.특공	필드 전원의 특공 배율	{발동확률} {대상}의 「특공」을 강화({배율}배)한다.
+Effect	특성·계속 효과	ability.field.scalar.특방	필드 전원의 특방 배율	{발동확률} {대상}의 「특방」을 강화({배율}배)한다.
+Effect	특성·계속 효과	ability.field.scalar.회피	필드 전원의 회피 배율	{발동확률} {대상}의 「회피」을 강화({배율}배)한다.
+Effect	특성·계속 효과	ability.field.hurtothers	필드의 지정 타입 이외 전원 대미지	{발동확률} 필드에 있는 「{타입}」 타입 이외의 전원에게 최대 HP의 1/{분모} 대미지를 준다.
+Effect	특성·계속 효과	ability.field.healtype	필드의 지정 타입 전원 회복	{발동확률} 필드에 있는 「{타입}」 타입 전원의 체력을 최대 HP의 1/{분모} 회복한다.
+Effect	특성·계속 효과	ability.truant	행동 후 쉼	{발동확률} 자신이 행동한 다음 T에는 자신의 기술이 실패한다.
+Effect	특성·계속 효과	ability.survive.chance	확률 버팀	{발동확률} 자신은 빈사가 되는 공격을 {확률} HP 1로 버틴다.
+Effect	포텐셜	effect.potential.nullify	이름 지정 포텐셜 무효화	{발동확률} {대상}의 『{이름}』을 무효화한다.
+Effect	포텐셜	effect.potential.grant	포텐셜 부여	{발동확률} 자신에게 『{포텐셜}』를 부여한다.
+Effect	포텐셜	effect.potential.nullify.kind	효과 종류별 포텐셜 무효화	{발동확률} {대상}의 「{효과}」 효과를 가진 포텐셜을 무효화한다.
+Effect	행동	effect.priority.내린다	기술 우선도 내린다	{발동확률} {주체}의 기술 우선도를 {수치} 내린다.
+Effect	행동	effect.priority.올린다	기술 우선도 올린다	{발동확률} {주체}의 기술 우선도를 {수치} 올린다.
+Effect	행동	effect.order.행동한다	먼저 행동한다	{발동확률} 자신은 {순서} 행동한다.
+Effect	행동	effect.order.행동할 수 있다	먼저 행동할 수 있다	{발동확률} 자신은 {순서} 행동할 수 있다.
+Effect	행동	exclusive.berserk.attack	버서크 추가공격	{발동확률} 이때 가장 먼저 같은 기술에 의한 추가공격을 한다.
+Effect	행동	effect.priority.lag	우선도 0.5 감소	{발동확률} 자신의 기술의 우선도를 -0.5한다.
+Effect	행동	effect.extra.reduced	위력이 약화된 추가행동	{발동확률} 가장 {순서} 같은 기술에 의한 추가행동을 얻는다(위력 {배율}배).
+Effect	행동	effect.extra.same	추가행동 같은 기술	{발동확률} 가장 {순서} 같은 기술에 의한 추가행동을 얻는다.
+Effect	행동	effect.extra.same.periodic	추가행동 같은 기술 (배수 T)	{발동확률} 「{배수}」배수 T, 가장 {순서} 같은 기술에 의한 추가행동을 얻는다.
+Effect	행동	effect.extra.any	추가행동 기술 선택	{발동확률} 가장 {순서} 추가행동을 얻는다.
+Effect	행동	effect.extra.any.periodic	추가행동 기술 선택 (배수 T)	{발동확률} 「{배수}」배수 T, 가장 {순서} 추가행동을 얻는다.
+Effect	행동	effect.extra.opponent	추가행동 상대와 같은 기술	{발동확률} 가장 {순서} 상대와 같은 기술에 의한 추가행동을 얻는다.
+Effect	행동	effect.extra.opponent.periodic	추가행동 상대와 같은 기술 (배수 T)	{발동확률} 「{배수}」배수 T, 가장 {순서} 상대와 같은 기술에 의한 추가행동을 얻는다.
+Effect	행동	effect.extra.condition	추가행동 조건 기술	{발동확률} 가장 {순서} {조건} 기술에 의한 추가행동을 얻는다.
+Effect	행동	effect.extra.condition.periodic	추가행동 조건 기술 (배수 T)	{발동확률} 「{배수}」배수 T, 가장 {순서} {조건} 기술에 의한 추가행동을 얻는다.
+TriggerEvent	기술·대미지	trigger.hit.True.False	공격 명중	자신의 {기술조건} 공격이 명중했을 때
+TriggerEvent	기술·대미지	trigger.hitconfirm	공격 명중 확정(대미지 전)	자신의 공격이 명중하면
+TriggerEvent	기술·대미지	trigger.receivedornullified	공격 피격 또는 무효화	상대의 공격을 받았거나 무효화했을 때
+TriggerEvent	기술·대미지	trigger.received.True.False	공격을 받음	상대의 {기술조건} 공격을 받았을 때
+TriggerEvent	기술·대미지	trigger.critical	급소	자신의 {기술조건} 기술이 급소에 맞았을 때
+TriggerEvent	기술·대미지	trigger.critical.received	급소 받음	상대의 {기술조건} 기술이 급소에 맞았을 때
+TriggerEvent	기술·대미지	trigger.hit.False.False	기술 명중	자신의 {기술조건} 기술이 명중했을 때
+TriggerEvent	기술·대미지	trigger.move.False	기술을 내보내기 직전	{주체}가 {기술조건} 기술을 내보낼 때
+TriggerEvent	기술·대미지	trigger.move.True	기술을 내보낸 직후	{주체}가 {기술조건} 기술을 내보냈을 때
+TriggerEvent	기술·대미지	trigger.received.False.False	기술을 받음	상대의 {기술조건} 기술을 받았을 때
+TriggerEvent	기술·대미지	trigger.missed	기술이 빗나감	자신의 기술이 빗나갔을 때
+TriggerEvent	기술·대미지	trigger.damaged	대미지를 받음	대미지를 받았을 때
+TriggerEvent	기술·대미지	trigger.protect.state	방어 상태가 공격을 막음	자신의 방어 상태가 공격을 막았을 때
+TriggerEvent	기술·대미지	trigger.protect	방어로 무효화	「방어」 등의 기술로 상대의 {대상} 무효화했을 때
+TriggerEvent	기술·대미지	trigger.drain	상대 체력 드레인	상대의 체력을 드레인했을 때
+TriggerEvent	기술·대미지	trigger.indirect	상대가 간접 대미지를 받음	상대가 공격 이외의 대미지를 받았을 때
+TriggerEvent	기술·대미지	trigger.defeat	상대를 쓰러뜨림	{대상} 쓰러뜨렸을 때
+TriggerEvent	기술·대미지	trigger.received.True.True	아인종 공격을 받음	아인종 상대의 {기술조건} 공격을 받았을 때
+TriggerEvent	기술·대미지	trigger.received.False.True	아인종 기술을 받음	아인종 상대의 {기술조건} 기술을 받았을 때
+TriggerEvent	기술·대미지	trigger.damage.small	작은 대미지 이하를 받음	「작은」 이하의 대미지를 받았을 때
+TriggerEvent	기술·대미지	trigger.defeat.move	조건 기술로 쓰러뜨림	자신의 {기술조건} 기술로 상대를 쓰러뜨렸을 때
+TriggerEvent	기술·대미지	trigger.nullified	조건 기술을 무효화	상대의 {기술조건} 기술을 무효화했을 때
+TriggerEvent	기술·대미지	trigger.received.fullhp	체력이 가득인 상태로 피격	체력이 가득인 상태로 공격을 받았을 때
+TriggerEvent	기술·대미지	trigger.defeat.type	타입 포켓몬을 쓰러뜨림	「{타입}」 타입 포켓몬을 쓰러뜨렸을 때
+TriggerEvent	날씨·장소	trigger.weatherchange	날씨 변화	날씨가 「{장소}」가 되었을 때
+TriggerEvent	날씨·장소	trigger.roomchange.False	룸·중력 전개	「{장소}」이 전개되었을 때
+TriggerEvent	날씨·장소	trigger.roomchange.True	룸·중력 해제	「{장소}」이 해제되었을 때
+TriggerEvent	날씨·장소	trigger.weatherchange.any	모든 날씨 변화	날씨가 변화했을 때
+TriggerEvent	날씨·장소	trigger.terrainchange	지형이 바뀜	「{장소}」가 되었을 때
+TriggerEvent	능력	trigger.rank.상대에 의한 하락	능력 랭크 상대에 의한 하락	상대에 의해 {주체}의 「{능력}」이 내려갔을 때
+TriggerEvent	능력	trigger.rank.상승	능력 랭크 상승	{주체}의 「{능력}」이 올랐을 때
+TriggerEvent	능력	trigger.rank.큰 상승	능력 랭크 큰 상승	{주체}의 「{능력}」이 크게 올랐을 때
+TriggerEvent	능력	trigger.rank.하락	능력 랭크 하락	{주체}의 「{능력}」이 내려갔을 때
+TriggerEvent	능력	trigger.rank.nullified	상대에 의한 능력 하락 무효	상대에 의한 능력 하락을 무효화했을 때
+TriggerEvent	데이터 해석	trigger.analyzed	상대 데이터 해석	상대의 데이터를 해석했을 때
+TriggerEvent	데이터 해석	trigger.analyzed.self	자신의 데이터가 해석됨	자신의 데이터가 해석되었을 때
+TriggerEvent	등장·교대	trigger.leave.True	강제교대를 포함한 퇴장	{주체}가 강제교대를 포함해 장소를 떠날 때
+TriggerEvent	등장·교대	trigger.entry.method	방식을 지정해 등장	{주체}가 {방식}로 장소에 나올 때
+TriggerEvent	등장·교대	trigger.switch.opponent	상대 교대	상대가 {방식}할 때
+TriggerEvent	등장·교대	trigger.switch.self	아군과 임의교대	아군과 임의교대할 때
+TriggerEvent	등장·교대	trigger.entry	장소에 등장	{주체}가 장소에 나올 때
+TriggerEvent	등장·교대	trigger.leave.False	장소에서 퇴장	{주체}가 장소를 떠날 때
+TriggerEvent	등장·교대	trigger.switch.type	타입 아군과 교대	「{타입}」 타입 아군과 교대할 때
+TriggerEvent	등장·교대	trigger.entry.type	타입 아군과 교대해 등장	「{타입}」 타입 아군과 교대해 장소에 나올 때
+TriggerEvent	상시·배틀	trigger.battlestart	배틀 시작	배틀 시작 시
+TriggerEvent	소지품·특성	trigger.berry	나무열매 사용	자신이 「나무열매」를 사용했을 때
+TriggerEvent	소지품·특성	trigger.itemloss.소모	소지품 소모	{주체}의 소지품이 소모됐을 때
+TriggerEvent	소지품·특성	trigger.itemloss.소모 또는 파괴	소지품 소모 또는 파괴	{주체}의 소지품이 소모(파괴)됐을 때
+TriggerEvent	소지품·특성	trigger.itemloss.파괴	소지품 파괴	{주체}의 소지품이 파괴됐을 때
+TriggerEvent	소지품·특성	trigger.item.stolen	소지품을 빼앗김	자신의 소지품을 빼앗겼을 때
+TriggerEvent	소지품·특성	trigger.intimidated	위협을 받음	상대의 〔위협〕을 받았을 때
+TriggerEvent	소지품·특성	trigger.ability.named	지정 특성 발동	자신의 「{이름}」 특성이 발동했을 때
+TriggerEvent	소지품·특성	trigger.ability.any	특성 발동(전체)	자신의 특성이 발동했을 때
+TriggerEvent	역할·트레이너	trigger.exclusive.received.entry	『전용』을 받아 등장	『전용』을 받아 장소에 나올 때
+TriggerEvent	역할·트레이너	trigger.exclusive.received	『전용』을 받음	『전용』을 받았을 때
+TriggerEvent	역할·트레이너	trigger.role.changed	역할이 됨	자신이 {역할} 되었을 때
+TriggerEvent	체력·상태	trigger.invert.event	능력 반전됨	{주체}의 능력이 반전했을 때
+TriggerEvent	체력·상태	trigger.lowered.False	상대 능력을 내림	자신이 상대의 {능력}을(를) 내렸을 때
+TriggerEvent	체력·상태	trigger.lowered.True	상대 능력을 크게 내림	자신이 상대의 {능력}을(를) 크게 내렸을 때
+TriggerEvent	체력·상태	trigger.state.상태 됨	상태 됨	{주체}가 「{이름}」 상태가 되었을 때
+TriggerEvent	체력·상태	trigger.state.상태 해제	상태 해제	{주체}의 「{이름}」 상태가 해제되었을 때
+TriggerEvent	체력·상태	trigger.typebecame.False	지정 타입이 됨	{주체}의 타입이 「{타입}」이 되었을 때
+TriggerEvent	체력·상태	trigger.hpchange.1	체력 변화 1	{주체}의 체력이 「1」이 되었을 때
+TriggerEvent	체력·상태	trigger.hpchange.가득	체력 변화 가득	{주체}의 체력이 가득해졌을 때
+TriggerEvent	체력·상태	trigger.hpchange.가득 아님	체력 변화 가득 아님	{주체}의 체력이 가득하지 않게 되었을 때
+TriggerEvent	체력·상태	trigger.hpchange.감소	체력 변화 감소	{주체}의 체력이 감소했을 때
+TriggerEvent	체력·상태	trigger.hpchange.이하	체력 변화 이하	{주체}의 체력이 {분자}/{분모} 이하가 되었을 때
+TriggerEvent	체력·상태	trigger.recover	체력을 회복	{주체}가 체력을 회복했을 때
+TriggerEvent	체력·상태	trigger.typechanged.False	타입이 바뀜	{주체}의 타입이 바뀌었을 때
+TriggerEvent	체력·상태	trigger.faint.any	필드의 누군가 빈사	필드의 누군가가 「빈사」 상태가 되었을 때
+TriggerEvent	턴·행동	trigger.selected.idle	공격하지 않는 행동 선택	{주체} 공격하지 않는 행동을 선택했을 때
+TriggerEvent	턴·행동	trigger.timing.field	등장 후 지정 턴 종료	장소에 나와 「{턴}」T째 종료 시
+TriggerEvent	턴·행동	trigger.order.after	먼저 행동했을 때	{주체} 먼저 행동했을 때
+TriggerEvent	턴·행동	trigger.timing.every	배수 턴 타이밍	「{배수}」배수 {시점}
+TriggerEvent	턴·행동	trigger.timing.event.True	사건 다음 턴 종료	「{사건}」가 성립한 다음 T 종료 시
+TriggerEvent	턴·행동	trigger.timing.event.False	사건 성립 턴 종료	「{사건}」가 성립한 T 종료 시
+TriggerEvent	턴·행동	trigger.selected.both	서로 같은 종류 선택	서로 {종류} 선택했을 때
+TriggerEvent	턴·행동	trigger.timing	턴 타이밍	{시점}
+TriggerEvent	턴·행동	trigger.exclusive.normal-switch-last	통상교대 등장 턴의 최후	통상교대로 장소에 나온 T의 최후
+TriggerEvent	파티·트레이너	trigger.order	지령을 받음	{주체} 지령을 받았을 때
+TriggerLabel	등장·교대	trigger.entry.both	자신과 상대의 등장 (두 줄)	장소에 나올 때
+상대가 장소에 나왔을 때
+TriggerLabel	확정 목록 문장	trigger.label.29	자신이 나무열매를 소모했을 때	자신이 나무열매를 소모했을 때
+TriggerState	날씨·장소	trigger.weather	날씨	날씨가 「{장소}」일 때
+TriggerState	날씨·장소	trigger.weather.any	날씨 있음	날씨가 있을 때
+TriggerState	날씨·장소	trigger.room	룸·중력 전개 중	「{장소}」이 전개되어 있을 때
+TriggerState	날씨·장소	trigger.side.자신.True	자진 설치물 층수	자진의 「{이름}」이 {겹}겹 이상일 때
+TriggerState	날씨·장소	trigger.side.자신.False	자진 효과 있음	자진에 「{이름}」이 있을 때
+TriggerState	날씨·장소	trigger.side.상대.True	적진 설치물 층수	적진의 「{이름}」이 {겹}겹 이상일 때
+TriggerState	날씨·장소	trigger.side.상대.False	적진 효과 있음	적진에 「{이름}」이 있을 때
+TriggerState	날씨·장소	trigger.terrain	지형 전개 중	「{장소}」일 때
+TriggerState	날씨·장소	trigger.side.양쪽.True	필드 설치물 층수	필드의 「{이름}」이 {겹}겹 이상일 때
+TriggerState	날씨·장소	trigger.side.양쪽.False	필드 효과 있음	필드에 「{이름}」이 있을 때
+TriggerState	능력	trigger.rank.total.True	능력 변화 합이 양수	자신의 능력 변화가 +{합} 이상일 때
+TriggerState	능력	trigger.rank.total.False	능력 변화 합이 음수	자신의 능력 변화가 -{합} 이하일 때
+TriggerState	능력	trigger.stats.compare.높음	두 능력치 비교: 높음	{주체}의 「{왼쪽}」이 「{오른쪽}」보다 높을 때
+TriggerState	능력	trigger.stats.compare.이하	두 능력치 비교: 이하	{주체}의 「{왼쪽}」이 「{오른쪽}」 이하일 때
+TriggerState	능력	trigger.sametype	상대와 같은 타입	상대가 자신과 같은 타입일 때
+TriggerState	능력	trigger.speed	상대와 속도 비교	자신의 「속도」가 상대보다 {비교} 때
+TriggerState	데이터 해석	trigger.analyzedstate	데이터 해석 상태	{상태}
+TriggerState	상시·배틀	trigger.always	상시	X
+TriggerState	상시·배틀	trigger.here	여기다	「여기다！」일 때
+TriggerState	상시·배틀	trigger.onfield	장소에 있는 한	장소에 있는 한
+TriggerState	소지품·특성	trigger.item.exists	소지품을 보유함	자신이 소지품을 가지고 있을 때
+TriggerState	소지품·특성	trigger.item.absent	소지품이 없음	{주체}가 소지품을 가지고 있지 않을 때
+TriggerState	소지품·특성	trigger.held.소지품	현재 소지품	{주체}의 소지품이 「{이름}」일 때
+TriggerState	소지품·특성	trigger.held.특성	현재 특성	{주체}의 특성이 「{이름}」일 때
+TriggerState	역할·트레이너	trigger.exclusive.received.turn	『전용』을 받은 T	『전용』을 받은 T
+TriggerState	조건 조합	trigger.or	두 상태 조건 중 하나	{조건A}이거나 {조건B}
+TriggerState	종족치	trigger.species.samegrade	종족치 같은 등급	상대의 「{능력}」 종족치가 자신과 같은 등급일 때
+TriggerState	종족치	trigger.species.grade	종족치 등급 비교	{주체}의 「{능력}」 종족치가 「{등급}」 {비교}일 때
+TriggerState	체력·상태	trigger.floating	공중에 떠 있음	{주체} 공중에 떠 있을 때
+TriggerState	체력·상태	trigger.invert.turn	능력 반전이 일어난 T	{주체}의 능력이 반전한 T
+TriggerState	체력·상태	trigger.state.상태	상태	{주체}가 「{이름}」 상태일 때
+TriggerState	체력·상태	trigger.typebecame.True	지정 타입이 된 T	{주체}의 타입이 「{타입}」이 된 T
+TriggerState	체력·상태	trigger.typechanged.True	타입이 바뀐 T	{주체}의 타입이 바뀐 T
+TriggerState	체력·상태	trigger.hp.가득	현재 체력 가득	{주체}의 체력이 가득일 때
+TriggerState	체력·상태	trigger.hp.가득 아님	현재 체력 가득 아님	{주체}의 체력이 가득하지 않을 때
+TriggerState	체력·상태	trigger.hp.이상	현재 체력 이상	{주체}의 체력이 {분자}/{분모} 이상일 때
+TriggerState	체력·상태	trigger.hp.이하	현재 체력 이하	{주체}의 체력이 {분자}/{분모} 이하일 때
+TriggerState	턴·행동	trigger.idle	그 턴에 공격하지 않음	{주체}가 공격하지 않을 때
+TriggerState	턴·행동	trigger.priority.atleast	기술 우선도 조건	자신의 기술의 우선도가 「+{우선도}」 이상일 때
+TriggerState	턴·행동	trigger.turn.condition.field	등장 후 T 조건	장소에 나와 「{턴}」T째일 때
+TriggerState	턴·행동	trigger.firstaction	등장 후 첫 행동 전	장소에 나와 아직 기술을 내보내지 않았을 때
+TriggerState	턴·행동	trigger.order.before	먼저 행동할 때	{주체} 먼저 행동할 때
+TriggerState	턴·행동	trigger.turn.condition.multiple	배수 T 조건	「{배수}」배수의 T일 때
+TriggerState	파티·트레이너	trigger.party.ability	PT에 지정 특성 아군 있음	PT에 특성이 「{이름}」인 아군이 있을 때
+TriggerState	파티·트레이너	trigger.observer	PT에 참여 중	PT에 참여하고 있을 때
+TriggerState	파티·트레이너	trigger.named.부여	부여	『{이름}』이 부여되어 있을 때
+TriggerState	파티·트레이너	trigger.faintcount	빈사 수 비교	아군의 빈사 수가 상대보다 {비교} 때
+TriggerState	파티·트레이너	trigger.trainer.aptitude.True	상대 트레이너 자질 등급	상대 트레이너가 「{자질}:{등급}」 이상일 때
+TriggerState	파티·트레이너	trigger.named.생존	생존	아군에 「{이름}」가 생존해 있을 때
+TriggerState	파티·트레이너	trigger.opponent.type	적진의 타입	적진에 「{이름}」 포켓몬이 있을 때
+TriggerState	파티·트레이너	trigger.last	최후의 1체	자신만 생존해 있을 때
+TriggerState	파티·트레이너	trigger.notlast	최후의 1체가 아님	자신이 「최후의 1체」가 아닐 때
+TriggerState	파티·트레이너	trigger.flavor.gender	트레이너 성별	트레이너가 「{이름}」일 때
+TriggerState	파티·트레이너	trigger.flavor.affiliation	트레이너 소속	소속이 《{이름}》일 때
+TriggerState	파티·트레이너	trigger.flavor.name	트레이너 이름	「{이름}」가 트레이너일 때
+TriggerState	파티·트레이너	trigger.trainer.aptitude.False	트레이너 자질 등급	트레이너가 「{자질}:{등급}」 이상일 때
+TriggerState	파티·트레이너	trigger.named.포텐셜 보유	포텐셜 보유	자신이 『{이름}』를 보유하고 있을 때

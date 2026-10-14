@@ -5,7 +5,7 @@ Codex 토큰이 떨어지면 Claude가 아래처럼 Sonnet 서브에이전트로
 ## 순서
 1. A·C·D 마무리(`2026-10-14-ACD-finish.md`) — Codex가 하던 중. 남았으면 Sonnet으로.
 2. E·F·G 동시(각 worktree): `E-battle-continuation`, `F-abaddon-gaps`, `G-chaldea-phase3`.
-3. K(모듈 정리, 단독) → H(파티 구조) → I(폼 변경). J(HANDOFF 분리·Releases 배포)는 다른 작업이 없을 때 단독.
+3. (완료: E·F·G·K) 다음: L·M·H·N 병렬(Codex 명령) → O(특성·계속 효과 해체, 단독) → I(폼 변경). J(HANDOFF 분리·Releases 배포)는 다른 작업이 없을 때 단독.
 
 ## 서브에이전트 실행 (Agent 도구: model sonnet, isolation worktree, 백그라운드)
 프롬프트 틀:
