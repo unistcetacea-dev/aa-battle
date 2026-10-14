@@ -1,44 +1,75 @@
-﻿param([string]$Notes = '')
-# 배포: 빌드 → release/windows에 EXE 복사 → version.txt 버전 올림 → README 빌드 기준 날짜 갱신.
-# 커밋·push는 하지 않는다. 변경을 확인한 뒤 release/windows를 직접 커밋·push한다.
+﻿param(
+    [string]$Notes = '',
+    [string]$Version = '',
+    [switch]$NoUpload
+)
+# 배포: 빌드 → AABattle-<버전>.zip 생성 → GitHub Release에 zip 업로드(gh 필요).
+#   - 저장소(release/windows)에는 EXE를 복사하지 않는다. zip은 outputs/publish에만 만들어지며 Git에 올리지 않는다.
+#   - gh가 없거나 -NoUpload를 주면 zip만 만들고 수동 업로드 방법을 출력한다.
+#   - 버전을 주지 않으면 오늘 날짜(yyyy.M.d)에 같은 날 번호(.1, .2 ...)를 붙인다.
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$release = Join-Path $projectRoot 'release\windows'
-$versionFile = Join-Path $release 'version.txt'
-$readmeFile = Join-Path $release 'README.txt'
-$utf8 = New-Object System.Text.UTF8Encoding($false)
+$outputDirectory = Join-Path $projectRoot 'outputs\publish'
+$gh = Get-Command gh -ErrorAction SilentlyContinue
 
-# 새 버전: 오늘 날짜 + 같은 날 번호(이미 오늘 버전이면 번호 +1)
-$today = Get-Date -Format 'yyyy.M.d'
-$version = "$today.1"
-if (Test-Path $versionFile) {
-    $current = (Get-Content $versionFile -Encoding UTF8 | Where-Object { $_.Trim() -ne '' } | Select-Object -First 1)
-    if ($current) {
-        $current = ($current -replace '^﻿','').Trim()
-        # 현재 버전이 오늘 날짜 이상이면(같은 날 재배포 등) 번호만 올려서 버전이 거꾸로 가지 않게 한다
-        if ($current -match '^(\d+\.\d+\.\d+)\.(\d+)$' -and ([version]"$($Matches[1]).0") -ge ([version]"$today.0")) {
-            $version = "$($Matches[1]).$([int]$Matches[2] + 1)"
+# 이미 쓴 버전 번호(로컬 태그 + gh가 있으면 Release 태그)를 모은다
+function Get-UsedTags {
+    $tags = @()
+    $local = & git -C $projectRoot tag --list 'v*' 2>$null
+    if ($LASTEXITCODE -eq 0 -and $local) { $tags += $local }
+    if ($gh) {
+        $remote = & gh release list --limit 100 --json tagName --jq '.[].tagName' 2>$null
+        if ($LASTEXITCODE -eq 0 -and $remote) { $tags += $remote }
+    }
+    return $tags
+}
+
+if ($Version -eq '') {
+    $today = Get-Date -Format 'yyyy.M.d'
+    $number = 1
+    foreach ($tag in (Get-UsedTags)) {
+        if ($tag -match ('^v' + [regex]::Escape($today) + '\.(\d+)$')) {
+            $number = [Math]::Max($number, [int]$Matches[1] + 1)
         }
     }
+    $Version = "$today.$number"
 }
+if ($Version -notmatch '^\d+(\.\d+){0,3}$') { throw "Invalid version: $Version" }
 
-# 버전 파일을 먼저 쓰고 빌드해야 EXE에 새 버전이 들어간다
-$text = $version + "`r`n"
-if ($Notes -ne '') { $text += $Notes + "`r`n" }
-[System.IO.File]::WriteAllText($versionFile, $text, $utf8)
+# 새 버전을 어셈블리 버전으로 넣어 빌드한다(프로그램이 자기 버전을 알아야 업데이트를 비교한다)
+if (Test-Path $outputDirectory) { Remove-Item $outputDirectory -Recurse -Force }
+& (Join-Path $PSScriptRoot 'build.ps1') -OutputPath 'outputs/publish' -Version $Version
 
-$buildOutput = 'outputs/publish'
-& (Join-Path $PSScriptRoot 'build.ps1') -OutputPath $buildOutput
-$built = Join-Path $projectRoot $buildOutput
-foreach ($file in 'AABattle.exe','AABattleDataEditor.exe') {
-    Copy-Item (Join-Path $built $file) (Join-Path $release $file) -Force
+# zip: EXE 2개 + 함께 쓰는 DLL 2개(.config 포함) + README (글꼴·참조 데이터는 DLL에 내장되어 있다)
+$stage = Join-Path $outputDirectory 'zip-stage'
+New-Item -ItemType Directory -Path $stage -Force | Out-Null
+foreach ($file in 'AABattle.exe', 'AABattle.exe.config', 'AABattleDataEditor.exe', 'AABattleDataEditor.exe.config', 'AABattle.UI.dll', 'AABattle.Engine.dll') {
+    Copy-Item (Join-Path $outputDirectory $file) (Join-Path $stage $file) -Force
 }
+$utf8Bom = New-Object System.Text.UTF8Encoding($true)
+$readme = [System.IO.File]::ReadAllText((Join-Path $PSScriptRoot 'dist-readme.txt'), (New-Object System.Text.UTF8Encoding($false)))
+$readme = $readme.Replace('{VERSION}', $Version).Replace('{DATE}', (Get-Date -Format 'yyyy-MM-dd'))
+[System.IO.File]::WriteAllText((Join-Path $stage 'README.txt'), $readme, $utf8Bom)
+$zip = Join-Path $outputDirectory "AABattle-$Version.zip"
+if (Test-Path $zip) { Remove-Item $zip -Force }
+Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zip
+$size = [Math]::Round((Get-Item $zip).Length / 1MB, 1)
+Write-Output "Built $zip ($size MB)"
 
-# README의 「빌드 기준」 날짜
-if (Test-Path $readmeFile) {
-    $readme = [System.IO.File]::ReadAllText($readmeFile, $utf8)
-    $date = Get-Date -Format 'yyyy-MM-dd'
-    $readme = [regex]::Replace($readme, '빌드 기준: \d{4}-\d{2}-\d{2}', "빌드 기준: $date")
-    [System.IO.File]::WriteAllText($readmeFile, $readme, $utf8)
+$tagName = "v$Version"
+if ($Notes -eq '') { $Notes = "AA BATTLE $Version" }
+if ($gh -and -not $NoUpload) {
+    & gh release create $tagName $zip --title "AA BATTLE $Version" --notes $Notes
+    if ($LASTEXITCODE -ne 0) { throw 'gh release create failed' }
+    Write-Output "Released $tagName with $([System.IO.Path]::GetFileName($zip))."
+} else {
+    if (-not $gh) { Write-Output 'gh(GitHub CLI) is not installed, so nothing was uploaded.' }
+    Write-Output ''
+    Write-Output 'Upload manually:'
+    Write-Output '  1. https://github.com/unistcetacea-dev/aa-battle/releases/new'
+    Write-Output "  2. Choose a tag: $tagName (Create new tag on publish, target main)"
+    Write-Output "  3. Release title: AA BATTLE $Version, description: $Notes"
+    Write-Output "  4. Attach the zip: $zip"
+    Write-Output '  5. Publish release (do not mark as pre-release)'
+    Write-Output 'Or install gh (winget install GitHub.cli), run gh auth login, then re-run publish.ps1.'
 }
-Write-Output "Published $version to $release. Review and commit/push release/windows yourself."

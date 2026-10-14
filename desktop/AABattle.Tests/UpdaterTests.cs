@@ -3,7 +3,7 @@ using System.Linq;
 using NUnit.Framework;
 
 namespace AABattle {
- // 업데이트 확인의 순수 로직: 버전 비교·version.txt 해석·교체 스크립트 (네트워크는 쓰지 않는다)
+ // 업데이트 확인의 순수 로직: 버전 비교·Releases JSON 해석·zip 경로·교체 스크립트 (네트워크는 쓰지 않는다)
  [TestFixture] public class UpdaterTests {
   [TestCase("2026.10.14.1", "2026.10.14.1", false)]
   [TestCase("2026.10.14.2", "2026.10.14.1", true)]
@@ -19,18 +19,43 @@ namespace AABattle {
    Assert.AreEqual(expected, UpdateVersion.IsNewer(remote, local));
   }
 
-  [Test] public void ManifestReadsFirstLineAsVersionAndRestAsNotes() {
-   var manifest = UpdateManifest.Parse("\uFEFF\r\n2026.10.14.1\r\n첫 줄\r\n둘째 줄\r\n");
-   Assert.AreEqual("2026.10.14.1", manifest.Version);
-   Assert.AreEqual("첫 줄\r\n둘째 줄", manifest.Notes);
+  const string ReleaseJson = "{\"tag_name\":\"v2026.10.15.2\",\"body\":\"첫 줄\\r\\n둘째 줄\",\"assets\":["
+   + "{\"name\":\"notes.txt\",\"browser_download_url\":\"https://example.com/notes.txt\"},"
+   + "{\"name\":\"AABattle-2026.10.15.2.zip\",\"browser_download_url\":\"https://example.com/AABattle-2026.10.15.2.zip\"}]}";
+
+  [Test] public void ReleaseJsonGivesVersionNotesAndZipAsset() {
+   var manifest = UpdateManifest.Parse(ReleaseJson);
+   Assert.AreEqual("2026.10.15.2", manifest.Version);
+   Assert.AreEqual("첫 줄\n둘째 줄", manifest.Notes);
+   Assert.AreEqual("https://example.com/AABattle-2026.10.15.2.zip", manifest.AssetUrl);
   }
 
   [TestCase("")]
-  [TestCase("   \r\n  ")]
-  [TestCase("버전 없음\r\n설명")]
   [TestCase("<html>404: Not Found</html>")]
-  public void ManifestRejectsEmptyOrMalformed(string text) {
-   Assert.IsNull(UpdateManifest.Parse(text));
+  [TestCase("[]")]
+  [TestCase("{\"message\":\"Not Found\"}")]
+  [TestCase("{\"tag_name\":\"latest\",\"assets\":[{\"name\":\"AABattle-1.zip\",\"browser_download_url\":\"https://x/a.zip\"}]}")]
+  [TestCase("{\"tag_name\":\"v1.0\",\"assets\":[]}")]
+  [TestCase("{\"tag_name\":\"v1.0\",\"assets\":[{\"name\":\"other.zip\",\"browser_download_url\":\"https://x/o.zip\"}]}")]
+  [TestCase("{\"tag_name\":\"v1.0\",\"assets\":[{\"name\":\"AABattle-1.0.zip\",\"browser_download_url\":\"http://x/a.zip\"}]}")]
+  public void ReleaseJsonRejectsMalformedOrWithoutZip(string json) {
+   Assert.IsNull(UpdateManifest.Parse(json));
+  }
+
+  [TestCase("AABattle.exe", "AABattle.exe", true)]
+  [TestCase("AABattle-1.0/AABattle.exe", "AABattle.exe", true)]
+  [TestCase("AABattle-1.0\\AABattle.exe", "AABattle.exe", true)]
+  [TestCase("../AABattle.exe", "AABattle.exe", false)]
+  [TestCase("a/b/AABattle.exe", "AABattle.exe", false)]
+  [TestCase("AABattle.exe.bak", "AABattle.exe", false)]
+  public void ZipEntryLookupRejectsOutsidePaths(string entry, string file, bool found) {
+   Assert.AreEqual(found, UpdateZip.FindEntryName(new[] { entry }, file) != null);
+  }
+
+  [Test] public void ZipTargetStaysInsideFolder() {
+   string folder = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "aa update");
+   Assert.AreEqual(System.IO.Path.Combine(folder, "AABattle.exe"), UpdateZip.TargetPath(folder, "AABattle.exe"));
+   Assert.Throws<System.IO.InvalidDataException>(() => UpdateZip.TargetPath(folder, "..\\AABattle.exe"));
   }
 
   [Test] public void ScriptQuotesPathsWithSpacesAndKorean() {

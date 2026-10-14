@@ -1,9 +1,6 @@
-AA BATTLE Windows 테스트 빌드
+AA BATTLE 배포본은 더 이상 이 폴더에 두지 않습니다.
 
-AABattle.exe: 배틀 시뮬레이터와 통합 팀 편집기
-AABattleDataEditor.exe: 데이터 편집기 단독 실행
+GitHub Releases에서 AABattle-<버전>.zip을 받아 압축을 푸세요.
+https://github.com/unistcetacea-dev/aa-battle/releases/latest
 
-빌드 기준: 2026-09-15
-포함 데이터: 포켓몬/기술 참조 데이터, 포텐셜 도감, HeadKasen 및 Pokemon BW 글꼴
-
-Windows에서 다운로드 경고가 표시되면 파일 속성의 차단 해제를 확인하세요.
+(프로그램의 자동 업데이트도 같은 Releases에서 받습니다.)

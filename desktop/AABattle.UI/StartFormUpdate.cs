@@ -8,6 +8,7 @@ namespace AABattle {
  partial class StartForm {
   FlatButton updateButton;
   string updateVersion = "";
+  string updateAssetUrl = "";
   bool updating;
 
   void InitUpdate() {
@@ -19,7 +20,7 @@ namespace AABattle {
    ThreadPool.QueueUserWorkItem(state => {
     Updater.CleanOld();
     UpdateManifest manifest = Updater.CheckForUpdate();
-    if (manifest != null) RunOnUi(() => ShowUpdate(manifest.Version));
+    if (manifest != null) RunOnUi(() => ShowUpdate(manifest.Version, manifest.AssetUrl));
    });
   }
 
@@ -31,8 +32,9 @@ namespace AABattle {
    }
   }
 
-  void ShowUpdate(string version) {
+  void ShowUpdate(string version, string assetUrl) {
    updateVersion = version;
+   updateAssetUrl = assetUrl;
    updateButton.Text = "새 버전 " + version + " — 업데이트";
    updateButton.Visible = true;
    ArrangeUpdate();
@@ -46,7 +48,7 @@ namespace AABattle {
   }
 
   internal void SetUpdateForTest(string version) {
-   ShowUpdate(version);
+   ShowUpdate(version, "");
   }
 
   void StartUpdate() {
@@ -55,7 +57,7 @@ namespace AABattle {
    updateButton.Text = "받는 중 0%";
    ThreadPool.QueueUserWorkItem(state => {
     try {
-     string folder = Updater.Download(p => RunOnUi(() => { updateButton.Text = "받는 중 " + (int)(p * 100) + "%"; }));
+     string folder = Updater.Download(updateAssetUrl, p => RunOnUi(() => { updateButton.Text = "받는 중 " + (int)(p * 100) + "%"; }));
      RunOnUi(() => {
       try {
        Updater.LaunchSwap(folder);

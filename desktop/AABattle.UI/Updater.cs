@@ -2,18 +2,20 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace AABattle {
- // 배포 폴더(GitHub raw)에서 새 버전을 확인하고 받아 교체하는 네트워크·파일 처리
+ // GitHub Releases에서 새 버전을 확인하고 받아 교체하는 네트워크·파일 처리
  static class Updater {
   [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
   static extern bool DeleteFileW(string path);
 
-  // 내 버전: 빌드 때 version.txt에서 들어간 어셈블리 버전
+  // 내 버전: 빌드 때 -p:Version으로 들어간 어셈블리 버전
   public static string CurrentVersion {
    get {
     Version version = typeof(Updater).Assembly.GetName().Version;
@@ -39,7 +41,9 @@ namespace AABattle {
   // 새 버전 정보. 새 버전이 없거나 네트워크 실패면 null (조용히 무시)
   public static UpdateManifest CheckForUpdate() {
    try {
-    using (var response = Open(UpdateConfig.VersionUrl, 8000).GetResponse())
+    HttpWebRequest request = Open(UpdateConfig.LatestReleaseUrl, 8000);
+    request.Accept = "application/vnd.github+json";
+    using (var response = request.GetResponse())
     using (var reader = new StreamReader(response.GetResponseStream(), System.Text.Encoding.UTF8)) {
      UpdateManifest manifest = UpdateManifest.Parse(reader.ReadToEnd());
      if (manifest != null && UpdateVersion.IsNewer(manifest.Version, CurrentVersion)) return manifest;
@@ -61,32 +65,37 @@ namespace AABattle {
    }
   }
 
-  // 파일을 임시 폴더로 받는다. progress는 0~1. 실패하면 예외
-  public static string Download(Action<double> progress) {
+  // Release의 zip을 임시 폴더에 받아 풀고, 풀린 EXE가 든 폴더를 돌려준다. progress는 0~1. 실패하면 예외
+  public static string Download(string zipUrl, Action<double> progress) {
    string folder = Path.Combine(Path.GetTempPath(), "aabattle-update-" + Guid.NewGuid().ToString("N"));
    Directory.CreateDirectory(folder);
-   int index = 0;
-   foreach (string file in UpdateConfig.Files) {
-    string path = Path.Combine(folder, file);
-    using (var response = Open(UpdateConfig.RawUrl(file), 30000).GetResponse())
-    using (var input = response.GetResponseStream())
-    using (var output = File.Create(path)) {
-     long total = response.ContentLength;
-     var buffer = new byte[64 * 1024];
-     long done = 0;
-     int read;
-     while ((read = input.Read(buffer, 0, buffer.Length)) > 0) {
-      output.Write(buffer, 0, read);
-      done += read;
-      if (total > 0 && progress != null) progress((index + (double)done / total) / UpdateConfig.Files.Length);
-     }
+   string zipPath = folder + ".zip";
+   using (var response = Open(zipUrl, 30000).GetResponse())
+   using (var input = response.GetResponseStream())
+   using (var output = File.Create(zipPath)) {
+    long total = response.ContentLength;
+    var buffer = new byte[64 * 1024];
+    long done = 0;
+    int read;
+    while ((read = input.Read(buffer, 0, buffer.Length)) > 0) {
+     output.Write(buffer, 0, read);
+     done += read;
+     if (total > 0 && progress != null) progress(0.9 * done / total);
     }
-    if (!UpdateFileCheck.LooksLikeExe(File.ReadAllBytes(path))) throw new InvalidDataException(file + " 다운로드 파일이 올바른 실행 파일이 아닙니다.");
-    // 다운로드 차단 표시(Mark of the Web)를 지운다
-    DeleteFileW(path + ":Zone.Identifier");
-    index++;
-    if (progress != null) progress((double)index / UpdateConfig.Files.Length);
    }
+   using (ZipArchive archive = ZipFile.OpenRead(zipPath)) {
+    foreach (string file in UpdateConfig.Files) {
+     string entryName = UpdateZip.FindEntryName(archive.Entries.Select(e => e.FullName), file);
+     if (entryName == null) throw new InvalidDataException(file + "이(가) zip에 없습니다.");
+     string path = UpdateZip.TargetPath(folder, file);
+     archive.GetEntry(entryName).ExtractToFile(path, true);
+     if (!UpdateFileCheck.LooksLikeExe(File.ReadAllBytes(path))) throw new InvalidDataException(file + " 파일이 올바른 실행 파일이 아닙니다.");
+     // 다운로드 차단 표시(Mark of the Web)를 지운다
+     DeleteFileW(path + ":Zone.Identifier");
+    }
+   }
+   File.Delete(zipPath);
+   if (progress != null) progress(1.0);
    return folder;
   }
 

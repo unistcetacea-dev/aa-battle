@@ -2,20 +2,20 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Web.Script.Serialization;
 
 namespace AABattle {
  // 업데이트 설정: 저장소 경로와 URL은 이 한 곳에서만 정한다
  static class UpdateConfig {
   public const string Repository = "unistcetacea-dev/aa-battle";
-  public const string Branch = "main";
-  public const string Folder = "release/windows";
-  public static readonly string[] Files = { "AABattle.exe", "AABattleDataEditor.exe" };
+  // zip 자산 이름: AABattle-<버전>.zip
+  public const string AssetPrefix = "AABattle-";
+  // 교체 대상: 실행 파일 2개와 함께 쓰는 어셈블리(.config는 바뀌지 않아 zip에만 넣는다)
+  public static readonly string[] Files = { "AABattle.exe", "AABattleDataEditor.exe", "AABattle.UI.dll", "AABattle.Engine.dll" };
 
-  public static string RawUrl(string file) {
-   return "https://raw.githubusercontent.com/" + Repository + "/" + Branch + "/" + Folder + "/" + file;
+  public static string LatestReleaseUrl {
+   get { return "https://api.github.com/repos/" + Repository + "/releases/latest"; }
   }
-
-  public static string VersionUrl { get { return RawUrl("version.txt"); } }
  }
 
  // 점으로 나눈 숫자 버전(예: 2026.10.14.1). 형식이 틀리면 null
@@ -51,22 +51,74 @@ namespace AABattle {
   }
  }
 
- // version.txt: 첫 비어 있지 않은 줄 = 버전, 나머지 = 변경 내용
+ // GitHub Releases "latest" JSON: tag_name = 버전(앞의 v는 뗀다), body = 변경 내용, assets 중 AABattle-*.zip = 받을 파일
  class UpdateManifest {
   public string Version = "";
   public string Notes = "";
+  public string AssetUrl = "";
 
-  public static UpdateManifest Parse(string text) {
-   if (string.IsNullOrWhiteSpace(text)) return null;
-   string[] lines = text.TrimStart('﻿').Replace("\r\n", "\n").Split('\n');
-   int first = 0;
-   while (first < lines.Length && lines[first].Trim().Length == 0) first++;
-   if (first >= lines.Length) return null;
-   string version = lines[first].Trim();
-   if (UpdateVersion.Parse(version) == null) return null;
-   var notes = new StringBuilder();
-   for (int i = first + 1; i < lines.Length; i++) notes.AppendLine(lines[i].TrimEnd());
-   return new UpdateManifest { Version = version, Notes = notes.ToString().Trim() };
+  public static UpdateManifest Parse(string json) {
+   if (string.IsNullOrWhiteSpace(json)) return null;
+   Dictionary<string, object> root;
+   try {
+    root = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(json);
+   } catch (Exception) {
+    return null;
+   }
+   if (root == null) return null;
+   string tag = Text(root, "tag_name").Trim();
+   if (tag.Length > 0 && (tag[0] == 'v' || tag[0] == 'V')) tag = tag.Substring(1);
+   if (UpdateVersion.Parse(tag) == null) return null;
+   string url = FindZipUrl(root);
+   if (url == null) return null;
+   return new UpdateManifest { Version = tag, Notes = Text(root, "body").Replace("\r\n", "\n").Trim(), AssetUrl = url };
+  }
+
+  static string Text(Dictionary<string, object> map, string key) {
+   object value;
+   return map.TryGetValue(key, out value) && value is string ? (string)value : "";
+  }
+
+  // assets 중 이름이 AABattle-*.zip이고 https 주소인 첫 자산
+  static string FindZipUrl(Dictionary<string, object> root) {
+   object assets;
+   if (!root.TryGetValue("assets", out assets)) return null;
+   var list = assets as System.Collections.IEnumerable;
+   if (list == null || assets is string) return null;
+   foreach (object item in list) {
+    var asset = item as Dictionary<string, object>;
+    if (asset == null) continue;
+    string name = Text(asset, "name");
+    string url = Text(asset, "browser_download_url");
+    bool nameOk = name.StartsWith(UpdateConfig.AssetPrefix, StringComparison.OrdinalIgnoreCase)
+     && name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase);
+    if (nameOk && url.StartsWith("https://", StringComparison.OrdinalIgnoreCase)) return url;
+   }
+   return null;
+  }
+ }
+
+ // zip 안의 파일 찾기: 루트 또는 폴더 하나 아래의 정확한 이름만 인정한다(.. 경로 거부)
+ static class UpdateZip {
+  public static string FindEntryName(IEnumerable<string> entryNames, string file) {
+   foreach (string raw in entryNames) {
+    string[] parts = raw.Replace('\\', '/').Split('/');
+    if (parts.Length < 1 || parts.Length > 2) continue;
+    if (parts[parts.Length - 1] != file) continue;
+    if (parts.Length == 2 && (parts[0].Length == 0 || parts[0] == "." || parts[0] == "..")) continue;
+    return raw;
+   }
+   return null;
+  }
+
+  // 풀 위치는 항상 폴더 바로 아래의 고정 이름이며, 폴더 밖으로 나가면 예외
+  public static string TargetPath(string folder, string file) {
+   string full = Path.GetFullPath(Path.Combine(folder, file));
+   string root = Path.GetFullPath(folder).TrimEnd('\\') + "\\";
+   if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase) || Path.GetFileName(full) != file) {
+    throw new InvalidDataException("올바르지 않은 파일 경로: " + file);
+   }
+   return full;
   }
  }
 

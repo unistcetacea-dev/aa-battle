@@ -81,3 +81,9 @@ Codex 공유 링크는 특정 시점의 읽기 전용 대화 스냅샷이다. �
 ### 구조·운영 (2026-10-14 대화) (일부)
 - **PROJECT_HANDOFF.md 분리**: **주제별**(기술·특성·포텐셜·소지품·UI·편집기·배틀 진행 등)로 나누고 본문은 색인·현재 규칙 요약만.
 - **배포**: 시간이 걸려도 됨. 요구: (1) **EXE가 Git 기록에 계속 쌓이지 않는 구조**, (2) 받는 사람은 **zip 하나 받아 압축을 푸는 방식**. → GitHub Releases에 zip 첨부(저장소 기록에 안 쌓임), `release/windows` EXE는 저장소에서 제거, 업데이트 기능은 최신 Release의 zip을 받아 교체하도록 변경(사용자 확인 완료 — 이 방식으로 진행).
+
+## 2026-10-14 배포를 GitHub Releases zip으로 (task/J-handoff-release)
+- `desktop/publish.ps1`: 빌드(`build.ps1 -Version`) → `outputs/publish/AABattle-<버전>.zip`(EXE 2개 + 함께 쓰는 DLL 2개(UI·Engine, .config 포함) + `desktop/dist-readme.txt` 기반 README. 업데이트는 EXE·DLL 4개를 교체) → `gh release create v<버전>`. `gh`가 없거나 `-NoUpload`면 zip만 만들고 수동 업로드 안내를 출력한다. 버전 기본값은 오늘 날짜 + 같은 날 번호(로컬 태그·Release 태그 참고). `release/windows`로 복사하지 않는다.
+- 업데이트(`Updater`/`UpdateLogic`): `api.github.com/repos/unistcetacea-dev/aa-battle/releases/latest`의 `tag_name`(앞의 v 제거)을 내 버전과 비교, `AABattle-*.zip` 자산을 받아 임시 폴더에 풀고(루트 또는 폴더 한 겹 아래 고정 이름만) PE 검사 후 기존 교체 스크립트로 교체한다. `version.txt` 방식은 제거했다. 프로그램 버전은 빌드 때 `-p:Version`으로 들어간다.
+- `release/windows`의 EXE·`version.txt`는 저장소에서 삭제했고 README만 남겼다(과거 기록의 EXE는 재작성하지 않는다).
+- 첫 배포: `gh` 설치·`gh auth login` 후 `./desktop/publish.ps1 -Notes "변경 내용"`, 또는 `-NoUpload`로 zip을 만들어 Releases 웹 화면에서 직접 올린다. 첫 Release가 올라가기 전에는 이미 배포된 옛 EXE가 새 방식을 모른다(옛 EXE는 raw `version.txt`를 본다).
