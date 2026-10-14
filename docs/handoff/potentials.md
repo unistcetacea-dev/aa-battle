@@ -346,3 +346,4 @@ Codex 작업 지침과 검증 절차는 `AGENTS.md`, `HARNESS.md`, `desktop/veri
 - P 후속 구현: 조건 없는 `effect.priority.lag`(느림보꼬리)는 합친 우선도 모듈의 「-0.5」 선택값이 되었다(정규화 덤프 전후 차이 없음). 저주 관통은 건 보유자가 장소에 있고 빈사가 아닌 동안만 유지된다: 보유자가 퇴장하면(`LeaveField`) 또는 판정 때 빈사·퇴장이면 `CurseSource`를 비운다(저주는 남고 매직가드에 막힌다). 이미 저주 상태면 다시 걸리지 않으므로 관통은 저주가 풀린 뒤 다시 걸릴 때 붙는다.
 
 - 탐사대원·야생 포켓몬의 「임의의 능력」: `RoleEntryRuntime`의 이름별 무작위 상승을 없애고 역할 문장이 표준 경로(`RunRank` 임의, `Rules.ChooseStat`)로 한 번만 처리한다. 선택기가 없거나 취소하면 판정 대기(상승 없음).
+- 선발 등장(MainForm.LoadTeams)은 EffectScope 안에서 EntryTriggers.Enter를 돌려 「장소에 나올 때」 포텐셜(탐사대원 선택 창 포함)을 배틀 준비 직후 처리하고 EntryTriggered를 세워 첫 Resolve에서 다시 일어나지 않게 한다.
