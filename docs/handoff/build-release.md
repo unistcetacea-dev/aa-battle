@@ -73,3 +73,11 @@ Codex 공유 링크는 특정 시점의 읽기 전용 대화 스냅샷이다. �
 - 시작 화면(`StartFormUpdate.cs`)이 백그라운드로 raw URL의 `version.txt`를 받아 비교하고(실패는 조용히 무시), 새 버전이면 오른쪽 아래에 「새 버전 X — 업데이트」 버튼을 낸다. 인자를 준 실행(검사·캡처)은 네트워크를 쓰지 않는다.
 - 버튼: `Updater.cs`가 EXE 2개를 임시 폴더로 받아(크기·PE 헤더 확인, Zone.Identifier 제거) 교체 배치 파일을 띄우고 종료한다. 배치 파일이 종료 대기 → `*.old.exe`로 보관 → 이동 → 재실행하고, 다음 실행 때 `*.old.exe`를 지운다. 저장소·URL 상수와 순수 로직(버전 비교·해석·스크립트 생성)은 `UpdateLogic.cs`.
 - 배포는 `desktop/publish.ps1`(빌드 → 복사 → 버전 올림 → README 날짜). 커밋·push는 사람이 `release/windows`를 확인한 뒤 한다. 검사는 `UpdaterTests`.
+
+## 사용자 결정
+
+원본: `research/tasks/2026-10-14-user-decisions.md`
+
+### 구조·운영 (2026-10-14 대화) (일부)
+- **PROJECT_HANDOFF.md 분리**: **주제별**(기술·특성·포텐셜·소지품·UI·편집기·배틀 진행 등)로 나누고 본문은 색인·현재 규칙 요약만.
+- **배포**: 시간이 걸려도 됨. 요구: (1) **EXE가 Git 기록에 계속 쌓이지 않는 구조**, (2) 받는 사람은 **zip 하나 받아 압축을 푸는 방식**. → GitHub Releases에 zip 첨부(저장소 기록에 안 쌓임), `release/windows` EXE는 저장소에서 제거, 업데이트 기능은 최신 Release의 zip을 받아 교체하도록 변경(사용자 확인 완료 — 이 방식으로 진행).
