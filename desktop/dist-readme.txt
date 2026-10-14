@@ -5,7 +5,7 @@ AA BATTLE {VERSION} (Windows)
 AABattle.exe: 배틀 시뮬레이터와 통합 팀 편집기
 AABattleDataEditor.exe: 데이터 편집기 단독 실행
 AABattle.UI.dll, AABattle.Engine.dll: 두 프로그램이 함께 쓰는 파일(같은 폴더에 두세요)
-samples\: 샘플 파티(실프 인헨스먼츠, 피니스 칼데아). 프로그램의 「열기」로 불러옵니다.
+samples\: 샘플 파티(실프 인헨스먼츠, 피니스 칼데아). 프로그램의 「열기」로 불러옵니다. 업데이트 버튼을 누르면 같은 이름의 샘플은 새것으로 바뀌니, 고쳐 쓰려면 다른 이름으로 저장하세요.
 
 빌드 기준: {DATE}
 포함 데이터: 포켓몬/기술 참조 데이터, 포텐셜 도감, HeadKasen 및 Pokemon BW 글꼴(프로그램에 내장)
